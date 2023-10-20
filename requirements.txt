@@ -1,0 +1,7 @@
+aiogram~=2.18
+asyncpg~=0.28.0
+aioredis<2.0
+environs~=9.0
+numpy~=1.26.0
+more_itertools~=10.1.0
+requests~=2.31.0
