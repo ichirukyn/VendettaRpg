@@ -125,23 +125,26 @@ async def entry_point(message: Message, state: FSMContext):
 
     hero = await db.get_user_id(chat_id)
 
-    if hero is None or len(hero) == 0:
-        races = await db.get_races()
-        kb = list_kb(races, is_back=False)
+    try:
+        if hero is None or len(hero) == 0:
+            races = await db.get_races()
+            kb = list_kb(races, is_back=False)
 
-        await RegState.select_race.set()
-        return await message.answer('Выбери стартовую расу:', reply_markup=kb)
+            await RegState.select_race.set()
+            return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
-    else:
-        print(f"hero_id: {hero['id']}")
-        await LocationState.home.set()
+        else:
+            print(f"hero_id: {hero['id']}")
 
-        hero = await init_hero(db, hero['id'])
+            hero = await init_hero(db, hero['id'])
 
-        await state.update_data(hero=hero)
-        await state.update_data(hero_id=hero.id)
+            await state.update_data(hero=hero)
+            await state.update_data(hero_id=hero.id)
 
-        return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
+            await LocationState.home.set()
+            return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
+    except:
+        print('error reg')
 
 
 async def started(message: Message, state: FSMContext):

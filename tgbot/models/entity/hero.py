@@ -68,6 +68,9 @@ class Hero(Entity):
         self.money = money
         self.free_stats = free_stats
 
+    def level_up(self):
+        self.free_stats += 10  # TODO: Обновить под ранги, а не статика
+
 
 class HeroInfo:
     def __init__(self, hero):
@@ -102,6 +105,7 @@ class HeroInfo:
             f"Раса: {self.hero.race_name}\n"
             f"Класс: {self.hero.class_name}\n"
             f"Золото: {formatted(self.hero.money)}\n"
+            f"Уровень: {self.hero.lvl} ({self.hero.exp}/{self.hero.exp_to_lvl})\n"
             f"□□□□□□□□□□□□□□□\n"
             f"ХП: `{formatted(self.hero.hp)} / {formatted(self.hero.hp_max)}`\n"
             f"Мана: `{formatted(self.hero.mana)}`\n"

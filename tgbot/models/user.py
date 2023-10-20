@@ -97,7 +97,13 @@ class DBCommands:
 
         self.ADD_LVL = "INSERT INTO levels (exp_to_lvl, exp_total) VALUES ($1, $2)"
         self.GET_LVLS = "SELECT * FROM levels"
-        self.GET_LVLS = "SELECT * FROM levels"
+        self.GET_LVL = "SELECT * FROM levels WHERE lvl = $1"
+
+        self.ADD_HERO_LVL = "INSERT INTO hero_levels (hero_id, lvl, exp) VALUES ($1, $2, $3)"
+        self.GET_HERO_LVL = "SELECT * FROM hero_levels hl JOIN levels l ON hl.lvl = l.lvl WHERE hl.hero_id = $1"
+
+        self.GET_HERO_LVL_BY_EXP = "SELECT MAX(t.lvl) FROM (SELECT lvl FROM levels WHERE exp_total - $1 <= 0) t"
+        self.GET_EXP_THIS_LVL = "SELECT $1 - exp_total FROM levels WHERE lvl = $2"
 
     async def add_user(self, chat_id, login, is_admin=False, is_baned=False, ref_id=1):
         command = self.ADD_USER
@@ -118,6 +124,37 @@ class DBCommands:
 
         record_id = await self.pool.fetchval(command, exp_to_lvl, exp_total)
         return record_id
+
+    async def add_hero_lvl(self, hero_id, lvl, exp):
+        command = self.ADD_HERO_LVL
+
+        record_id = await self.pool.fetchval(command, hero_id, lvl, exp)
+        return record_id
+
+    async def get_hero_lvl(self, hero_id):
+        command = self.GET_HERO_LVL
+
+        return await self.pool.fetchrow(command, hero_id)
+
+    async def get_lvl(self, lvl):
+        command = self.ADD_LVL
+
+        return await self.pool.fetchrow(command, lvl)
+
+    async def update_hero_level(self, exp, lvl, hero_id):
+        command = f"UPDATE hero_levels SET exp = $1, lvl = $2 WHERE hero_id = $3"
+
+        return await self.pool.fetchrow(command, exp, lvl, hero_id)
+
+    async def get_hero_lvl_by_exp(self, hero_exp):
+        command = self.GET_HERO_LVL_BY_EXP
+
+        return await self.pool.fetchrow(command, hero_exp)
+
+    async def get_exp_this_lvl(self, hero_exp_total, hero_lvl):
+        command = self.GET_EXP_THIS_LVL
+
+        return await self.pool.fetchrow(command, hero_exp_total, hero_lvl)
 
     # TODO: Допилить..
     async def add_hero(self, user_id, name, race_id, class_id):

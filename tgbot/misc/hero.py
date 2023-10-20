@@ -8,8 +8,9 @@ async def init_hero(db: DBCommands, user_id) -> Hero:
 
     hero_db = await db.get_heroes(user_id)
     stats_db = await db.get_hero_stats(hero_db['id'])
+    hero_lvl = await db.get_hero_lvl(hero_db['id'])
 
-    team_db = await db.get_hero_team(user_id)
+    team_db = await db.get_hero_team(hero_db['id'])
 
     race_db = await db.get_race(hero_db['race_id'])
     class_db = await db.get_class(hero_db['class_id'])
@@ -20,6 +21,7 @@ async def init_hero(db: DBCommands, user_id) -> Hero:
 
     hero: Hero = HeroFactory.create_hero(hero_db, stats_db, race_db, class_db)
     hero.update_stats_all()
+    hero.init_level(hero_lvl)
 
     if skills:
         hero = await skills_init(hero, skills, db)
@@ -71,33 +73,25 @@ async def update_hero(db: DBCommands, hero) -> Hero:
 
     hero_db = await db.get_heroes(hero.id)
     stats_db = await db.get_hero_stats(hero.id)
+    hero_lvl = await db.get_hero_lvl(hero_db['id'])
 
     skills = await db.get_hero_skills(hero.id)
     hero_weapon = await db.get_hero_weapons(hero.id)
 
     team_db = await db.get_hero_team(hero.id)
 
+    race_db = await db.get_race(hero_db['race_id'])
+    class_db = await db.get_class(hero_db['class_id'])
+
+    hero: Hero = HeroFactory.create_hero(hero_db, stats_db, race_db, class_db)
     hero = await skills_init(hero, skills, db)
 
-    # TODO: Костыль..
-    hero.strength = stats_db['strength']
-    hero.health = stats_db['health']
-    hero.speed = stats_db['speed']
-    hero.soul = stats_db['soul']
-    hero.intelligence = stats_db['intelligence']
-    hero.dexterity = stats_db['dexterity']
-    hero.submission = stats_db['submission']
-    hero.crit_rate = stats_db['crit_rate']
-    hero.crit_damage = stats_db['crit_damage']
-    hero.free_stats = stats_db['free_stats']
-    hero.total_stats = stats_db['total_stats']
-    hero.money = hero_db['money']
-
     hero.update_stats()
+    hero.init_level(hero_lvl)
 
     if hero_weapon:
         weapon = await db.get_weapon(hero_weapon['weapon_id'])
-        hero.add_weapon(hero_weapon, weapon)
+        hero.add_weapon(weapon, hero_weapon['lvl'])
 
     try:
         hero_team_bd = await db.get_hero_team(hero.id)

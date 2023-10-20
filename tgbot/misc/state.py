@@ -22,6 +22,7 @@ class BattleState(StatesGroup):
     user_escape_confirm = State()
     battle_start = State()
     revival = State()
+    load = State()
 
 
 class HuntState(StatesGroup):

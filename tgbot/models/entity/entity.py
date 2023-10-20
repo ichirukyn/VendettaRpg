@@ -1,12 +1,13 @@
 from random import randint, random
 
 from tgbot.models.entity.entity_base.entity_damage import EntityDamage
+from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
 from tgbot.models.entity.skill import SkillFactory
 
 
-class Entity(EntityResist, EntityDamage, EntityWeapon):
+class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
     lvl = 1
     team_id = 0
 

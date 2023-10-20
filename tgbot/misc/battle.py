@@ -233,6 +233,7 @@ class BattleInterface:
         self.db: DBCommands = db
         self.engine: BattleEngine = engine
         self.logger: BattleLogger = logger
+        self.engine_data = None
 
         self.dp: Dispatcher = message.bot.get('dp')
 
@@ -242,6 +243,7 @@ class BattleInterface:
                 if state_name is not None and state is not None:
                     await self.update_data(player.chat_id, state_name, state)
 
+                await self.update_data(player.chat_id, 'engine_data', self.engine_data)
                 await self.update_data(player.chat_id, 'engine', self.engine)
                 await self.update_data(player.chat_id, 'logger', self.logger)
 
@@ -341,6 +343,8 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.user_turn)
 
             text = f'{hero.name} пробует уклонится.'
+
+            await self.set_state(hero.chat_id, BattleState.load.set)
             await self.send_all(hero, text, text, None, next_kb)
             return await self.battle()
 
@@ -351,6 +355,8 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.user_turn)
 
             text = f'{hero.name} поставил блок.'
+
+            await self.set_state(hero.chat_id, BattleState.load.set)
             await self.send_all(hero, text, text, None, next_kb)
             return await self.battle()
 
@@ -361,6 +367,8 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.user_turn)
 
             text = f'{hero.name} ждёт момент для контрудара.'
+
+            await self.set_state(hero.chat_id, BattleState.load.set)
             await self.send_all(hero, text, text, None, next_kb)
             return await self.battle()
 
@@ -377,6 +385,7 @@ class BattleInterface:
 
             text = f'{hero.name} сбегает..'
 
+            await self.set_state(hero.id, LocationState.home)
             await self.save_battle('order', self.engine.order)
             await self.send_all(hero, text, text, None, home_kb)
 
@@ -533,14 +542,37 @@ class BattleInterface:
             state = BattleState.revival
 
             for winner in team_win:
-                if isinstance(e, Hero) and e.chat_id == winner.chat_id:
-                    log = 'Вы победили!'
-                    kb = self.engine.exit_kb
-                    state = self.engine.exit_state
+                if isinstance(e, Hero):
+                    # TODO: Почему-то пропускает нпс, после побега пользователя
+                    # TODO: + Пофиксить побег и навыки, стянув код с Хантера
+                    if e.chat_id == winner.chat_id:
+                        log = 'Вы победили!\n'
+                        kb = self.engine.exit_kb
+                        state = self.engine.exit_state
+
+                        mod = len(order) - len(team_win) / 10
+                        log += await self.battle_reward(e, mod)
 
                 if isinstance(e, Hero) and e.sub_action != 'Сбежать':
                     await self.set_state(e.chat_id, state)
                     await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
+
+    async def battle_reward(self, e, mod):
+        reward_exp = round(e.exp_reward(1 + mod))
+
+        e.exp += int(reward_exp)
+        log = f'Вы получили {reward_exp} опыта'
+
+        if e.check_lvl_up():
+            new_lvl = await self.db.get_hero_lvl_by_exp(e.exp)
+            e.lvl = new_lvl['max'] + 1
+
+            log += f"\n\nВы достигли {e.lvl} уровня!"
+
+        await self.db.update_hero_level(e.exp, e.lvl, e.id)
+        await self.update_data(e.chat_id, 'hero', e)
+
+        return log
 
     async def process_revival(self, message: Message, state: FSMContext):
         if message.text == 'Возрождение':
@@ -609,6 +641,8 @@ async def start_battle(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.start_battle()
 
 
@@ -621,6 +655,8 @@ async def user_turn(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.process_user_turn(message, state)
 
 
@@ -633,6 +669,8 @@ async def user_sub_turn(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.process_user_sub_turn(message, state)
 
 
@@ -645,6 +683,8 @@ async def select_technique(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.process_select_technique(message, state)
 
 
@@ -657,6 +697,8 @@ async def select_skill(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.process_select_skill(message, state)
 
 
@@ -669,6 +711,8 @@ async def select_skill_confirm(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.process_select_skill_confirm(message, state)
 
 
@@ -681,6 +725,8 @@ async def select_target(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.process_select_target(message, state)
 
 
@@ -693,4 +739,6 @@ async def revival(message: Message, state: FSMContext):
 
     factory = BattleFactory(**engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
+    ui.engine_data = engine_data
+
     await ui.process_revival(message, state)

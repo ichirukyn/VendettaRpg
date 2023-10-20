@@ -34,6 +34,14 @@ async def battle_init(message: Message, state: FSMContext):
         hero = data.get('hero')
         player_team = [hero]
 
+    engine_data = {
+        "enemy_team": enemy_team,
+        "player_team": player_team,
+        "exit_state": LocationState.home,
+        "exit_message": '',
+        "exit_kb": home_kb,
+    }
+
     factory = BattleFactory(enemy_team, player_team, LocationState.home, '', home_kb)
 
     logger = factory.create_battle_logger()
@@ -42,14 +50,7 @@ async def battle_init(message: Message, state: FSMContext):
 
     engine.initialize()
     ui.engine = engine
-
-    engine_data = {
-        "enemy_team": enemy_team,
-        "player_team": player_team,
-        "exit_state": LocationState.home,
-        "exit_message": '',
-        "exit_kb": home_kb,
-    }
+    ui.engine_data = engine_data
 
     await state.update_data(engine_data=engine_data)
     await state.update_data(engine=engine)

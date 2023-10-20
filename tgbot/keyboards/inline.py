@@ -84,7 +84,7 @@ top_inline.add(
     InlineKeyboardButton(text='Интеллект', callback_data='intelligence'),
 )
 top_inline.add(
-    InlineKeyboardButton(text='Ловкость', callback_data='submission'),
+    InlineKeyboardButton(text='Подчинение', callback_data='submission'),
 )
 top_inline.add(
     InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),

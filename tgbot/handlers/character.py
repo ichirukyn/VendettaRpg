@@ -3,7 +3,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from numpy.random import randint
 
-from tgbot.handlers.location import to_home
 from tgbot.keyboards.inline import skill_add_inline, skill_del_inline, list_inline
 from tgbot.keyboards.reply import character_kb, character_distribution_kb, back_kb, inventory_kb
 from tgbot.misc.Inventory import WeaponItem
@@ -185,11 +184,13 @@ async def character_equip(message: Message, state: FSMContext):
     if message.text == 'Текущее оружие':
         await message.answer(hero.info.equip_stat())
 
-    elif message.text == 'Артефакты (В разработке)':
+    if message.text == 'Артефакты (В разработке)':
         pass
 
-    elif message.text == '🔙 Назад':
-        return await to_home(message)
+    if message.text == '🔙 Назад':
+        await LocationState.character.set()
+        await message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
+                             parse_mode='Markdown')
 
 
 async def character_inventory(message: Message, state: FSMContext):
