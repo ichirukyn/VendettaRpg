@@ -468,7 +468,7 @@ class DBCommands:
     async def get_enemy_techniques(self, enemy_id):
         command = self.GET_ENEMY_TECHNIQUE
 
-        return await self.pool.fetchrow(command, enemy_id)
+        return await self.pool.fetch(command, enemy_id)
 
     async def get_enemy_skills(self, enemy_id):
         command = self.GET_ENEMY_SKILLS

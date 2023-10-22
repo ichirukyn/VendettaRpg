@@ -1,26 +1,12 @@
 import math
 
-# data = {
-#     "lvl": 300,
-#     "exp": 0,
-#     "exp_to_lvl": 814903,
-#     "exp_total": 90952662,
-# }
-
-data = {
-    "lvl": 1,
-    "exp": 0,
-    "exp_to_lvl": 50,
-    "exp_total": 50,
-}
-
 
 class EntityLevel:
     lvl = 1
-    exp_total = 0
     exp = 0
-    exp_to_lvl = 50
     exp_now = 0
+    exp_total = 0
+    exp_to_lvl = 50
 
     base_reward = 1  # Ид ранга
 
