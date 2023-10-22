@@ -2,7 +2,7 @@ from aiogram import Dispatcher
 from aiogram.dispatcher.middlewares import LifetimeControllerMiddleware, BaseMiddleware
 from aiogram.types import Message, ParseMode
 
-from tgbot.misc.hero import update_hero, init_team
+from tgbot.misc.hero import init_team, init_hero
 from tgbot.models.user import DBCommands
 
 
@@ -48,7 +48,7 @@ class UpdateStatsMiddleware(BaseMiddleware):
 
         try:
             hero = data['hero']
-            hero = await update_hero(db, hero)
+            hero = await init_hero(db, hero, hero.chat_id)
 
             state = await dp.storage.get_state(chat=chat_id)
 

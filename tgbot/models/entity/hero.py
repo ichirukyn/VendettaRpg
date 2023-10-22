@@ -105,7 +105,7 @@ class HeroInfo:
             f"Раса: {self.hero.race_name}\n"
             f"Класс: {self.hero.class_name}\n"
             f"Золото: {formatted(self.hero.money)}\n"
-            f"Уровень: {self.hero.lvl} ({self.hero.exp}/{self.hero.exp_to_lvl})\n"
+            f"Уровень: {self.hero.lvl} ({self.hero.exp_now}/{self.hero.exp_to_lvl})\n"
             f"□□□□□□□□□□□□□□□\n"
             f"ХП: `{formatted(self.hero.hp)} / {formatted(self.hero.hp_max)}`\n"
             f"Мана: `{formatted(self.hero.mana)}`\n"

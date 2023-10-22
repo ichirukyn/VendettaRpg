@@ -32,16 +32,20 @@ class EnemyFactory:
 
 
 class Enemy(Entity):
-    # def __init__(self, entity_id, name, rank, money, strength, health, speed, dexterity, soul, intelligence, submission,
-    #              crit_rate, crit_damage, resist):
-    #     super().__init__(entity_id, name, rank, money, strength, health, speed, dexterity, soul, intelligence,
-    #                      submission, crit_rate, crit_damage, resist)
+    def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
+                 crit_rate, crit_damage, resist, race_id, class_id, race_name, class_name):
+        super().__init__(entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
+                         crit_rate, crit_damage, resist, race_id, class_id, race_name, class_name)
+        self.techniques = []
 
     def select_target(self, team):
         if len(team) > 0:
             self.target = min(team, key=lambda x: x.hp)
         else:
             self.target = team[0]
+
+    def choice_technique(self):
+        self.technique_damage = choice(self.techniques)
 
     def define_action(self):
         if len(self.active_bonuses) == 0 and len(self.skills) != 0:
@@ -78,6 +82,7 @@ async def init_enemy(db: DBCommands, enemy_id) -> Enemy:
     stats_db = await db.get_enemy_stats(enemy_id)
     skills = await db.get_enemy_skills(enemy_id)
 
+    techniques = await db.get_enemy_techniques(enemy_id)
     enemy_weapon = await db.get_enemy_weapon(enemy_id)
     weapon = await db.get_weapon(enemy_weapon['weapon_id'])
 
@@ -88,6 +93,7 @@ async def init_enemy(db: DBCommands, enemy_id) -> Enemy:
     enemy = await skills_init(enemy, skills, db)
     enemy.add_weapon(weapon, enemy_weapon['lvl'])
     enemy.update_stats_all()
+    enemy.techniques = [technique['damage'] for technique in techniques]
 
     return enemy
 

@@ -20,6 +20,8 @@ class EntityLevel:
     exp_total = 0
     exp = 0
     exp_to_lvl = 50
+    exp_now = 0
+
     base_reward = 1  # Ид ранга
 
     def exp_reward(self, difficulty):
@@ -33,10 +35,11 @@ class EntityLevel:
         return reward
 
     def init_level(self, data):
-        self.lvl = data['lvl']
-        self.exp = data['exp']
-        self.exp_to_lvl = data['exp_to_lvl']
-        self.exp_total = data['exp_total']
+        self.lvl = data['lvl']  # 3 ур
+        self.exp = data['exp']  # 213 - 537 --
+        self.exp_to_lvl = data['exp_to_lvl']  # 324
+        self.exp_total = data['exp_total']  # 537
+        self.exp_now = self.exp - (self.exp_total - self.exp_to_lvl)
 
     def check_lvl_up(self):
         need_to_lvl = self.exp_to_lvl - self.exp

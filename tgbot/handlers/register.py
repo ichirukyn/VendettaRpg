@@ -134,13 +134,13 @@ async def entry_point(message: Message, state: FSMContext):
             return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
         else:
-            print(f"hero_id: {hero['id']}")
-
             hero = await init_hero(db, hero['id'])
+            print(f"hero_id: {hero.id}")
 
             await state.update_data(hero=hero)
             await state.update_data(hero_id=hero.id)
 
+            print('-- Exit on /start -- \n')
             await LocationState.home.set()
             return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
     except:
@@ -160,7 +160,7 @@ async def started(message: Message, state: FSMContext):
 
 def start(dp: Dispatcher):
     dp.register_message_handler(started, commands=["started"])
-    dp.register_message_handler(entry_point, commands=["start"])
+    dp.register_message_handler(entry_point, commands=["start"], state='*')
     dp.register_message_handler(entry_point, state=RegState.entry)
 
     dp.register_message_handler(register_user, state=RegState.user_name)

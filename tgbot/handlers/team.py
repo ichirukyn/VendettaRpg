@@ -26,7 +26,7 @@ async def team_add(message: Message, state: FSMContext):
 
         team_db = await db.get_hero_team(hero.id)
 
-        await db.add_hero_team(hero.id, test['id'])
+        await db.add_hero_team(hero.id, test['id'], True)
 
         await state.update_data(team_name='')
         await state.update_data(team_private=False)
@@ -47,10 +47,10 @@ async def team_add_name(message: Message, state: FSMContext):
 
 
 async def team_add_private(message: Message, state: FSMContext):
-    is_private = False
+    is_private = True
 
     if message.text == 'Нет':
-        is_private = True
+        is_private = False
 
     await state.update_data(team_private=is_private)
 

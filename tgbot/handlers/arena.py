@@ -25,16 +25,20 @@ async def arena_select_type(message: Message, state: FSMContext):
     try:
         if message.text == 'В бой':
             pvp_hero = data['pvp_hero']
-            text = f'{hero.name} принял вызов.'
+            text_solo = f'{hero.name} принял вызов.'
+            text_team = f'{hero.name}, принял вызов, от лица группы.'
+
             id = pvp_hero.id
         else:
-            text = f'{hero.name} бросил вам вызов.'
+            text_solo = f'{hero.name} бросил вам вызов.'
+            text_team = f'{hero.name}, бросил вызов вашей группе.'
+
             id = int(message.text)
 
-        player_team = []
-        enemy_team = []
-
         if pvp_type == 'solo':
+            player_team = []
+            enemy_team = []
+
             player = await init_hero(db, id)
 
             enemy_team.append(player)
@@ -45,18 +49,23 @@ async def arena_select_type(message: Message, state: FSMContext):
 
             await dp.storage.update_data(chat=player.chat_id, pvp_hero=hero)
             await dp.storage.update_data(chat=player.chat_id, pvp_type=pvp_type)
-            await message.bot.send_message(chat_id=player.chat_id, text=text)
-        else:
-            team = await db.get_team_heroes(hero.team_id)
-            enemy_team = await init_team(db, team)
-            leader = leader_on_team(enemy_team)
+            await message.bot.send_message(chat_id=player.chat_id, text=text_solo)
 
+        if pvp_type == 'team':
+            team = await db.get_team_heroes(hero.team_id)
+            player_team = await init_team(db, team)
+
+            team_bd = await db.get_team_heroes(id)
+            enemy_team = await init_team(db, team_bd)
+
+            await state.update_data(player_team=player_team)
             await state.update_data(enemy_team=enemy_team)
+
+            leader = leader_on_team(enemy_team)
 
             await dp.storage.update_data(chat=leader.chat_id, pvp_hero=hero)
             await dp.storage.update_data(chat=leader.chat_id, pvp_type=pvp_type)
-            await message.bot.send_message(chat_id=leader.chat_id, text=text)
-
+            await message.bot.send_message(chat_id=leader.chat_id, text=text_team)
 
     except TypeError:
         print('Arena Error')

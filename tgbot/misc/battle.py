@@ -73,6 +73,7 @@ class BattleEngine:
             entity = self.order[i]
             entity.check_active_skill()
 
+            log = self.check_durability(entity)
             self.order_index += 1
 
             if entity.hp <= 0:
@@ -84,15 +85,30 @@ class BattleEngine:
             else:
                 target_enemy_team = self.target_enemy_team(entity)
 
+                if len(target_enemy_team) == 0:
+                    return self.check_hp()
+
                 entity.select_target(target_enemy_team)
                 entity.define_action()
                 entity.define_sub_action(target_enemy_team)
+                entity.choice_technique()
+
                 who = 'enemy'
 
-            return self.order, entity, who, i
+            return self.order, entity, who, i, log
 
         self.order_index = 0
         return self.battle()
+
+    # TODO: Расширить функцию, на проверку станов, и отрицательных эффектов
+    def check_durability(self, entity):
+        log = None
+
+        if (entity.durability <= 0):
+            log = f"🌀 Стойкость {entity.name} пробита, он пропускает ход."
+            entity.durability = entity.durability_max
+
+        return log
 
     def battle_action(self, attacker, defender, skill):
         action_return = {'name': attacker.action, 'target': defender, 'attacker': attacker}
@@ -239,7 +255,7 @@ class BattleInterface:
 
     async def save_battle(self, state_name=None, state=None):
         for player in self.engine.order:
-            if isinstance(player, Hero):
+            if player.chat_id != 0:
                 if state_name is not None and state is not None:
                     await self.update_data(player.chat_id, state_name, state)
 
@@ -279,7 +295,14 @@ class BattleInterface:
         await self.battle()
 
     async def battle(self):
-        order, entity, who, i = self.engine.battle()
+        order, entity, who, i, log = self.engine.battle()
+
+        if log is not None:
+            if isinstance(entity, Hero):
+                await self.set_state(entity.chat_id, BattleState.load)
+
+            await self.send_all(entity, log, log, None, next_kb)
+            order, entity, who, i, log = self.engine.battle()
 
         if who == 'hero':
             self.handler_user_turn_start(order, entity)
@@ -385,7 +408,7 @@ class BattleInterface:
 
             text = f'{hero.name} сбегает..'
 
-            await self.set_state(hero.id, LocationState.home)
+            await LocationState.home.set()
             await self.save_battle('order', self.engine.order)
             await self.send_all(hero, text, text, None, home_kb)
 
@@ -459,6 +482,7 @@ class BattleInterface:
             kb = list_object_kb(hero.skills)
 
         if is_return:
+            await self.set_state(hero.chat_id, BattleState.select_skill)
             return await message.answer(text, reply_markup=kb)
 
         # TODO: Добавить выбор союзников
@@ -565,9 +589,12 @@ class BattleInterface:
 
         if e.check_lvl_up():
             new_lvl = await self.db.get_hero_lvl_by_exp(e.exp)
-            e.lvl = new_lvl['max'] + 1
 
-            log += f"\n\nВы достигли {e.lvl} уровня!"
+            while e.lvl < new_lvl['max']:
+                e.lvl += 1
+                e.free_stats += 10  # TODO: Тянуть с ранга
+                log += f"\n\nВы достигли {e.lvl} уровня!\nВы получили {10} СО"
+                await self.db.update_hero_stat('free_stats', e.free_stats, e.id)
 
         await self.db.update_hero_level(e.exp, e.lvl, e.id)
         await self.update_data(e.chat_id, 'hero', e)

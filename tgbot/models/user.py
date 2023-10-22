@@ -48,7 +48,7 @@ class DBCommands:
         self.GET_TEAM_HEROES = "SELECT leader_id, is_private, hero_id, team_id, is_leader, prefix, h.name " \
                                "FROM teams t JOIN hero_teams ht ON ht.team_id = t.id " \
                                "JOIN heroes h ON ht.hero_id = h.user_id AND t.id = $1"
-        self.ADD_HERO_TEAM = "INSERT INTO hero_teams (hero_id, team_id) VALUES ($1, $2)"
+        self.ADD_HERO_TEAM = "INSERT INTO hero_teams (hero_id, team_id, is_leader) VALUES ($1, $2, $3)"
         self.GET_HERO_TEAM = "SELECT * FROM hero_teams WHERE hero_id = $1"
         self.DEL_HERO_TEAM = "DELETE FROM hero_teams WHERE hero_id = $1"
         self.GET_ENEMY_TEAM = "SELECT * FROM enemy_teams WHERE enemy_id = $1"
@@ -59,6 +59,8 @@ class DBCommands:
         self.GET_TECHNIQUES = "SELECT * FROM techniques WHERE id = $1 AND type='None'"
         self.GET_HERO_TECHNIQUE = "SELECT * FROM hero_technique INNER JOIN  techniques " \
                                   "ON hero_technique.technique_id = techniques.id WHERE hero_id = $1"
+        self.GET_ENEMY_TECHNIQUE = "SELECT * FROM enemy_technique e INNER JOIN techniques " \
+                                   "ON e.technique_id = techniques.id WHERE enemy_id = $1"
 
         # TODO: Убрать type="None". Нужно будет подставлять nen_type
         self.ADD_HERO_SKILL = "INSERT INTO hero_skill (hero_id, skill_id, lvl) VALUES ($1, $2, $3)"
@@ -102,7 +104,7 @@ class DBCommands:
         self.ADD_HERO_LVL = "INSERT INTO hero_levels (hero_id, lvl, exp) VALUES ($1, $2, $3)"
         self.GET_HERO_LVL = "SELECT * FROM hero_levels hl JOIN levels l ON hl.lvl = l.lvl WHERE hl.hero_id = $1"
 
-        self.GET_HERO_LVL_BY_EXP = "SELECT MAX(t.lvl) FROM (SELECT lvl FROM levels WHERE exp_total - $1 <= 0) t"
+        self.GET_HERO_LVL_BY_EXP = "SELECT MAX(t.lvl + 1) FROM (SELECT lvl FROM levels WHERE exp_total - $1 <= 0) t"
         self.GET_EXP_THIS_LVL = "SELECT $1 - exp_total FROM levels WHERE lvl = $2"
 
     async def add_user(self, chat_id, login, is_admin=False, is_baned=False, ref_id=1):
@@ -393,10 +395,10 @@ class DBCommands:
 
         return await self.pool.fetch(command, hero_id)
 
-    async def add_hero_team(self, hero_id, team_id):
+    async def add_hero_team(self, hero_id, team_id, is_leader=False):
         command = self.ADD_HERO_TEAM
 
-        return await self.pool.fetchrow(command, hero_id, team_id)
+        return await self.pool.fetchrow(command, hero_id, team_id, is_leader)
 
     async def get_team_heroes(self, team_id):
         command = self.GET_TEAM_HEROES
@@ -460,6 +462,11 @@ class DBCommands:
 
     async def get_enemy_weapon(self, enemy_id):
         command = self.GET_ENEMY_WEAPONS
+
+        return await self.pool.fetchrow(command, enemy_id)
+
+    async def get_enemy_techniques(self, enemy_id):
+        command = self.GET_ENEMY_TECHNIQUE
 
         return await self.pool.fetchrow(command, enemy_id)
 

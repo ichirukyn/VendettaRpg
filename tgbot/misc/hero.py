@@ -3,10 +3,15 @@ from tgbot.models.entity.skill import skills_init
 from tgbot.models.user import DBCommands
 
 
-async def init_hero(db: DBCommands, user_id) -> Hero:
+async def init_hero(db: DBCommands, user_id, chat_id=None) -> Hero:
     print('Hero init')
 
-    hero_db = await db.get_heroes(user_id)
+    if chat_id:
+        user_db = await db.get_user_id(chat_id)
+        hero_db = await db.get_heroes(user_db['id'])
+    else:
+        hero_db = await db.get_heroes(user_id)
+
     stats_db = await db.get_hero_stats(hero_db['id'])
     hero_lvl = await db.get_hero_lvl(hero_db['id'])
 
