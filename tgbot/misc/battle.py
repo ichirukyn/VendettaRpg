@@ -255,7 +255,7 @@ class BattleInterface:
 
     async def save_battle(self, state_name=None, state=None):
         for player in self.engine.order:
-            if player.chat_id != 0:
+            if isinstance(player, Hero):
                 if state_name is not None and state is not None:
                     await self.update_data(player.chat_id, state_name, state)
 
@@ -408,7 +408,7 @@ class BattleInterface:
 
             text = f'{hero.name} сбегает..'
 
-            await LocationState.home.set()
+            await self.set_state(hero.chat_id, LocationState.home)
             await self.save_battle('order', self.engine.order)
             await self.send_all(hero, text, text, None, home_kb)
 
@@ -566,9 +566,7 @@ class BattleInterface:
             state = BattleState.revival
 
             for winner in team_win:
-                if isinstance(e, Hero):
-                    # TODO: Почему-то пропускает нпс, после побега пользователя
-                    # TODO: + Пофиксить побег и навыки, стянув код с Хантера
+                if isinstance(e, Hero) and isinstance(winner, Hero):
                     if e.chat_id == winner.chat_id:
                         log = 'Вы победили!\n'
                         kb = self.engine.exit_kb
