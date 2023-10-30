@@ -4,9 +4,9 @@ from tgbot.models.entity.entity import Entity
 
 class HeroFactory:
     @staticmethod
-    def create_hero(data, stats, race, _class):
+    def create_hero(id, data, stats, race, _class):
         hero = {
-            'entity_id': data['id'],
+            'entity_id': id,
             'name': data['name'],
             'rank': data['rank'],
             'money': data['money'],
@@ -98,28 +98,31 @@ class HeroInfo:
     def status_begin(self):
         self.hero.update_stats()
         return (
-            f"Это ваш профиль, ниже вы можете увидеть все статистики вашего персонажа.\n"
-            f"■■■■■■■■■■■■■■■\n"
-            f"Имя: **{self.hero.name}** (`{self.hero.id}`)\n"
-            f"Ранг: {self.hero.rank}\n"
-            f"Раса: {self.hero.race_name}\n"
-            f"Класс: {self.hero.class_name}\n"
-            f"Золото: {formatted(self.hero.money)}\n"
-            f"Уровень: {self.hero.lvl} ({self.hero.exp_now}/{self.hero.exp_to_lvl})\n"
-            f"□□□□□□□□□□□□□□□\n"
-            f"ХП: `{formatted(self.hero.hp)} / {formatted(self.hero.hp_max)}`\n"
-            f"Мана: `{formatted(self.hero.mana)}`\n"
-            f"□□□□□□□□□□□□□□□\n"
-            f"Сила: `{formatted(self.hero.strength)}`\n"
-            f"Здоровье: `{formatted(self.hero.health)}`\n"
-            f"Скорость: `{formatted(self.hero.speed)}`\n"
-            f"Ловкость: `{formatted(self.hero.dexterity)}`\n"
-            f"Интеллект: `{formatted(self.hero.intelligence)}`\n"
-            f"Дух: `{formatted(self.hero.soul)}`\n"
-            f"Подчинение: `{formatted(self.hero.submission)}`\n"
-            f"Крит. Шанс: `{self.hero.crit_rate * 100}%`\n"
-            f"Крит. Урон: `{self.hero.crit_damage * 100}%`\n"
-            f"■■■■■■■■■■■■■■■\n"
-            f"Общая сила: `{formatted(self.hero.total_stats)}`\n"
-            f"{f'Свободные очки: `{formatted(self.hero.free_stats)}`' if self.hero.free_stats > 0 else ''}\n"
+            f"**Ваш статус:**\n"
+            f"• Имя: **{self.hero.name}** \n"
+            f"• ID: `{self.hero.id}`\n"
+            f"• Раса: `{self.hero.race_name}`\n"
+            f"     • Класс: `{self.hero.class_name}`\n"
+            f"• Уровень: `{self.hero.lvl}` `({self.hero.exp_now}/{self.hero.exp_to_lvl})`\n"
+            f"     • Ранг: `{self.hero.rank}`\n"
+            f"• Золото: `{formatted(self.hero.money)}`\n"
+            f"••••••••••••••••••••••••••••••••••••••\n"
+            f"**Ваше текущее состояние:**\n"
+            f"• ХП: `{formatted(self.hero.hp)} / {formatted(self.hero.hp_max)}`\n"
+            f"• Мана: `{formatted(self.hero.mana)}`\n"
+            f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n"
+            f"**Ваши характеристики:**\n"
+            f"• Сила: `{formatted(self.hero.strength)}`\n"
+            f"• Здоровье: `{formatted(self.hero.health)}`\n"
+            f"• Скорость: `{formatted(self.hero.speed)}`\n"
+            f"• Ловкость: `{formatted(self.hero.dexterity)}`\n"
+            f"• Интеллект: `{formatted(self.hero.intelligence)}`\n"
+            f"• Дух: `{formatted(self.hero.soul)}`\n"
+            f"• Подчинение: `{formatted(self.hero.submission)}`\n"
+            f"• Крит. Шанс: `{self.hero.crit_rate * 100}%`\n"
+            f"• Крит. Урон: `{self.hero.crit_damage * 100}%`\n"
+            f"••••••••••••••••••••••••••••••••••••••\n"
+            f"• Общая сила: `{formatted(self.hero.total_stats)}`\n"
+            f"• {f'Свободные очки: `{formatted(self.hero.free_stats)}`' if self.hero.free_stats > 0 else ''}\n"
+            f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n"
         )

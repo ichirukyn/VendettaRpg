@@ -22,6 +22,7 @@ class DBCommands:
         self.GET_USER = "SELECT * FROM users WHERE id = $1"
         self.GET_USERS = "SELECT * FROM users ORDER BY id"
         self.GET_HEROES = "SELECT * FROM heroes h INNER JOIN users u ON u.id = h.user_id WHERE user_id = $1"
+        self.GET_HERO_ID = "SELECT h.id FROM heroes h INNER JOIN users u ON u.id = h.user_id WHERE user_id = $1"
         self.GET_HERO_STATS = "SELECT * FROM hero_stats WHERE hero_id = $1"
 
         self.GET_CLANS = "SELECT * FROM clans ORDER BY id"
@@ -125,6 +126,12 @@ class DBCommands:
         command = self.ADD_LVL
 
         record_id = await self.pool.fetchval(command, exp_to_lvl, exp_total)
+        return record_id
+
+    async def get_hero_id(self, user_id):
+        command = self.GET_HERO_ID
+
+        record_id = await self.pool.fetchval(command, user_id)
         return record_id
 
     async def add_hero_lvl(self, hero_id, lvl, exp):

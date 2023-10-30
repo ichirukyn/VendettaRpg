@@ -35,7 +35,7 @@ async def register_user(message: Message, state: FSMContext):
         hero.id = hero_id
 
         await db.add_hero_stats(hero_id, hero)
-
+        await db.add_hero_lvl(hero_id, 1, 0)
         await db.add_hero_weapon(hero_id, 1)
         await db.add_hero_technique(hero_id, 1)  # TODO: Добавить новые техники с привязкой к классу
 
@@ -125,26 +125,23 @@ async def entry_point(message: Message, state: FSMContext):
 
     hero = await db.get_user_id(chat_id)
 
-    try:
-        if hero is None or len(hero) == 0:
-            races = await db.get_races()
-            kb = list_kb(races, is_back=False)
+    if hero is None or len(hero) == 0:
+        races = await db.get_races()
+        kb = list_kb(races, is_back=False)
 
-            await RegState.select_race.set()
-            return await message.answer('Выбери стартовую расу:', reply_markup=kb)
+        await RegState.select_race.set()
+        return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
-        else:
-            hero = await init_hero(db, hero['id'])
-            print(f"hero_id: {hero.id}")
+    else:
+        hero = await init_hero(db, hero['id'])
+        print(f"hero_id: {hero.id}")
 
-            await state.update_data(hero=hero)
-            await state.update_data(hero_id=hero.id)
+        await state.update_data(hero=hero)
+        await state.update_data(hero_id=hero.id)
 
-            print('-- Exit on /start -- \n')
-            await LocationState.home.set()
-            return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
-    except:
-        print('error reg')
+        print('-- Exit on /start -- \n')
+        await LocationState.home.set()
+        return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
 
 
 async def started(message: Message, state: FSMContext):

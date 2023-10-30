@@ -8,23 +8,25 @@ async def init_hero(db: DBCommands, user_id, chat_id=None) -> Hero:
 
     if chat_id:
         user_db = await db.get_user_id(chat_id)
-        hero_db = await db.get_heroes(user_db['id'])
+        hero_id = await db.get_hero_id(user_db['id'])
     else:
-        hero_db = await db.get_heroes(user_id)
+        hero_id = await db.get_hero_id(user_id)
 
-    stats_db = await db.get_hero_stats(hero_db['id'])
-    hero_lvl = await db.get_hero_lvl(hero_db['id'])
+    hero_db = await db.get_heroes(hero_id)
 
-    team_db = await db.get_hero_team(hero_db['id'])
+    stats_db = await db.get_hero_stats(hero_id)
+    hero_lvl = await db.get_hero_lvl(hero_id)
+
+    team_db = await db.get_hero_team(hero_id)
 
     race_db = await db.get_race(hero_db['race_id'])
     class_db = await db.get_class(hero_db['class_id'])
 
-    skills = await db.get_hero_skills(hero_db['id'])
-    hero_weapon = await db.get_hero_weapons(hero_db['id'])
+    skills = await db.get_hero_skills(hero_id)
+    hero_weapon = await db.get_hero_weapons(hero_id)
     weapon = await db.get_weapon(hero_weapon['weapon_id'])
 
-    hero: Hero = HeroFactory.create_hero(hero_db, stats_db, race_db, class_db)
+    hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db, race_db, class_db)
     hero.update_stats_all()
     hero.init_level(hero_lvl)
 
