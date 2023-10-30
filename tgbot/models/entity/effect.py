@@ -1,6 +1,6 @@
 class EffectFactory:
     @staticmethod
-    def create_effect(hero, data, source):
+    def create_effect(data, source):
         effect_type = data['type']
         attribute = data['attribute']
         value = data['value']
@@ -11,7 +11,7 @@ class EffectFactory:
         if 'off' in effect_type or 'on' in effect_type:
             return ToggleBonusEffect(attribute, value, source)
 
-        elif effect_type:
+        if 'number' in effect_type:
             return BonusEffect(attribute, value, source)
 
 

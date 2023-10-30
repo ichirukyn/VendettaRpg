@@ -585,6 +585,10 @@ class BattleInterface:
         e.exp += int(reward_exp)
         log = f'Вы получили {reward_exp} опыта'
 
+        # TODO: Против "фармил", которые живут ареной и пока не сделаю норм опыт....
+        if e.lvl > 20:
+            return f'Вы достигли предела, ждите обновление'
+
         if e.check_lvl_up():
             new_lvl = await self.db.get_hero_lvl_by_exp(e.exp)
 

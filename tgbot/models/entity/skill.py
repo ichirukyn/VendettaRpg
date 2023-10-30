@@ -90,7 +90,7 @@ async def skills_init(entity, skills, db):
             new_bonuses = []
 
             for bonus in bonuses:
-                new_bonuses.append(EffectFactory.create_effect(entity, bonus, source=('skill', skill_id)))
+                new_bonuses.append(EffectFactory.create_effect(bonus, source=('skill', skill_id)))
 
             new_skill.append(dict(skill))
             new_skill[i]['bonuses'] = new_bonuses
