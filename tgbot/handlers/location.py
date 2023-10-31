@@ -201,13 +201,22 @@ async def location_character(message: Message, state: FSMContext):
         await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
         return await message.answer(locale['skills_select'], reply_markup=kb)
 
-    else:
-        await LocationState.character.set()
-        data = await state.get_data()
-        hero = data['hero']
+    data = await state.get_data()
+    hero = data['hero']
 
-        await message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
-                             parse_mode='Markdown')
+    if message.text == 'Полный статус':
+        await LocationState.character.set()
+        return await message.answer(hero.info.status_all(), reply_markup=character_kb(hero.free_stats),
+                                    parse_mode='Markdown')
+
+    if message.text == 'Чистый статус':
+        await LocationState.character.set()
+        return await message.answer(hero.info.status_flat(), reply_markup=character_kb(hero.free_stats),
+                                    parse_mode='Markdown')
+
+    await LocationState.character.set()
+    await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
+                         parse_mode='Markdown')
 
 
 async def location_store(cb: CallbackQuery, state: FSMContext):

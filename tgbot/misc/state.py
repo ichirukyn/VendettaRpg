@@ -42,6 +42,8 @@ class CharacterState(StatesGroup):
     skill_fix = State()
     distribution = State()
     distribution_menu = State()
+    all_stats = State()
+    flat_stats = State()
 
 
 class EquipState(StatesGroup):

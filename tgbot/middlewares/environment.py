@@ -48,7 +48,7 @@ class UpdateStatsMiddleware(BaseMiddleware):
 
         try:
             hero = data['hero']
-            hero = await init_hero(db, hero, hero.chat_id)
+            hero = await init_hero(db, hero_id=hero.id)
 
             state = await dp.storage.get_state(chat=chat_id)
 

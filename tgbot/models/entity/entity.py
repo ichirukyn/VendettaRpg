@@ -4,12 +4,14 @@ from tgbot.models.entity.entity_base.entity_damage import EntityDamage
 from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
+from tgbot.models.entity.race import Race
 from tgbot.models.entity.skill import SkillFactory
 
 
-class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
+class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
     lvl = 1
     team_id = 0
+    is_leader = False
 
     mana = 0
     mana_max = 0
@@ -27,27 +29,33 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
     effects = []
     skills = []
     select_skill = None
+    race = None
 
     action = ''
     sub_action = ''
     target = None
 
     mana_modify = 10
-    hp_modify = 40
+    hp_modify = 10
+
+    flat_strength = 0
+    flat_health = 0
+    flat_speed = 0
+    flat_dexterity = 0
+    flat_soul = 0
+    flat_intelligence = 0
+    flat_submission = 0
 
     def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
-                 crit_rate, crit_damage, resist, race_id, class_id, race_name, class_name):
+                 crit_rate, crit_damage, resist, class_id, class_name):
 
         self.id = entity_id
-        self.is_leader = False
 
         self.name = name
         self.rank = rank
 
         self.class_name = class_name
-        self.race_name = race_name
         self.class_id = class_id
-        self.race_id = race_id
 
         self.strength = strength
         self.health = health
@@ -64,6 +72,15 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
         self.total_stats = self.sum_stats()
 
     # Stats
+    def flat_init(self):
+        self.flat_strength = self.strength
+        self.flat_health = self.health
+        self.flat_speed = self.speed
+        self.flat_dexterity = self.dexterity
+        self.flat_soul = self.soul
+        self.flat_intelligence = self.intelligence
+        self.flat_submission = self.submission
+
     def default_stats(self):
         self.mana = self.mana_max
         self.hp = self.hp_max
@@ -82,7 +99,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
         self.total_stats = self.sum_stats()
 
     def sum_stats(self):
-        return self.strength + self.health + self.speed + self.dexterity + self.soul + self.intelligence + self.submission
+        return self.flat_strength + self.flat_health + self.flat_speed + self.flat_dexterity + self.flat_soul + \
+            self.flat_intelligence + self.flat_submission
 
     def check_active_skill(self):
         for skill in self.active_bonuses:
@@ -91,6 +109,10 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
     def init_skills(self, skills):
         for skill in skills:
             self.skills.append(SkillFactory.create_skill(self, skill))
+
+    # def init_race_bonus(self, race_bonus: Race):
+    #     self.race_bonus = race_bonus
+    #     self.race_bonus.race_apply()
 
     def is_active_skill(self, name):
         for skill in self.active_bonuses:

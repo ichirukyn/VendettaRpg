@@ -123,9 +123,9 @@ async def entry_point(message: Message, state: FSMContext):
     chat_id = message.chat.id
     print('chat_id: ', chat_id)
 
-    hero = await db.get_user_id(chat_id)
+    user = await db.get_user_id(chat_id)
 
-    if hero is None or len(hero) == 0:
+    if user is None or len(user) == 0:
         races = await db.get_races()
         kb = list_kb(races, is_back=False)
 
@@ -133,7 +133,7 @@ async def entry_point(message: Message, state: FSMContext):
         return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
     else:
-        hero = await init_hero(db, hero['id'])
+        hero = await init_hero(db, user_id=user['id'])
         print(f"hero_id: {hero.id}")
 
         await state.update_data(hero=hero)

@@ -14,14 +14,16 @@ class DBCommands:
 
         self.GET_RACES = "SELECT * FROM races"
         self.GET_RACE = "SELECT * FROM races WHERE id = $1"
+        self.GET_RACE_BONUSES = "SELECT * FROM race_bonuses WHERE race_id = $1"
         self.GET_RACE_CLASSES = "SELECT * FROM classes WHERE race_id = $1"
+
         self.GET_CLASSES = "SELECT * FROM classes"
         self.GET_CLASS = "SELECT * FROM classes WHERE id = $1"
 
         self.GET_USER_ID = "SELECT id FROM users WHERE chat_id = $1"
         self.GET_USER = "SELECT * FROM users WHERE id = $1"
         self.GET_USERS = "SELECT * FROM users ORDER BY id"
-        self.GET_HEROES = "SELECT * FROM heroes h INNER JOIN users u ON u.id = h.user_id WHERE user_id = $1"
+        self.GET_HEROES = "SELECT * FROM heroes h INNER JOIN users u ON u.id = h.user_id WHERE h.id = $1"
         self.GET_HERO_ID = "SELECT h.id FROM heroes h INNER JOIN users u ON u.id = h.user_id WHERE user_id = $1"
         self.GET_HERO_STATS = "SELECT * FROM hero_stats WHERE hero_id = $1"
 
@@ -263,6 +265,10 @@ class DBCommands:
     async def get_race(self, race_id):
         command = self.GET_RACE
         return await self.pool.fetchrow(command, race_id)
+
+    async def get_race_bonuses(self, race_id):
+        command = self.GET_RACE_BONUSES
+        return await self.pool.fetch(command, race_id)
 
     async def get_race_classes(self, race_id):
         command = self.GET_RACE_CLASSES

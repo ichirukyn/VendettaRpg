@@ -168,7 +168,8 @@ character_distribution_kb = ReplyKeyboardMarkup(
 
 def character_kb(free_stats=0):
     kb = [
-        [KeyboardButton(text="Тренировка"), KeyboardButton(text="🏵 Мастерство")],
+        [KeyboardButton(text="Полный статус"), KeyboardButton(text="Чистый статус")],
+        # [KeyboardButton(text="Тренировка"), KeyboardButton(text="🏵 Мастерство")],
         [KeyboardButton(text="🧤 Экипировка"), KeyboardButton(text="👝 Инвентарь")],
         [KeyboardButton(text="🔙 Назад")]
     ]

@@ -22,7 +22,7 @@ async def train(message: Message, state: FSMContext):
 
     if message.text == '🔙 Назад':
         await LocationState.character.set()
-        return await message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
                                     parse_mode='Markdown')
 
     if hero.energy < 3:
@@ -65,7 +65,7 @@ async def distribution_menu(message: Message, state: FSMContext):
     if message.text == '🔙 Назад' or hero.free_stats <= 0:
         await LocationState.character.set()
 
-        return await message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
                                     parse_mode='Markdown')
 
     stat = stats.get(message.text)
@@ -113,7 +113,7 @@ async def distribution(message: Message, state: FSMContext):
 
         if hero.free_stats <= 0:
             await LocationState.character.set()
-            return await message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
+            return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
                                         parse_mode='Markdown')
         else:
             await CharacterState.distribution_menu.set()
@@ -131,7 +131,7 @@ async def character_skills(cb: CallbackQuery, state: FSMContext):
         await cb.message.delete()
         await LocationState.character.set()
 
-        return await cb.message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
+        return await cb.message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
                                        parse_mode='Markdown')
 
     skill_id = int(cb.data)
@@ -189,7 +189,7 @@ async def character_equip(message: Message, state: FSMContext):
 
     if message.text == '🔙 Назад':
         await LocationState.character.set()
-        await message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
+        await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
                              parse_mode='Markdown')
 
 
@@ -203,7 +203,7 @@ async def character_inventory(message: Message, state: FSMContext):
         await message.delete()
         await LocationState.character.set()
 
-        return await message.answer(hero.info.status_begin(), reply_markup=character_kb(hero.free_stats),
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
                                     parse_mode='Markdown')
 
     if message.text not in inventory:

@@ -521,15 +521,15 @@ class BattleInterface:
                 await self.set_state(hero.chat_id, BattleState.user_sub_turn)
 
                 await self.send_all(hero, action_result['log'], action_result['log'], None, battle_sub_kb)
+
+                await self.check_hp()
+                await self.save_battle()
             else:
                 await self.send_all(hero, action_result['log'], action_result['log'], None, None)
 
                 await self.check_hp()
                 await self.save_battle()
-                return await self.battle()
-
-            await self.check_hp()
-            await self.save_battle()
+                await self.battle()
 
     async def handler_select_target(self, message: Message, state: FSMContext):
         data = await state.get_data()

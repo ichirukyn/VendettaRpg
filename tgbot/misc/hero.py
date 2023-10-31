@@ -1,15 +1,14 @@
 from tgbot.models.entity.hero import Hero, HeroFactory
+from tgbot.models.entity.race import race_init
 from tgbot.models.entity.skill import skills_init
 from tgbot.models.user import DBCommands
 
 
-async def init_hero(db: DBCommands, user_id, chat_id=None) -> Hero:
+async def init_hero(db: DBCommands, user_id=None, hero_id=None) -> Hero:
     print('Hero init')
+    print('user_id', user_id)
 
-    if chat_id:
-        user_db = await db.get_user_id(chat_id)
-        hero_id = await db.get_hero_id(user_db['id'])
-    else:
+    if user_id is not None:
         hero_id = await db.get_hero_id(user_id)
 
     hero_db = await db.get_heroes(hero_id)
@@ -18,17 +17,21 @@ async def init_hero(db: DBCommands, user_id, chat_id=None) -> Hero:
     hero_lvl = await db.get_hero_lvl(hero_id)
 
     team_db = await db.get_hero_team(hero_id)
+    print('hero_id', hero_id)
+    print('hero_db', hero_db)
 
-    race_db = await db.get_race(hero_db['race_id'])
     class_db = await db.get_class(hero_db['class_id'])
 
     skills = await db.get_hero_skills(hero_id)
     hero_weapon = await db.get_hero_weapons(hero_id)
     weapon = await db.get_weapon(hero_weapon['weapon_id'])
 
-    hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db, race_db, class_db)
+    hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db, class_db)
+    hero.flat_init()
     hero.update_stats_all()
     hero.init_level(hero_lvl)
+
+    hero = await race_init(hero, hero_db['race_id'], db)
 
     if skills:
         hero = await skills_init(hero, skills, db)
@@ -50,7 +53,7 @@ async def init_team(db, team, hero=None):
     entity_team = []
 
     for entity in team:
-        h = await init_hero(db, entity['hero_id'])
+        h = await init_hero(db, hero_id=entity['hero_id'])
 
         if len(entity['prefix']) > 0:
             prefix = f" \"{entity['prefix']}\""

@@ -39,7 +39,7 @@ async def arena_select_type(message: Message, state: FSMContext):
             player_team = []
             enemy_team = []
 
-            player = await init_hero(db, id)
+            player = await init_hero(db, hero_id=id)
 
             enemy_team.append(player)
             player_team.append(hero)

@@ -23,7 +23,7 @@ async def battle_init(message: Message, state: FSMContext):
     if player_team:
         player_team_update = []
         for player in player_team:
-            new = await init_hero(db, player.id)
+            new = await init_hero(db, hero_id=player.id)
             new.name = player.name
 
             player_team_update.append(new)
@@ -144,7 +144,7 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
     await state.update_data(enemy_team=enemy_team)
 
     await BattleState.battle_start.set()
-    await cb.message.edit_text(text, reply_markup=battle_start_inline, parse_mode='MarkdownV2')
+    await cb.message.edit_text(text, reply_markup=battle_start_inline, parse_mode='Markdown')
 
 
 async def floor_enemies(db, floor_id):
