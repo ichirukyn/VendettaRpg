@@ -85,6 +85,7 @@ async def distribution(message: Message, state: FSMContext):
     hero = data['hero']
     hero_id = data['hero_id']
     stat = data['train_stat']
+    flat_stat = f"flat_{stat}"
 
     try:
         count = int(message.text)
@@ -97,10 +98,10 @@ async def distribution(message: Message, state: FSMContext):
         return
 
     if 0 < count <= hero.free_stats:
-        stat_value = hero.__getattribute__(stat)
+        stat_value = hero.__getattribute__(flat_stat)
         stat_value += count
 
-        hero.__setattr__(stat, stat_value)
+        hero.__setattr__(flat_stat, stat_value)
         hero.total_stats += count
         hero.free_stats -= count
 

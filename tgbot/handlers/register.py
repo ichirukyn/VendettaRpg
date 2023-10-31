@@ -29,9 +29,9 @@ async def register_user(message: Message, state: FSMContext):
 
     user_id = await db.add_user(chat_id, login, True, ref_id=1)
     if user_id is not None:
-        hero = HeroFactory.create_init_hero(user_id, chat_id, name, race_id, class_id)
+        hero = HeroFactory.create_init_hero(user_id, chat_id, name, class_id)
 
-        hero_id = await db.add_hero(user_id, hero.name, hero.race_id, hero.class_id)
+        hero_id = await db.add_hero(user_id, hero.name, race_id, hero.class_id)
         hero.id = hero_id
 
         await db.add_hero_stats(hero_id, hero)

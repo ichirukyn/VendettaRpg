@@ -169,29 +169,23 @@ async def location_hunt(cb: CallbackQuery, state: FSMContext):
 
 
 async def location_character(message: Message, state: FSMContext):
-    if message.text == 'Тренировка':
-        pass
-        # TODO: Выпилить тренировки полностью
-        # await CharacterState.train.set()
-        # return await message.answer(locale['train'], reply_markup=character_train_kb)
-
-    elif message.text == '🎓 Распределение СО':
+    if message.text == '🎓 Распределение СО':
         await CharacterState.distribution_menu.set()
-        await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
+        return await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
 
-    elif message.text == '🔙 Назад':
+    if message.text == '🔙 Назад':
         await LocationState.home.set()
         return await message.answer(locale['home'], reply_markup=home_kb)
 
-    elif message.text == '🧤 Экипировка':
+    if message.text == '🧤 Экипировка':
         await CharacterState.equip.set()
-        await message.answer(locale['equip'], reply_markup=equip_kb)
+        return await message.answer(locale['equip'], reply_markup=equip_kb)
 
-    elif message.text == '👝 Инвентарь':
+    if message.text == '👝 Инвентарь':
         await CharacterState.inventory.set()
-        await message.answer(locale['inventory'], reply_markup=inventory_kb)
+        return await message.answer(locale['inventory'], reply_markup=inventory_kb)
 
-    elif message.text == '🏵 Мастерство':
+    if message.text == '🏵 Мастерство':
         db = DBCommands(message.bot.get('db'))
 
         skills = await db.get_skills()
@@ -270,7 +264,7 @@ async def location_top(cb: CallbackQuery, state: FSMContext):
         return await to_home(cb.message)
 
     data = await state.get_data()
-    hero_id = data['hero_id']
+    _hero = data.get('hero')
 
     db = DBCommands(cb.message.bot.get('db'))
 
@@ -283,13 +277,12 @@ async def location_top(cb: CallbackQuery, state: FSMContext):
     i = 0
 
     for hero in heroes:
-
-        if hero['user_id'] == hero_id:
-            hero_data = f"<u>{i + 1}. {hero['name']} {hero['clan']} — {formatted(hero[cb.data])}</u>"
+        if hero['hero_id'] == _hero.id:
+            hero_data = f"<u>{i + 1}. {hero['name']} — {formatted(hero[cb.data])}</u>"
             hero_top = i
             top.append(hero_data)
         else:
-            top.append(f"{i + 1}. {hero['name']} {hero['clan']}— {formatted(hero[cb.data])}")
+            top.append(f"{i + 1}. {hero['name']}— {formatted(hero[cb.data])}")
 
         i += 1
 

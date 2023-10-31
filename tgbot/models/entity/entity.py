@@ -5,7 +5,7 @@ from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
 from tgbot.models.entity.race import Race
-from tgbot.models.entity.skill import SkillFactory
+from tgbot.models.entity.skill import SkillFactory, Skill
 
 
 class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
@@ -103,8 +103,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
             self.flat_intelligence + self.flat_submission
 
     def check_active_skill(self):
-        for skill in self.active_bonuses:
-            skill.skill_check()
+        for bonus in self.active_bonuses:
+            if isinstance(bonus, Skill):
+                bonus.skill_check()
 
     def init_skills(self, skills):
         for skill in skills:

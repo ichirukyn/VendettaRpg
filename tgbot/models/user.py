@@ -308,7 +308,7 @@ class DBCommands:
 
     async def get_all_heroes_stats(self, stats_order='total_stats'):
         command = f"SELECT * FROM heroes h INNER JOIN hero_stats hs " \
-                  f"ON h.user_id = hs.hero_id ORDER BY {stats_order} DESC"
+                  f"ON h.id = hs.hero_id ORDER BY {stats_order} DESC"
 
         return await self.pool.fetch(command)
 

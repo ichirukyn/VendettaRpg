@@ -139,7 +139,7 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
     else:
         entity = enemy_team[0]
         name = f"{entity.name} {entity.race_name}"
-        text = f"Выбран противник: {name} — {formatted(entity.lvl)} ОС"
+        text = f"Выбран противник: {name} — {formatted(entity.lvl)} Уровень"
 
     await state.update_data(enemy_team=enemy_team)
 

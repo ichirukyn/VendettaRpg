@@ -1,5 +1,6 @@
 from tgbot.misc.other import formatted
 from tgbot.models.entity.entity import Entity
+from tgbot.models.entity.race import Race
 
 
 class HeroFactory:
@@ -84,7 +85,8 @@ class HeroInfo:
         bonuses = ''
 
         for bonus in self.hero.active_bonuses:
-            bonuses += f'{bonus.name}, '
+            if not isinstance(bonus, Race):
+                bonuses += f'{bonus.name}, '
 
         return bonuses
 
@@ -142,8 +144,8 @@ class HeroInfo:
             f"• Вода: `{formatted(self.hero.water_damage * 100)}%`\n"
             f"• Земля: `{formatted(self.hero.earth_damage * 100)}%`\n"
             f"• Воздух: `{formatted(self.hero.air_damage * 100)}%`\n"
-            f"• Тьма: `{formatted(self.hero.light_damage * 100)}%`\n"
-            f"• Свет: `{formatted(self.hero.dark_damage * 100)}%`\n"
+            f"• Тьма: `{formatted(self.hero.dark_damage * 100)}%`\n"
+            f"• Свет: `{formatted(self.hero.light_damage * 100)}%`\n"
         )
 
     def status_elements_resist(self):
@@ -154,9 +156,19 @@ class HeroInfo:
             f"• Вода: `{formatted(self.hero.water_resist * 100)}%`\n"
             f"• Земля: `{formatted(self.hero.earth_resist * 100)}%`\n"
             f"• Воздух: `{formatted(self.hero.air_resist * 100)}%`\n"
-            f"• Тьма: `{formatted(self.hero.light_resist * 100)}%`\n"
-            f"• Свет: `{formatted(self.hero.dark_resist * 100)}%`\n"
+            f"• Тьма: `{formatted(self.hero.dark_resist * 100)}%`\n"
+            f"• Свет: `{formatted(self.hero.light_resist * 100)}%`\n"
         )
+
+    def race_info(self):
+        self.hero.update_stats()
+        return (
+            f"**Ваша раса ${self.hero.race.race_name}:**\n"
+            f"• Огонь: `{formatted(self.hero.fire_resist * 100)}%`\n"
+        )
+
+    def character_info(self):
+        pass
 
     def status_all(self):
         return "°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n" \
