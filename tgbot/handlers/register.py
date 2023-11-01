@@ -155,11 +155,34 @@ async def started(message: Message, state: FSMContext):
         # await asyncio.sleep(1)
 
 
+# Сброс ОС в СО
+async def change_os_to_so(message: Message, state: FSMContext):
+    db = DBCommands(message.bot.get('db'))
+
+    users = await db.get_users()
+
+    for user in users:
+        hero_id = await db.get_hero_id(user['id'])
+        stats = await db.get_hero_stats(hero_id)
+
+        if stats['total_stats'] > 7:
+            await db.update_hero_stat('strength', 1, hero_id)
+            await db.update_hero_stat('health', 1, hero_id)
+            await db.update_hero_stat('speed', 1, hero_id)
+            await db.update_hero_stat('dexterity', 1, hero_id)
+            await db.update_hero_stat('soul', 1, hero_id)
+            await db.update_hero_stat('intelligence', 1, hero_id)
+            await db.update_hero_stat('submission', 1, hero_id)
+            await db.update_hero_stat('total_stats', 7, hero_id)
+
+            new_so = stats['free_stats'] + stats['total_stats'] - 7
+            await db.update_hero_stat('free_stats', new_so, hero_id)
+
+
 def start(dp: Dispatcher):
     dp.register_message_handler(started, commands=["started"])
     dp.register_message_handler(entry_point, commands=["start"], state='*')
     dp.register_message_handler(entry_point, state=RegState.entry)
-
     dp.register_message_handler(register_user, state=RegState.user_name)
     dp.register_message_handler(select_race, state=RegState.select_race)
     dp.register_message_handler(select_class, state=RegState.select_class)

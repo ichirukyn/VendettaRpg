@@ -4,7 +4,7 @@ from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from numpy.random import randint
 
 from tgbot.keyboards.inline import skill_add_inline, skill_del_inline, list_inline
-from tgbot.keyboards.reply import character_kb, character_distribution_kb, back_kb, inventory_kb
+from tgbot.keyboards.reply import character_kb, character_distribution_kb, back_kb, inventory_kb, character_info_kb
 from tgbot.misc.Inventory import WeaponItem
 from tgbot.misc.locale import locale
 from tgbot.misc.state import CharacterState, LocationState
@@ -76,6 +76,7 @@ async def distribution_menu(message: Message, state: FSMContext):
 
         await CharacterState.distribution.set()
         return await message.answer(f"Доступно {hero.free_stats} СО\nВведите количество:", reply_markup=back_kb)
+
 
 
 async def distribution(message: Message, state: FSMContext):
@@ -277,6 +278,32 @@ async def character_inventory_action(cb: CallbackQuery, state: FSMContext):
     return await cb.message.edit_text(locale['inventory'], reply_markup=kb)
 
 
+async def character_info_menu(message: Message, state: FSMContext):
+    data = await state.get_data()
+    hero = data['hero']
+
+    if message.text == 'Статус':
+        return await message.answer(hero.info.status(), reply_markup=character_info_kb,
+                                    parse_mode='Markdown')
+
+    if message.text == 'Полный статус':
+        return await message.answer(hero.info.status_all(), reply_markup=character_info_kb,
+                                    parse_mode='Markdown')
+
+    if message.text == 'Чистый статус':
+        return await message.answer(hero.info.status_flat(), reply_markup=character_info_kb,
+                                    parse_mode='Markdown')
+
+    if message.text == 'Раса':
+        return await message.answer(hero.info.race_info(), reply_markup=character_info_kb,
+                                    parse_mode='Markdown')
+
+    if message.text == '🔙 Назад':
+        await LocationState.character.set()
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
+                                    parse_mode='')
+
+
 def character(dp: Dispatcher):
     dp.register_message_handler(train, state=CharacterState.train)
     dp.register_message_handler(distribution, state=CharacterState.distribution)
@@ -287,3 +314,5 @@ def character(dp: Dispatcher):
     dp.register_callback_query_handler(character_inventory_action, state=CharacterState.inventory_action)
     dp.register_callback_query_handler(character_skills, state=CharacterState.skills)
     dp.register_callback_query_handler(character_skill_fix, state=CharacterState.skill_fix)
+
+    dp.register_message_handler(character_info_menu, state=CharacterState.info_menu)

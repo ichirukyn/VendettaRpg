@@ -1,4 +1,5 @@
 from tgbot.misc.other import formatted
+from tgbot.models.entity.effect import Effect
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import Race
 
@@ -164,10 +165,48 @@ class HeroInfo:
 
     def race_info(self):
         self.hero.update_stats()
-        return (
-            f"**Ваша раса ${self.hero.race.race_name}:**\n"
-            f"• Огонь: `{formatted(self.hero.fire_resist * 100)}%`\n"
+
+        elements = []
+        resists = []
+        others = []
+
+        for el in self.hero.race.bonuses:
+            if el.type == 'percent':
+                val = el.value * 100
+                el.value = f"{formatted(val)}%"
+
+            if '_damage' in el.attribute:
+                val = el.value * 100
+                el.value = f"{formatted(val)}%"
+                elements.append(el)
+
+            elif '_resist' in el.attribute:
+                val = el.value * 100
+                el.value = f"{formatted(val)}%"
+                resists.append(el)
+
+            else:
+                others.append(el)
+
+        text = (
+            f"**Ваша раса __{self.hero.race.race_name}__**\n"
+            f"• Описание: {self.hero.race.race_desc}\n"
         )
+
+        text += self.effects_info(others, 'Модификаторы')
+        text += self.effects_info(elements, 'Стихийный урон')
+        text += f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n"
+
+        return text
+
+    def effects_info(self, effects: [Effect], header):
+        text = f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n{header}:\n"
+
+        # mod_text = ''
+        for effect in effects:
+            text += f"• {effect.name}: `{effect.value}`\n"
+
+        return text
 
     def character_info(self):
         pass

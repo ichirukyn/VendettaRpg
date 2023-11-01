@@ -45,6 +45,8 @@ class CharacterState(StatesGroup):
     all_stats = State()
     flat_stats = State()
 
+    info_menu = State()
+
 
 class EquipState(StatesGroup):
     weapon = State()

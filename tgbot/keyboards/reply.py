@@ -162,13 +162,22 @@ character_distribution_kb = ReplyKeyboardMarkup(
         [KeyboardButton(text="Подчинение")],
         [KeyboardButton(text="🔙 Назад")]
     ],
+    resize_keyboard=True)
+
+character_info_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Статус")],
+        [KeyboardButton(text="Полный статус"), KeyboardButton(text="Чистый статус")],
+        [KeyboardButton(text="Раса"), KeyboardButton(text="Класс (В разработке)")],
+        [KeyboardButton(text="🔙 Назад")]
+    ],
 
     resize_keyboard=True)
 
 
 def character_kb(free_stats=0):
     kb = [
-        [KeyboardButton(text="Полный статус"), KeyboardButton(text="Чистый статус")],
+        [KeyboardButton(text="Информация")],
         # [KeyboardButton(text="Тренировка"), KeyboardButton(text="🏵 Мастерство")],
         [KeyboardButton(text="🧤 Экипировка"), KeyboardButton(text="👝 Инвентарь")],
         [KeyboardButton(text="🔙 Назад")]

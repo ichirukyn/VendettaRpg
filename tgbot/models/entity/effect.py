@@ -4,22 +4,25 @@ class EffectFactory:
         effect_type = data['type']
         attribute = data['attribute']
         value = data['value']
+        name = data['name']
 
         if 'percent' in effect_type:
-            return PercentBonusEffect(attribute, value, source)
+            return PercentBonusEffect(attribute, value, source, effect_type, name)
 
         if 'off' in effect_type or 'on' in effect_type:
-            return ToggleBonusEffect(attribute, value, source)
+            return ToggleBonusEffect(attribute, value, source, effect_type, name)
 
         if 'number' in effect_type:
-            return BonusEffect(attribute, value, source)
+            return BonusEffect(attribute, value, source, effect_type, name)
 
 
 class Effect:
-    def __init__(self, attribute, value, source):
+    def __init__(self, attribute, value, source, effect_type, name):
         self.attribute = attribute
         self.value = value
         self.source = source
+        self.name = name
+        self.type = effect_type
 
     def apply(self, hero):
         pass

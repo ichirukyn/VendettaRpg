@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from tgbot.handlers.team import to_team_main
 from tgbot.keyboards.inline import top_inline, list_inline, shop_buy_inline
 from tgbot.keyboards.reply import home_kb, character_kb, character_distribution_kb, equip_kb, inventory_kb, town_kb, \
-    battle_start_kb, back_kb, arena_type_kb, team_accept_kb
+    battle_start_kb, back_kb, arena_type_kb, team_accept_kb, character_info_kb
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
 from tgbot.misc.state import LocationState, CharacterState, HuntState, ShopState, TowerState, ArenaState, \
@@ -171,6 +171,7 @@ async def location_hunt(cb: CallbackQuery, state: FSMContext):
 async def location_character(message: Message, state: FSMContext):
     if message.text == '🎓 Распределение СО':
         await CharacterState.distribution_menu.set()
+        await message.answer(locale['distribution_tip'], parse_mode='Markdown')
         return await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
 
     if message.text == '🔙 Назад':
@@ -198,14 +199,9 @@ async def location_character(message: Message, state: FSMContext):
     data = await state.get_data()
     hero = data['hero']
 
-    if message.text == 'Полный статус':
-        await LocationState.character.set()
-        return await message.answer(hero.info.status_all(), reply_markup=character_kb(hero.free_stats),
-                                    parse_mode='Markdown')
-
-    if message.text == 'Чистый статус':
-        await LocationState.character.set()
-        return await message.answer(hero.info.status_flat(), reply_markup=character_kb(hero.free_stats),
+    if message.text == 'Информация':
+        await CharacterState.info_menu.set()
+        return await message.answer(hero.info.status_all(), reply_markup=character_info_kb,
                                     parse_mode='Markdown')
 
     await LocationState.character.set()
