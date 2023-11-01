@@ -8,10 +8,11 @@ class EntityLevel:
     exp_total = 0
     exp_to_lvl = 50
 
-    base_reward = 1  # Ид ранга
+    global_mod = 1  # x2, x3, x5 опыт для всех, на ивенты и т.д.
 
     def exp_reward(self, difficulty):
-        reward = self.base_reward * self.lvl * math.log(self.exp_total + 1, 2)
+        reward = self.global_mod * self.lvl * math.log(self.exp_total + 1, 2)
+        # reward = self.lvl * ()
         reward *= difficulty
 
         # need_battle = self.exp_to_lvl / reward

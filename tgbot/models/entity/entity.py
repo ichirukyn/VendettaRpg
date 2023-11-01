@@ -47,7 +47,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
     flat_submission = 0
 
     def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
-                 crit_rate, crit_damage, resist, class_id, class_name):
+                 crit_rate, crit_damage, resist, class_id, class_name, main_attr):
 
         self.id = entity_id
 
@@ -56,6 +56,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
 
         self.class_name = class_name
         self.class_id = class_id
+        self.main_attr = main_attr
 
         self.strength = strength
         self.health = health
@@ -124,9 +125,10 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
 
     def damage(self, defender, damage_type):
         def_res = defender.__getattribute__(damage_type)
+        dmg_attr = self.__getattribute__(self.main_attr)
 
         # TODO: Заменить Силу на основную характеристику класса
-        base_dmg = self.technique_damage * (self.strength + self.weapon_damage)
+        base_dmg = self.technique_damage * (dmg_attr + self.weapon_damage)
         bonus_dmg = self.__getattribute__(damage_type) + 1
 
         # TODO 1 - 0 -- Сопротивления элем. урону | 1 - 0 -- Игнорирование защиты

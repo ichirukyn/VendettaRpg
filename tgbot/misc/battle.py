@@ -170,6 +170,7 @@ class BattleEngine:
 
         self.order = self.update_order()
 
+    # Противники текущего существа, а не команда нпс
     def target_enemy_team(self, target):
         team = self.enemy_team
 
@@ -585,9 +586,11 @@ class BattleInterface:
         e.exp += int(reward_exp)
         log = f'Вы получили {reward_exp} опыта'
 
+        enemies = self.engine.target_enemy_team(e)
+
         # TODO: Против "фармил", которые живут ареной и пока не сделаю норм опыт....
         if e.lvl > 20:
-            return f'Вы достигли предела, ждите обновление'
+            return f'Вы достигли предела, ждите обновление.. '
 
         if e.check_lvl_up():
             new_lvl = await self.db.get_hero_lvl_by_exp(e.exp)

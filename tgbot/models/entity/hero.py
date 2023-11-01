@@ -25,6 +25,7 @@ class HeroFactory:
             'chat_id': data['chat_id'],
             'class_id': _class['id'],
             'class_name': _class['name'],
+            'main_attr': _class['main_attr'],
         }
         return Hero(**hero)
 
@@ -49,6 +50,7 @@ class HeroFactory:
             'chat_id': chat_id,
             'class_id': class_id,
             'class_name': '',
+            'main_attr': '',
         }
 
         return Hero(**hero)
@@ -56,9 +58,9 @@ class HeroFactory:
 
 class Hero(Entity):
     def __init__(self, entity_id, name, rank, money, strength, health, speed, dexterity, soul, intelligence, submission,
-                 crit_rate, crit_damage, resist, free_stats, chat_id, class_id, class_name):
+                 crit_rate, crit_damage, resist, free_stats, chat_id, class_id, class_name, main_attr):
         super().__init__(entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
-                         crit_rate, crit_damage, resist, class_id, class_name)
+                         crit_rate, crit_damage, resist, class_id, class_name, main_attr)
         self.chat_id = chat_id
         self.info = HeroInfo(self)
 
