@@ -1,14 +1,19 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery
+from aiogram.types import Message
 
-from tgbot.keyboards.inline import list_inline, battle_start_inline
-from tgbot.keyboards.reply import home_kb, town_kb
-from tgbot.misc.battle import BattleFactory
+from tgbot.handlers.battle.interface import BattleFactory
+from tgbot.keyboards.inline import battle_start_inline
+from tgbot.keyboards.inline import list_inline
+from tgbot.keyboards.reply import home_kb
+from tgbot.keyboards.reply import town_kb
 from tgbot.misc.hero import init_hero
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
-from tgbot.misc.state import BattleState, LocationState, TowerState
+from tgbot.misc.state import BattleState
+from tgbot.misc.state import LocationState
+from tgbot.misc.state import TowerState
 from tgbot.models.entity.enemy import init_enemy
 from tgbot.models.user import DBCommands
 

@@ -1,11 +1,16 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message
+from aiogram.types import ReplyKeyboardRemove
 
-from tgbot.keyboards.reply import home_kb, list_kb, confirm_kb, entry_kb
+from tgbot.keyboards.reply import confirm_kb
+from tgbot.keyboards.reply import entry_kb
+from tgbot.keyboards.reply import home_kb
+from tgbot.keyboards.reply import list_kb
 from tgbot.misc.hero import init_hero
 from tgbot.misc.locale import locale
-from tgbot.misc.state import RegState, LocationState
+from tgbot.misc.state import LocationState
+from tgbot.misc.state import RegState
 from tgbot.models.entity.hero import HeroFactory
 from tgbot.models.user import DBCommands
 
@@ -29,9 +34,9 @@ async def register_user(message: Message, state: FSMContext):
 
     user_id = await db.add_user(chat_id, login, True, ref_id=1)
     if user_id is not None:
-        hero = HeroFactory.create_init_hero(user_id, chat_id, name, class_id)
+        hero = HeroFactory.create_init_hero(user_id, chat_id, name)
 
-        hero_id = await db.add_hero(user_id, hero.name, race_id, hero.class_id)
+        hero_id = await db.add_hero(user_id, hero.name, race_id, class_id)
         hero.id = hero_id
 
         await db.add_hero_stats(hero_id, hero)
@@ -165,17 +170,18 @@ async def change_os_to_so(message: Message, state: FSMContext):
         hero_id = await db.get_hero_id(user['id'])
         stats = await db.get_hero_stats(hero_id)
 
-        if stats['total_stats'] > 7:
+        if stats['total_stats'] > 8:
             await db.update_hero_stat('strength', 1, hero_id)
             await db.update_hero_stat('health', 1, hero_id)
             await db.update_hero_stat('speed', 1, hero_id)
             await db.update_hero_stat('dexterity', 1, hero_id)
+            await db.update_hero_stat('accuracy', 1, hero_id)
             await db.update_hero_stat('soul', 1, hero_id)
             await db.update_hero_stat('intelligence', 1, hero_id)
             await db.update_hero_stat('submission', 1, hero_id)
-            await db.update_hero_stat('total_stats', 7, hero_id)
+            await db.update_hero_stat('total_stats', 8, hero_id)
 
-            new_so = stats['free_stats'] + stats['total_stats'] - 7
+            new_so = stats['free_stats'] + stats['total_stats'] - 8
             await db.update_hero_stat('free_stats', new_so, hero_id)
 
 

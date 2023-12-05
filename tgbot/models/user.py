@@ -1,4 +1,5 @@
-from asyncpg import Connection, UniqueViolationError
+from asyncpg import Connection
+from asyncpg import UniqueViolationError
 
 
 class DBCommands:
@@ -19,6 +20,7 @@ class DBCommands:
 
         self.GET_CLASSES = "SELECT * FROM classes"
         self.GET_CLASS = "SELECT * FROM classes WHERE id = $1"
+        self.GET_CLASS_BONUSES = "SELECT * FROM class_bonuses WHERE class_id = $1"
 
         self.GET_USER_ID = "SELECT id FROM users WHERE chat_id = $1"
         self.GET_USER = "SELECT * FROM users WHERE id = $1"
@@ -50,7 +52,7 @@ class DBCommands:
         self.GET_TEAMS = "SELECT * FROM teams t JOIN hero_teams ht ON t.id = ht.team_id WHERE is_private = False"
         self.GET_TEAM_HEROES = "SELECT leader_id, is_private, hero_id, team_id, is_leader, prefix, h.name " \
                                "FROM teams t JOIN hero_teams ht ON ht.team_id = t.id " \
-                               "JOIN heroes h ON ht.hero_id = h.user_id AND t.id = $1"
+                               "JOIN heroes h ON ht.hero_id = h.id AND t.id = $1"
         self.ADD_HERO_TEAM = "INSERT INTO hero_teams (hero_id, team_id, is_leader) VALUES ($1, $2, $3)"
         self.GET_HERO_TEAM = "SELECT * FROM hero_teams WHERE hero_id = $1"
         self.DEL_HERO_TEAM = "DELETE FROM hero_teams WHERE hero_id = $1"
@@ -282,6 +284,10 @@ class DBCommands:
     async def get_class(self, class_id):
         command = self.GET_CLASS
         return await self.pool.fetchrow(command, class_id)
+
+    async def get_class_bonuses(self, class_id):
+        command = self.GET_CLASS_BONUSES
+        return await self.pool.fetch(command, class_id)
 
     # User
     async def get_user_id(self, chat_id):

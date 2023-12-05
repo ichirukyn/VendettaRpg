@@ -1,5 +1,6 @@
 from random import choice
 
+from tgbot.models.entity._class import class_init
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import race_init
 from tgbot.models.entity.skill import skills_init
@@ -17,25 +18,23 @@ class EnemyFactory:
             'health': data['health'],
             'speed': data['speed'],
             'dexterity': data['dexterity'],
+            'accuracy': data['accuracy'],
             'soul': data['soul'],
             'intelligence': data['intelligence'],
             'submission': data['submission'],
             'crit_rate': data['crit_rate'],
             'crit_damage': data['crit_damage'],
             'resist': data['resist'],
-            'class_id': _class['id'],
-            'class_name': _class['name'],
-            'main_attr': _class['main_attr'],
         }
 
         return Enemy(**enemy)
 
 
 class Enemy(Entity):
-    def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
-                 crit_rate, crit_damage, resist, class_id, class_name, main_attr):
-        super().__init__(entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
-                         crit_rate, crit_damage, resist, class_id, class_name, main_attr)
+    def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, accuracy, soul, intelligence,
+                 submission, crit_rate, crit_damage, resist):
+        super().__init__(entity_id, name, rank, strength, health, speed, dexterity, accuracy, soul, intelligence,
+                         submission, crit_rate, crit_damage, resist)
         self.techniques = []
 
     def select_target(self, team):
@@ -90,11 +89,15 @@ async def init_enemy(db: DBCommands, enemy_id) -> Enemy:
 
     enemy = EnemyFactory.create_enemy(stats_db, class_db)
     enemy.lvl = stats_db['lvl']
+
     enemy = await skills_init(enemy, skills, db)
     enemy.add_weapon(weapon, enemy_weapon['lvl'])
     enemy.update_stats_all()
+
     enemy.techniques = [technique['damage'] for technique in techniques]
+
     enemy = await race_init(enemy, stats_db['race_id'], db)
+    enemy = await class_init(enemy, stats_db['class_id'], db)
 
     return enemy
 

@@ -48,7 +48,7 @@ async def race_init(entity, race_id, db):
             new_bonuses.append(EffectFactory.create_effect(bonus, source=('race', race_id)))
 
         race = RaceFactory.create_race(entity, race_db, new_bonuses)
-        print(race)
+        # print(race.race_name)
 
         entity.race = race
         entity.race.race_apply()

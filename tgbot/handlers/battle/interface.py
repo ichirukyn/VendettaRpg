@@ -2,224 +2,33 @@ import asyncio
 
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message
+from aiogram.types import ReplyKeyboardRemove
 
-from tgbot.keyboards.reply import battle_main_kb, arena_kb
-from tgbot.keyboards.reply import battle_revival_kb, next_kb, battle_sub_kb, list_kb, home_kb, list_object_kb, \
-    confirm_kb
+from tgbot.handlers.battle.hook import BattleEngine
+from tgbot.keyboards.reply import arena_kb
+from tgbot.keyboards.reply import battle_main_kb
+from tgbot.keyboards.reply import battle_revival_kb
+from tgbot.keyboards.reply import battle_sub_kb
+from tgbot.keyboards.reply import confirm_kb
+from tgbot.keyboards.reply import home_kb
+from tgbot.keyboards.reply import list_kb
+from tgbot.keyboards.reply import list_object_kb
+from tgbot.keyboards.reply import next_kb
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
-from tgbot.misc.state import BattleState, LocationState
+from tgbot.misc.state import BattleState
+from tgbot.misc.state import LocationState
 from tgbot.models.entity.hero import Hero
 from tgbot.models.user import DBCommands
-
-
-async def hero_victory(hero, money, message, state):
-    data = await state.get_data()
-    hero_id = data.get('hero_id')
-    db = DBCommands(message.bot.get('db'))
-
-    hero.money += int(money)
-    hero.default_stats()
-
-    # await hero_save_on_team(hero, state)
-    await state.update_data(hero=hero)
-
-    await db.update_heroes('money', hero.money, hero_id)
-
-    await LocationState.arena.set()
-    return await message.answer(f"Ты победил!\nТвоя награда:\n{formatted(money)} иен.", reply_markup=next_kb)
-
-
-def escape(hero_speed, enemy_speed, success_threshold):
-    if hero_speed >= enemy_speed:
-        return True
-
-    speed_ratio = enemy_speed / hero_speed
-
-    return speed_ratio > success_threshold
-
-
-class BattleEngine:
-    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb):
-        self.enemy_team = enemy_team
-        self.player_team = player_team
-        self.order = []
-        self.order_index = 0
-
-        # self.leader: Hero = hero
-
-        self.exit_state = exit_state
-        self.exit_message = exit_message
-        self.exit_kb = exit_kb
-
-        self.battle_result = None
-        self.team_win = None
-        self.logs = ''
-
-    def initialize(self):
-        self.order = self.update_order()
-
-    def update_order(self):
-        order = self.player_team + self.enemy_team
-        order.sort(key=lambda x: x.speed, reverse=True)
-
-        return order
-
-    def battle(self):
-        i = self.order_index
-
-        while i < len(self.order):
-            entity = self.order[i]
-            entity.check_active_skill()
-
-            log = self.check_durability(entity)
-            self.order_index += 1
-
-            if entity.hp <= 0:
-                return self.battle()
-
-            if isinstance(entity, Hero):
-                who = 'hero'
-
-            else:
-                target_enemy_team = self.target_enemy_team(entity)
-
-                if len(target_enemy_team) == 0:
-                    return self.check_hp()
-
-                entity.select_target(target_enemy_team)
-                entity.define_action()
-                entity.define_sub_action(target_enemy_team)
-                entity.choice_technique()
-
-                who = 'enemy'
-
-            return self.order, entity, who, i, log
-
-        self.order_index = 0
-        return self.battle()
-
-    # TODO: Расширить функцию, на проверку станов, и отрицательных эффектов
-    def check_durability(self, entity):
-        log = None
-
-        if (entity.durability <= 0):
-            log = f"🌀 Стойкость {entity.name} пробита, он пропускает ход."
-            entity.durability = entity.durability_max
-
-        return log
-
-    def battle_action(self, attacker, defender, skill):
-        action_return = {'name': attacker.action, 'target': defender, 'attacker': attacker}
-
-        if attacker.action == 'Атака':
-            action_return['log'] = self.entity_attack(attacker, defender)
-
-            if action_return['target'].hp <= 0:
-                log = f"\n💀 {action_return['target'].name} побежден."
-                action_return['log'] += log
-
-        elif attacker.action == 'Навыки':
-            log = skill.skill_activate()
-            action_return['log'] = log
-            action_return['attacker'] = skill.hero
-
-        return action_return
-
-    def entity_attack(self, attacker, defender):
-        log = ''
-        hp = attacker.hp
-
-        if attacker.durability <= 0:
-            log = f"🌀 Стойкость {attacker.name} пробита, он пропускает ход."
-            attacker.durability = attacker.durability_max
-            return log
-
-        if defender.hp > 0:
-            # TODO: Заменить хардкод на класс техники
-            total_damage = attacker.damage(defender, 'phys_damage')
-            defender.hp -= total_damage
-
-            if total_damage == 0:
-                # TODO: Добавить условие для вывода клана, если есть
-                log = f"⚔️ {attacker.name} промахнулся"
-            else:
-                defender.durability -= 20
-
-                if attacker.technique_name != '':
-                    log = f"⚔️ {attacker.name} использовал \"{attacker.technique_name}\" по {defender.name} и нанес {formatted(total_damage)} урона.\n"
-
-                else:
-                    log = f"⚔️ {attacker.name} атаковал {defender.name} и нанес {formatted(total_damage)} урона.\n"
-
-            if hp > attacker.hp:
-                delta = hp - attacker.hp
-                log += f'🪃 {defender.name} контратаковал на {formatted(delta)} урона.'
-
-        # if attacker.hp <= 0:
-        #     log = f"{attacker.name} побежден."
-
-        defender.sub_action = ''
-
-        return log
-
-    def save_entity(self, target):
-        self.enemy_team = [enemy if enemy.name != target.name else target for enemy in self.enemy_team]
-        self.player_team = [hero if hero.name != target.name else target for hero in self.player_team]
-
-        self.order = self.update_order()
-
-    # Противники текущего существа, а не команда нпс
-    def target_enemy_team(self, target):
-        team = self.enemy_team
-
-        for enemy in self.enemy_team:
-            if target.name == enemy.name:
-                team = self.player_team
-
-        team = [e for e in team if e.hp > 0]
-
-        return team
-
-    def round_hp(self):
-        for enemy in self.enemy_team:
-            if enemy.hp < 0:
-                enemy.hp = 0
-
-        for player in self.player_team:
-            if player.hp < 0:
-                player.hp = 0
-
-    # TODO: Условия победы в пвп добавить
-    def check_hp(self):
-        self.round_hp()
-
-        enemy = max(self.enemy_team, key=lambda x: x.hp)
-        player = max(self.player_team, key=lambda x: x.hp)
-
-        if enemy.hp <= 0:
-            print('Player win')
-            return self.player_team
-        elif player.hp <= 0:
-            print('Enemy win')
-            return self.enemy_team
-
-        return None
-
-    def check_pvp(self):
-        for e in self.enemy_team:
-            if e.chat_id is not None:
-                return True
-
-        return False
 
 
 class BattleLogger:
     def __init__(self):
         self.loss = "Ты проиграл и в последствие был убит."
 
-    def enemys_log(self, order, hero):
+    @staticmethod
+    def enemys_log(order, hero):
         logs = ''
 
         for entity in order:
@@ -232,7 +41,8 @@ class BattleLogger:
 
         return logs
 
-    def battle_order(self, order):
+    @staticmethod
+    def battle_order(order):
         response = "Последовательность действий:\n"
 
         i = 1
@@ -288,7 +98,11 @@ class BattleInterface:
             data = await self.state.get_data()
             order = data.get('order')
 
-            await self.handler_battle_end(order, team_win)
+            # await self.handler_battle_end(order, team_win)
+            self.handler_battle_end_start(order, team_win)
+            return True
+
+        return False
 
     async def start_battle(self):
         log = self.logger.battle_order(self.engine.order)
@@ -345,7 +159,7 @@ class BattleInterface:
         asyncio.create_task(self.handler_npc_turn(hero))
 
     async def handler_npc_turn(self, npc):
-        await self.process_battle_action(npc, npc.target, npc.select_skill)
+        await self.process_battle_action(npc, npc.target)
 
     def handler_user_turn_start(self, order, hero):
         asyncio.create_task(self.handle_user_turn(order, hero))
@@ -364,11 +178,10 @@ class BattleInterface:
             hero.sub_action = 'Уворот'
             self.engine.save_entity(hero)
 
-            await self.set_state(hero.chat_id, BattleState.user_turn)
+            await self.set_state(hero.chat_id, BattleState.load)
 
             text = f'{hero.name} пробует уклонится.'
 
-            await self.set_state(hero.chat_id, BattleState.load.set)
             await self.send_all(hero, text, text, None, next_kb)
             return await self.battle()
 
@@ -376,11 +189,10 @@ class BattleInterface:
             hero.sub_action = 'Защита'
             self.engine.save_entity(hero)
 
-            await self.set_state(hero.chat_id, BattleState.user_turn)
+            await self.set_state(hero.chat_id, BattleState.load)
 
             text = f'{hero.name} поставил блок.'
 
-            await self.set_state(hero.chat_id, BattleState.load.set)
             await self.send_all(hero, text, text, None, next_kb)
             return await self.battle()
 
@@ -388,11 +200,10 @@ class BattleInterface:
             hero.sub_action = 'Контрудар'
             self.engine.save_entity(hero)
 
-            await self.set_state(hero.chat_id, BattleState.user_turn)
+            await self.set_state(hero.chat_id, BattleState.load)
 
             text = f'{hero.name} ждёт момент для контрудара.'
 
-            await self.set_state(hero.chat_id, BattleState.load.set)
             await self.send_all(hero, text, text, None, next_kb)
             return await self.battle()
 
@@ -488,7 +299,7 @@ class BattleInterface:
 
         # TODO: Добавить выбор союзников
         await self.set_state(hero.chat_id, BattleState.user_sub_turn)
-        await self.process_battle_action(hero, hero.target, message)
+        await self.process_battle_action(hero, hero.target)
 
     async def process_select_technique(self, message: Message, state: FSMContext):
         data = await state.get_data()
@@ -508,7 +319,7 @@ class BattleInterface:
 
                 await self.handler_select_target(message, state)
 
-    async def process_battle_action(self, hero, target, message):
+    async def process_battle_action(self, hero, target):
         action_result = self.engine.battle_action(hero, target, hero.select_skill)
 
         if action_result is not None:
@@ -527,9 +338,11 @@ class BattleInterface:
                 await self.save_battle()
             else:
                 await self.send_all(hero, action_result['log'], action_result['log'], None, None)
-
-                await self.check_hp()
                 await self.save_battle()
+
+                if await self.check_hp():
+                    return
+
                 await self.battle()
 
     async def handler_select_target(self, message: Message, state: FSMContext):
@@ -555,7 +368,7 @@ class BattleInterface:
         for e in target_enemy_team:
             if message.text.strip(' ') == e.name.strip(' '):
                 hero.target = e
-                await self.process_battle_action(hero, hero.target, message)
+                await self.process_battle_action(hero, hero.target)
 
     def handler_battle_end_start(self, order, team_win):
         asyncio.create_task(self.handler_battle_end(order, team_win))
@@ -573,24 +386,35 @@ class BattleInterface:
                         kb = self.engine.exit_kb
                         state = self.engine.exit_state
 
-                        mod = len(order) - len(team_win) / 10
-                        log += await self.battle_reward(e, mod)
+                        teammate_count = len(order) - len(team_win)
+                        print('teammate_count', teammate_count)
+                        mod = teammate_count / 10
+                        log += await self.battle_reward(e, mod, teammate_count)
 
                 if isinstance(e, Hero) and e.sub_action != 'Сбежать':
                     await self.set_state(e.chat_id, state)
                     await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
 
-    async def battle_reward(self, e, mod):
-        reward_exp = round(e.exp_reward(1 + mod))
+    # TODO: Навести порядок, вынести в отдельный модуль EXP
+    async def battle_reward(self, e, mod, teammate_count):
+        enemies = self.engine.target_enemy_team(e, False)
+
+        total_reward = 0
+
+        for enemy in enemies:
+            total_reward += e.exp_reward(1 + mod, enemy.lvl)
+
+        reward_exp = round(total_reward / teammate_count)
 
         e.exp += int(reward_exp)
         log = f'Вы получили {reward_exp} опыта'
 
-        enemies = self.engine.target_enemy_team(e)
-
         # TODO: Против "фармил", которые живут ареной и пока не сделаю норм опыт....
         if e.lvl > 20:
-            return f'Вы достигли предела, ждите обновление.. '
+            return (
+                f'Вы достигли предела... \n'
+                f'Пополните баланс, чтобы продолжить)) \n'
+            )
 
         if e.check_lvl_up():
             new_lvl = await self.db.get_hero_lvl_by_exp(e.exp)
@@ -606,7 +430,8 @@ class BattleInterface:
 
         return log
 
-    async def process_revival(self, message: Message, state: FSMContext):
+    @staticmethod
+    async def process_revival(message: Message, state: FSMContext):
         if message.text == 'Возрождение':
             await LocationState.home.set()
 
@@ -621,17 +446,6 @@ class BattleInterface:
             await message.answer(locale['greeting'], reply_markup=home_kb, parse_mode='Markdown')
 
 
-def unregister(dp: Dispatcher):
-    dp.message_handlers.unregister('battle')
-    dp.message_handlers.unregister('revival')
-    dp.message_handlers.unregister('user_turn')
-    dp.message_handlers.unregister('user_sub_turn')
-    dp.message_handlers.unregister('select_technique')
-    dp.message_handlers.unregister('select_target')
-    dp.message_handlers.unregister('select_skill')
-    dp.message_handlers.unregister('select_skill_confirm')
-
-
 class BattleFactory:
     def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb):
         self.enemy_team = enemy_team
@@ -641,136 +455,14 @@ class BattleFactory:
         self.exit_message = exit_message
         self.exit_kb = exit_kb
 
-    def create_battle_logger(self):
-        return BattleLogger()
-
     def create_battle_engine(self):
         return BattleEngine(self.enemy_team, self.player_team, self.exit_state, self.exit_message,
                             self.exit_kb)
 
-    def create_battle_interface(self, message, state, db, engine, logger):
+    @staticmethod
+    def create_battle_logger():
+        return BattleLogger()
+
+    @staticmethod
+    def create_battle_interface(message, state, db, engine, logger):
         return BattleInterface(message, state, db, engine, logger)
-
-
-# class BattleHandler:
-def battle(dp):
-    dp.register_message_handler(start_battle, state=BattleState.battle)
-    dp.register_message_handler(revival, state=BattleState.revival)
-    dp.register_message_handler(user_turn, state=BattleState.user_turn)
-    dp.register_message_handler(user_sub_turn, state=BattleState.user_sub_turn)
-    dp.register_message_handler(select_technique, state=BattleState.select_technique)
-    dp.register_message_handler(select_target, state=BattleState.select_target)
-    dp.register_message_handler(select_skill, state=BattleState.select_skill)
-    dp.register_message_handler(select_skill_confirm, state=BattleState.select_skill_confirm)
-
-
-async def start_battle(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.start_battle()
-
-
-async def user_turn(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.process_user_turn(message, state)
-
-
-async def user_sub_turn(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.process_user_sub_turn(message, state)
-
-
-async def select_technique(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.process_select_technique(message, state)
-
-
-async def select_skill(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.process_select_skill(message, state)
-
-
-async def select_skill_confirm(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.process_select_skill_confirm(message, state)
-
-
-async def select_target(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.process_select_target(message, state)
-
-
-async def revival(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
-    data = await state.get_data()
-    engine_data = data['engine_data']
-    engine = data['engine']
-    logger = data['logger']
-
-    factory = BattleFactory(**engine_data)
-    ui = factory.create_battle_interface(message, state, db, engine, logger)
-    ui.engine_data = engine_data
-
-    await ui.process_revival(message, state)

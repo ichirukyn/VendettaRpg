@@ -2,11 +2,15 @@ from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
-from tgbot.keyboards.reply import arena_type_kb, home_kb
-from tgbot.misc.battle import BattleFactory
-from tgbot.misc.hero import init_hero, init_team, leader_on_team
+from tgbot.handlers.battle.interface import BattleFactory
+from tgbot.keyboards.reply import arena_type_kb
+from tgbot.keyboards.reply import home_kb
+from tgbot.misc.hero import init_hero
+from tgbot.misc.hero import init_team
+from tgbot.misc.hero import leader_on_team
 from tgbot.misc.locale import locale
-from tgbot.misc.state import ArenaState, LocationState
+from tgbot.misc.state import ArenaState
+from tgbot.misc.state import LocationState
 from tgbot.models.user import DBCommands
 
 

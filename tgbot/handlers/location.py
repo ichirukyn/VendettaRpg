@@ -1,15 +1,33 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery
+from aiogram.types import Message
+from aiogram.types import ReplyKeyboardRemove
 
 from tgbot.handlers.team import to_team_main
-from tgbot.keyboards.inline import top_inline, list_inline, shop_buy_inline
-from tgbot.keyboards.reply import home_kb, character_kb, character_distribution_kb, equip_kb, inventory_kb, town_kb, \
-    battle_start_kb, back_kb, arena_type_kb, team_accept_kb, character_info_kb
+from tgbot.keyboards.inline import list_inline
+from tgbot.keyboards.inline import shop_buy_inline
+from tgbot.keyboards.inline import top_inline
+from tgbot.keyboards.reply import arena_type_kb
+from tgbot.keyboards.reply import back_kb
+from tgbot.keyboards.reply import battle_start_kb
+from tgbot.keyboards.reply import character_distribution_kb
+from tgbot.keyboards.reply import character_info_kb
+from tgbot.keyboards.reply import character_kb
+from tgbot.keyboards.reply import equip_kb
+from tgbot.keyboards.reply import home_kb
+from tgbot.keyboards.reply import inventory_kb
+from tgbot.keyboards.reply import team_accept_kb
+from tgbot.keyboards.reply import town_kb
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
-from tgbot.misc.state import LocationState, CharacterState, HuntState, ShopState, TowerState, ArenaState, \
-    TeamState
+from tgbot.misc.state import ArenaState
+from tgbot.misc.state import CharacterState
+from tgbot.misc.state import HuntState
+from tgbot.misc.state import LocationState
+from tgbot.misc.state import ShopState
+from tgbot.misc.state import TeamState
+from tgbot.misc.state import TowerState
 from tgbot.misc.utils import check_before_send
 from tgbot.models.user import DBCommands
 
@@ -19,7 +37,7 @@ async def location_main_select(message: Message, state: FSMContext):
         await LocationState.town.set()
         return await message.answer(locale['town'], reply_markup=town_kb)
 
-    elif message.text == '📊 Статистика':
+    elif message.text == '👤 Персонаж':
         await location_character(message, state)
 
     elif message.text == '🔝 Топ':
@@ -199,7 +217,7 @@ async def location_character(message: Message, state: FSMContext):
     data = await state.get_data()
     hero = data['hero']
 
-    if message.text == 'Информация':
+    if message.text == '📊 Информация':
         await CharacterState.info_menu.set()
         return await message.answer(hero.info.status_all(), reply_markup=character_info_kb,
                                     parse_mode='Markdown')

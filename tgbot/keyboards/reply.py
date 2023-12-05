@@ -1,4 +1,5 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup
 from more_itertools import chunked
 
 from tgbot.models.entity.enemy import Enemy
@@ -22,7 +23,7 @@ next_kb = ReplyKeyboardMarkup(
 home_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="🚪 Локации")],
-        [KeyboardButton(text="📊 Статистика")],
+        [KeyboardButton(text="👤 Персонаж")],
         [KeyboardButton(text="🔝 Топ")],
     ],
     resize_keyboard=True)
@@ -159,7 +160,7 @@ character_distribution_kb = ReplyKeyboardMarkup(
         [KeyboardButton(text="Сила"), KeyboardButton(text="Здоровье")],
         [KeyboardButton(text="Ловкость"), KeyboardButton(text="Скорость")],
         [KeyboardButton(text="Интеллект"), KeyboardButton(text="Дух")],
-        [KeyboardButton(text="Подчинение")],
+        [KeyboardButton(text="Подчинение"), KeyboardButton(text="Меткость")],
         [KeyboardButton(text="🔙 Назад")]
     ],
     resize_keyboard=True)
@@ -168,7 +169,7 @@ character_info_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Статус")],
         [KeyboardButton(text="Полный статус"), KeyboardButton(text="Чистый статус")],
-        [KeyboardButton(text="Раса"), KeyboardButton(text="Класс (В разработке)")],
+        [KeyboardButton(text="Раса"), KeyboardButton(text="Класс")],
         [KeyboardButton(text="🔙 Назад")]
     ],
 
@@ -177,7 +178,7 @@ character_info_kb = ReplyKeyboardMarkup(
 
 def character_kb(free_stats=0):
     kb = [
-        [KeyboardButton(text="Информация")],
+        [KeyboardButton(text="📊 Информация")],
         # [KeyboardButton(text="Тренировка"), KeyboardButton(text="🏵 Мастерство")],
         [KeyboardButton(text="🧤 Экипировка"), KeyboardButton(text="👝 Инвентарь")],
         [KeyboardButton(text="🔙 Назад")]

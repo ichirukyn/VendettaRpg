@@ -1,11 +1,13 @@
-from random import randint, random
+from random import randint
+from random import random
 
 from tgbot.models.entity.entity_base.entity_damage import EntityDamage
 from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
 from tgbot.models.entity.race import Race
-from tgbot.models.entity.skill import SkillFactory, Skill
+from tgbot.models.entity.skill import Skill
+from tgbot.models.entity.skill import SkillFactory
 
 
 class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
@@ -13,10 +15,13 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
     team_id = 0
     is_leader = False
 
-    mana = 0
-    mana_max = 0
-    hp = 0
-    hp_max = 0
+    mana = 1
+    mana_max = 1
+    mana_percent = 1  # 1 - 100%
+
+    hp = 1
+    hp_percent = 1  # 1 - 100%
+    hp_max = 1
 
     technique_damage = 1
     technique_name = ''
@@ -30,6 +35,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
     skills = []
     select_skill = None
     race = None
+    _class = None
 
     action = ''
     sub_action = ''
@@ -42,26 +48,28 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
     flat_health = 0
     flat_speed = 0
     flat_dexterity = 0
+    flat_accuracy = 0
     flat_soul = 0
     flat_intelligence = 0
     flat_submission = 0
 
-    def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
-                 crit_rate, crit_damage, resist, class_id, class_name, main_attr):
+    # Для эффектов
+    prev = 0
+    prev_percent = 0
+
+    def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, accuracy, soul, intelligence,
+                 submission, crit_rate, crit_damage, resist):
 
         self.id = entity_id
 
         self.name = name
         self.rank = rank
 
-        self.class_name = class_name
-        self.class_id = class_id
-        self.main_attr = main_attr
-
         self.strength = strength
         self.health = health
         self.speed = speed
         self.dexterity = dexterity
+        self.accuracy = accuracy
         self.soul = soul
         self.intelligence = intelligence
         self.submission = submission
@@ -78,6 +86,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
         self.flat_health = self.health
         self.flat_speed = self.speed
         self.flat_dexterity = self.dexterity
+        self.flat_accuracy = self.accuracy
         self.flat_soul = self.soul
         self.flat_intelligence = self.intelligence
         self.flat_submission = self.submission
@@ -125,9 +134,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
 
     def damage(self, defender, damage_type):
         def_res = defender.__getattribute__(damage_type)
-        dmg_attr = self.__getattribute__(self.main_attr)
+        dmg_attr = self.__getattribute__(self._class.main_attr)
 
-        # TODO: Заменить Силу на основную характеристику класса
         base_dmg = self.technique_damage * (dmg_attr + self.weapon_damage)
         bonus_dmg = self.__getattribute__(damage_type) + 1
 

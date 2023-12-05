@@ -1,7 +1,8 @@
 import asyncio
 import logging
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot
+from aiogram import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 
@@ -11,14 +12,15 @@ from tgbot.filters.admin import AdminFilter
 from tgbot.filters.register import RegFilter
 from tgbot.handlers.admin import register_admin
 from tgbot.handlers.arena import arena
+from tgbot.handlers.battle.handlers import battle
 from tgbot.handlers.character import character
 from tgbot.handlers.location import location
 from tgbot.handlers.register import start
 from tgbot.handlers.shop import shop
 from tgbot.handlers.team import team
 from tgbot.handlers.tower import tower
-from tgbot.middlewares.environment import EnvironmentMiddleware, UpdateStatsMiddleware
-from tgbot.misc.battle import battle
+from tgbot.middlewares.environment import EnvironmentMiddleware
+from tgbot.middlewares.update_state import UpdateStatsMiddleware
 from tgbot.misc.commands import bot_command
 
 logger = logging.getLogger(__name__)
@@ -27,7 +29,6 @@ logger = logging.getLogger(__name__)
 def register_all_middlewares(dp, config):
     dp.setup_middleware(EnvironmentMiddleware(config=config))
     dp.setup_middleware(UpdateStatsMiddleware(dp=dp))
-    # dp.setup_middleware(SetParseModeMiddleware())
 
 
 def register_all_filters(dp):
@@ -37,16 +38,16 @@ def register_all_filters(dp):
 
 def register_all_handlers(dp):
     start(dp)
-    register_admin(dp)
-    battle(dp)
-
     location(dp)
+    register_admin(dp)
+
     character(dp)
     shop(dp)
+    team(dp)
 
     arena(dp)
     tower(dp)
-    team(dp)
+    battle(dp)
 
 
 async def main():

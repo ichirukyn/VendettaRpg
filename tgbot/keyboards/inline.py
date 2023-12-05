@@ -1,4 +1,5 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup
 from more_itertools import chunked
 
 back_inline = InlineKeyboardMarkup(row_width=1)
@@ -85,6 +86,7 @@ top_inline.add(
 )
 top_inline.add(
     InlineKeyboardButton(text='Подчинение', callback_data='submission'),
+    InlineKeyboardButton(text='Меткость', callback_data='accuracy'),
 )
 top_inline.add(
     InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),

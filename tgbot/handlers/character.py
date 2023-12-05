@@ -1,14 +1,38 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
+from aiogram.types import CallbackQuery
+from aiogram.types import Message
+from aiogram.types import ReplyKeyboardRemove
 from numpy.random import randint
 
-from tgbot.keyboards.inline import skill_add_inline, skill_del_inline, list_inline
-from tgbot.keyboards.reply import character_kb, character_distribution_kb, back_kb, inventory_kb, character_info_kb
+from tgbot.keyboards.inline import list_inline
+from tgbot.keyboards.inline import skill_add_inline
+from tgbot.keyboards.inline import skill_del_inline
+from tgbot.keyboards.reply import back_kb
+from tgbot.keyboards.reply import character_distribution_kb
+from tgbot.keyboards.reply import character_info_kb
+from tgbot.keyboards.reply import character_kb
+from tgbot.keyboards.reply import inventory_kb
 from tgbot.misc.Inventory import WeaponItem
 from tgbot.misc.locale import locale
-from tgbot.misc.state import CharacterState, LocationState
+from tgbot.misc.state import CharacterState
+from tgbot.misc.state import LocationState
 from tgbot.models.user import DBCommands
+
+stats = {
+    'Сила': 'strength',
+    'Здоровье': 'health',
+    'Скорость': 'speed',
+    'Ловкость': 'dexterity',
+    'Меткость': 'accuracy',
+    'Дух': 'soul',
+    'Интеллект': 'intelligence',
+    'Подчинение': 'submission',
+}
+
+inventory = {
+    'Оружие': 'weapon',
+}
 
 
 async def train(message: Message, state: FSMContext):
@@ -43,21 +67,6 @@ async def train(message: Message, state: FSMContext):
                              f"Текущая энергия: {hero.energy}")
 
 
-stats = {
-    'Сила': 'strength',
-    'Здоровье': 'health',
-    'Скорость': 'speed',
-    'Ловкость': 'dexterity',
-    'Дух': 'soul',
-    'Интеллект': 'intelligence',
-    'Подчинение': 'submission',
-}
-
-inventory = {
-    'Оружие': 'weapon',
-}
-
-
 async def distribution_menu(message: Message, state: FSMContext):
     data = await state.get_data()
     hero = data['hero']
@@ -76,7 +85,6 @@ async def distribution_menu(message: Message, state: FSMContext):
 
         await CharacterState.distribution.set()
         return await message.answer(f"Доступно {hero.free_stats} СО\nВведите количество:", reply_markup=back_kb)
-
 
 
 async def distribution(message: Message, state: FSMContext):
@@ -295,13 +303,16 @@ async def character_info_menu(message: Message, state: FSMContext):
                                     parse_mode='Markdown')
 
     if message.text == 'Раса':
-        return await message.answer(hero.info.race_info(), reply_markup=character_info_kb,
+        return await message.answer(hero.info.character_info('race'), reply_markup=character_info_kb,
+                                    parse_mode='Markdown')
+    if message.text == 'Класс':
+        return await message.answer(hero.info.character_info('class'), reply_markup=character_info_kb,
                                     parse_mode='Markdown')
 
     if message.text == '🔙 Назад':
         await LocationState.character.set()
         return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                                    parse_mode='')
+                                    parse_mode='Markdown')
 
 
 def character(dp: Dispatcher):
