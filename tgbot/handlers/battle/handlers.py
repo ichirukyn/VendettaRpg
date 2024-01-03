@@ -13,7 +13,10 @@ async def battle_handler_init(message: Message, state: FSMContext, ):
     engine = data['engine']
     logger = data['logger']
 
-    factory = BattleFactory(**engine_data)
+    config = message.bot.get('config')
+    is_dev = config.tg_bot.is_dev
+
+    factory = BattleFactory(is_dev=is_dev, **engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)
     ui.engine_data = engine_data
 

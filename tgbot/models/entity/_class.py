@@ -1,49 +1,44 @@
+from tgbot.api.class_ import fetch_class_bonuses
+from tgbot.api.class_ import get_class
 from tgbot.models.entity.effect import EffectFactory
+from tgbot.models.entity.effect import EffectParent
 
 
 class ClassFactory:
     @staticmethod
-    def create_class(hero, data, bonuses):
-        id = data['id']
-        name = data['name']
-        desc = data['desc']
-        main_attr = data['main_attr']
+    def create_class(entity, data, bonuses):
+        id = data.get('id', 1)
+        name = data.get('name', 'Мечник')
+        desc = data.get('desc', 'Мечник')
+        desc_short = data.get('desc_short', 'Мечник')
+        main_attr = data.get('main_attr', 'strength')
+        type = data.get('type', 'Воин')
 
-        _class = Class()
-        _class.init_class(hero, id, name, desc, bonuses, main_attr)
+        _class = Class(entity, id, name, desc, desc_short, bonuses, main_attr, type)
         return _class
 
 
-class Class:
-    hero = None
-    id = 0
-    name = ''
-    desc = ''
-    bonuses = []
-    effects = []
+class Class(EffectParent):
     main_attr = ''
 
-    def init_class(self, hero, id, name, desc, bonuses, main_attr):
-        self.hero = hero
+    def __init__(self, entity, id, name, desc, desc_short, bonuses, main_attr, type):
         self.id = id
         self.name = name
+        self.desc_short = desc_short
         self.desc = desc
+        self.entity = entity
+
         self.main_attr = main_attr
+        self.type = type
+
         self.bonuses = bonuses
         self.effects = []
 
-    def class_apply(self):
-        for bonus in self.bonuses:
-            self.effects.append(bonus)
-            bonus.apply(self.hero)
 
-        self.hero.active_bonuses.append(self)
-
-
-async def class_init(entity, id, db):
+def class_init(entity, id):
     try:
-        bonuses = await db.get_class_bonuses(id)
-        class_db = await db.get_class(id)
+        bonuses = fetch_class_bonuses(id)
+        class_db = get_class(id).json
 
         new_bonuses = []
 
@@ -54,7 +49,7 @@ async def class_init(entity, id, db):
         # print(_class.name)
 
         entity._class = _class
-        entity._class.class_apply()
+        entity._class.apply()
 
         return entity
     except KeyError:

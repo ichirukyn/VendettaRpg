@@ -4,12 +4,13 @@ from tgbot.models.entity._class import class_init
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import race_init
 from tgbot.models.entity.skill import skills_init
+from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
 
 class EnemyFactory:
     @staticmethod
-    def create_enemy(data, _class):
+    def create_enemy(data):
         enemy = {
             'entity_id': data['id'],
             'name': data['name'],
@@ -37,21 +38,56 @@ class Enemy(Entity):
                          submission, crit_rate, crit_damage, resist)
         self.techniques = []
 
-    def select_target(self, team):
-        if len(team) > 0:
-            self.target = min(team, key=lambda x: x.hp)
+    def select_enemy(self, enemy_team):
+        if len(enemy_team) > 0:
+            self.target = min(enemy_team, key=lambda x: x.hp)
         else:
-            self.target = team[0]
+            self.target = enemy_team[0]
+
+    def select_target(self, teammates, enemies):
+        if self.technique_target() == 'my':
+            self.target = self
+
+        elif self.technique_target() == 'enemy':
+            self.select_enemy(enemies)
+
+        elif self.technique_target() == 'enemies':
+            self.target = enemies
+
+        elif self.technique_target() == 'teammate':
+            self.select_enemy(teammates)
+
+        elif self.technique_target() == 'teammates':
+            self.target = teammates
 
     def choice_technique(self):
-        self.technique_damage = choice(self.techniques)
+        check_list = []
+
+        for tech in self.techniques:
+            root_tech_check = tech.distance != 'distant' or tech.type == 'support'
+
+            if not self.debuff_control_check('turn') and not root_tech_check:
+                continue
+
+            if not tech.is_activated() or tech.is_stack:
+                check_list.append(tech)
+
+        if len(check_list) == 0:
+            self.action = 'Пас'
+            return
+
+        tech = choice(self.techniques)
+        self.technique = tech
+        # Deprecated
+        self.technique_damage = tech.damage
 
     def define_action(self):
+        # TODO: Расширить проверку и отдельно вывести переменную для сложных нпс (== 4, а не 0, например)
         if len(self.active_bonuses) == 0 and len(self.skills) != 0:
             self.select_skill = choice(self.skills)
-            self.action = 'Навыки'
+            self.action = 'Заклинания'
         else:
-            self.action = 'Атака'
+            self.action = 'Техника'
 
     def define_sub_action(self, team):
         if len(team) > 1:
@@ -81,23 +117,25 @@ async def init_enemy(db: DBCommands, enemy_id) -> Enemy:
     stats_db = await db.get_enemy_stats(enemy_id)
     skills = await db.get_enemy_skills(enemy_id)
 
-    techniques = await db.get_enemy_techniques(enemy_id)
     enemy_weapon = await db.get_enemy_weapon(enemy_id)
     weapon = await db.get_weapon(enemy_weapon['weapon_id'])
 
-    class_db = await db.get_class(stats_db['class_id'])
-
-    enemy = EnemyFactory.create_enemy(stats_db, class_db)
+    enemy = EnemyFactory.create_enemy(stats_db)
     enemy.lvl = stats_db['lvl']
 
     enemy = await skills_init(enemy, skills, db)
     enemy.add_weapon(weapon, enemy_weapon['lvl'])
     enemy.update_stats_all()
 
-    enemy.techniques = [technique['damage'] for technique in techniques]
+    enemy.techniques = []
+    technique_db = await db.get_enemy_techniques(enemy_id)
 
-    enemy = await race_init(enemy, stats_db['race_id'], db)
-    enemy = await class_init(enemy, stats_db['class_id'], db)
+    for tech in technique_db:
+        technique_bonuses = await db.get_technique_bonuses(tech['technique_id'])
+        enemy = technique_init(enemy, tech, technique_bonuses)
+
+    enemy = race_init(enemy, stats_db['race_id'])
+    enemy = class_init(enemy, stats_db['class_id'])
 
     return enemy
 

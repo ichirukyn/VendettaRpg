@@ -59,10 +59,15 @@ async def main():
     config = load_config(".env")
 
     storage = RedisStorage2() if config.tg_bot.use_redis else MemoryStorage()
-    bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
+    bot = Bot(token=config.tg_bot.token, parse_mode='Markdown')
     dp: Dispatcher = Dispatcher(bot, storage=storage)
 
     db = await create_pool(config)
+
+    # Пример как подключить к боту SqlAlchemyORM
+    # engine = create_async_engine("postgresql+asyncpg://vendetta:vendetta@localhost:5432/vendetta", echo=True)
+    # async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    # bot['db_new'] = async_session()
 
     bot['config'] = config
     bot['db'] = db

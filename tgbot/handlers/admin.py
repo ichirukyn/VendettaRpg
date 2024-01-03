@@ -3,6 +3,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
 from tgbot.keyboards.reply import admin_kb, admin_hero_stats_kb, back_kb, admin_update_kb
+from tgbot.misc.locale import keyboard
 from tgbot.misc.state import AdminState
 from tgbot.models.user import DBCommands
 
@@ -30,7 +31,7 @@ async def admin_main(message: Message, state: FSMContext):
 
 
 async def admin_hero_id(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await AdminState.main.set()
         return await message.answer('Админ панель v0.0.0:', reply_markup=back_kb)
 
@@ -45,7 +46,7 @@ async def admin_hero_id(message: Message, state: FSMContext):
 
 
 async def admin_hero_stats(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await AdminState.main.set()
         return await message.answer('Админ панель v0.0.0:', reply_markup=back_kb)
 
@@ -60,7 +61,7 @@ async def admin_hero_stats(message: Message, state: FSMContext):
 
 
 async def admin_value(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await AdminState.hero_id.set()
         return await message.answer('Введите id игрока:', reply_markup=back_kb)
 

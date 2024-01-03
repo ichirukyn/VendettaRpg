@@ -2,12 +2,14 @@ from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
+from tgbot.config import Config
 from tgbot.handlers.battle.interface import BattleFactory
 from tgbot.keyboards.reply import arena_type_kb
 from tgbot.keyboards.reply import home_kb
 from tgbot.misc.hero import init_hero
 from tgbot.misc.hero import init_team
 from tgbot.misc.hero import leader_on_team
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import ArenaState
 from tgbot.misc.state import LocationState
@@ -15,7 +17,7 @@ from tgbot.models.user import DBCommands
 
 
 async def arena_select_type(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await LocationState.arena.set()
         return await message.answer(locale['arena'], reply_markup=arena_type_kb)
 
@@ -87,7 +89,10 @@ async def arena_team_battle(message: Message, state: FSMContext):
     db = DBCommands(message.bot.get('db'))
     dp = message.bot.get('dp')
 
-    factory = BattleFactory(enemy_team, player_team, LocationState.home, '', home_kb)
+    config = message.bot.get('config')
+    is_dev = config.tg_bot.is_dev
+
+    factory = BattleFactory(enemy_team, player_team, LocationState.home, '', home_kb, is_dev)
 
     engine = factory.create_battle_engine()
     logger = factory.create_battle_logger()

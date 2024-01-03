@@ -27,8 +27,8 @@ class EntityLevel:
     def init_level(self, data):
         self.lvl = data['lvl']
         self.exp = data['exp']
-        self.exp_to_lvl = data['exp_to_lvl']
-        self.exp_total = data['exp_total']
+        self.exp_to_lvl = data['level']['exp_to_lvl']
+        self.exp_total = data['level']['exp_total']
         self.exp_now = self.exp - (self.exp_total - self.exp_to_lvl)
 
     def check_lvl_up(self):

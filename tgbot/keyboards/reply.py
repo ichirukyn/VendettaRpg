@@ -2,85 +2,77 @@ from aiogram.types import KeyboardButton
 from aiogram.types import ReplyKeyboardMarkup
 from more_itertools import chunked
 
+from tgbot.misc.locale import keyboard
 from tgbot.models.entity.enemy import Enemy
 from tgbot.models.entity.hero import Hero
 
 # Home
 entry_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="Начать")]],
+    keyboard=[[KeyboardButton(text=keyboard['start'])]],
     resize_keyboard=True)
 
 back_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="🔙 Назад")]],
+    keyboard=[[KeyboardButton(text=keyboard['start'])]],
     resize_keyboard=True)
 
 next_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Продолжить")],
+        [KeyboardButton(text=keyboard['next'])],
     ],
     resize_keyboard=True)
 
 home_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="🚪 Локации")],
-        [KeyboardButton(text="👤 Персонаж")],
-        [KeyboardButton(text="🔝 Топ")],
+        [KeyboardButton(text=keyboard['location'])],
+        [KeyboardButton(text=keyboard['character'])],
+        [KeyboardButton(text=keyboard['top'])],
     ],
     resize_keyboard=True)
 
 town_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="🛕 Небесная башня"), KeyboardButton(text="🏟 Арена")],
-        [KeyboardButton(text="🕘 Тренировочная зона"), KeyboardButton(text="🔰 Команды")],
-        [KeyboardButton(text="🧺 Торговая лавка")],
-        [KeyboardButton(text="🔙 Назад")],
+        [KeyboardButton(text=keyboard['tower']), KeyboardButton(text=keyboard['arena'])],
+        [KeyboardButton(text=keyboard['training']), KeyboardButton(text=keyboard['team'])],
+        [KeyboardButton(text=keyboard['shop'])],
+        [KeyboardButton(text=keyboard['back'])],
     ],
     resize_keyboard=True)
 
 confirm_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Да")],
-        [KeyboardButton(text="🔙 Назад")],
+        [KeyboardButton(text=keyboard['yes'])],
+        [KeyboardButton(text=keyboard['back'])],
     ],
     resize_keyboard=True)
 
 # Battle
 battle_start_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="В бой")],
-        [KeyboardButton(text="🔙 Назад")],
+        [KeyboardButton(text=keyboard['battle_start'])],
+        [KeyboardButton(text=keyboard['back'])],
     ],
     resize_keyboard=True)
 
 battle_main_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Атака"), KeyboardButton(text="Навыки")],
-        [KeyboardButton(text="Пас")],
+        [KeyboardButton(text=keyboard['technique_list']), KeyboardButton(text=keyboard['spell_list'])],
+        [KeyboardButton(text=keyboard['pass'])],
     ],
     resize_keyboard=True)
 
 battle_sub_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Уворот"), KeyboardButton(text="Защита")],
-        [KeyboardButton(text="Контрудар"), KeyboardButton(text="Сбежать")],
-    ],
-    resize_keyboard=True)
-
-skill_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="Тэн"), KeyboardButton(text="Эн")],
-        [KeyboardButton(text="Кэн"), KeyboardButton(text="Гё")],
-        [KeyboardButton(text="Шу"), KeyboardButton(text="Рю")],
-        [KeyboardButton(text="🔙 Назад")],
+        [KeyboardButton(text=keyboard['evasion']), KeyboardButton(text=keyboard['defense'])],
+        [KeyboardButton(text=keyboard['contr_strike']), KeyboardButton(text=keyboard['escape'])],
     ],
     resize_keyboard=True)
 
 battle_revival_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="Возрождение")]],
+    keyboard=[[KeyboardButton(text=keyboard['reborn'])]],
     resize_keyboard=True)
 
 battle_end_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="Домой")]],
+    keyboard=[[KeyboardButton(text=keyboard['home'])]],
     resize_keyboard=True)
 
 
@@ -95,7 +87,7 @@ def list_kb(lists, columns=2, is_back=True):
 
         kb.append(row)
     if is_back:
-        kb.append([KeyboardButton(text="🔙 Назад")])
+        kb.append([KeyboardButton(text=keyboard['back'])])
 
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
@@ -111,7 +103,7 @@ def list_object_kb(lists, columns=2):
 
         kb.append(row)
 
-    kb.append([KeyboardButton(text="🔙 Назад")])
+    kb.append([KeyboardButton(text=keyboard['back'])])
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
 
@@ -133,44 +125,34 @@ def arena_kb(lists, columns=2):
 
         kb.append(row)
 
-    kb.append([KeyboardButton(text="🔙 Назад")])
+    kb.append([KeyboardButton(text=keyboard['back'])])
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
 
 arena_type_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Одиночный бой"), KeyboardButton(text="Командный бой")],
-        [KeyboardButton(text="🔙 Назад")]
-    ],
-
-    resize_keyboard=True)
-
-# Character
-character_train_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        # [KeyboardButton(text="Обычная тренировка"), KeyboardButton(text="Усиленная тренировка")],
-        [KeyboardButton(text="Обычная тренировка")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['battle_solo']), KeyboardButton(text=keyboard['battle_group'])],
+        [KeyboardButton(text=keyboard['back'])]
     ],
 
     resize_keyboard=True)
 
 character_distribution_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Сила"), KeyboardButton(text="Здоровье")],
-        [KeyboardButton(text="Ловкость"), KeyboardButton(text="Скорость")],
-        [KeyboardButton(text="Интеллект"), KeyboardButton(text="Дух")],
-        [KeyboardButton(text="Подчинение"), KeyboardButton(text="Меткость")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['strength']), KeyboardButton(text=keyboard['health'])],
+        [KeyboardButton(text=keyboard['speed']), KeyboardButton(text=keyboard['dexterity'])],
+        [KeyboardButton(text=keyboard['accuracy']), KeyboardButton(text=keyboard['soul'])],
+        [KeyboardButton(text=keyboard['intelligence']), KeyboardButton(text=keyboard['submission'])],
+        [KeyboardButton(text=keyboard['back'])]
     ],
     resize_keyboard=True)
 
 character_info_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Статус")],
-        [KeyboardButton(text="Полный статус"), KeyboardButton(text="Чистый статус")],
-        [KeyboardButton(text="Раса"), KeyboardButton(text="Класс")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['status']), KeyboardButton(text=keyboard['statistic'])],
+        [KeyboardButton(text=keyboard['status_full']), KeyboardButton(text=keyboard['status_flat'])],
+        [KeyboardButton(text=keyboard['race']), KeyboardButton(text=keyboard['class'])],
+        [KeyboardButton(text=keyboard['back'])]
     ],
 
     resize_keyboard=True)
@@ -178,14 +160,13 @@ character_info_kb = ReplyKeyboardMarkup(
 
 def character_kb(free_stats=0):
     kb = [
-        [KeyboardButton(text="📊 Информация")],
-        # [KeyboardButton(text="Тренировка"), KeyboardButton(text="🏵 Мастерство")],
-        [KeyboardButton(text="🧤 Экипировка"), KeyboardButton(text="👝 Инвентарь")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['info'])],
+        [KeyboardButton(text=keyboard['equipment']), KeyboardButton(text=keyboard['inventory'])],
+        [KeyboardButton(text=keyboard['back'])]
     ]
 
     if free_stats > 0:
-        kb.insert(0, [KeyboardButton(text="🎓 Распределение СО")])
+        kb.insert(0, [KeyboardButton(text=keyboard['distribution'])])
 
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
@@ -193,9 +174,8 @@ def character_kb(free_stats=0):
 # Equip
 equip_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Текущее оружие")],
-        [KeyboardButton(text="Артефакты (В разработке)")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['weapon_current'])],
+        [KeyboardButton(text=keyboard['back'])]
     ],
 
     resize_keyboard=True)
@@ -203,8 +183,8 @@ equip_kb = ReplyKeyboardMarkup(
 # Inventory
 inventory_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Оружие")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['weapon'])],
+        [KeyboardButton(text=keyboard['back'])]
     ],
 
     resize_keyboard=True)
@@ -212,39 +192,17 @@ inventory_kb = ReplyKeyboardMarkup(
 # Shop
 buy_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Купить всё")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['buy_all'])],
+        [KeyboardButton(text=keyboard['back'])]
     ],
 
-    resize_keyboard=True)
-
-# Hunt
-hunt_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="Зона охоты")],
-        [KeyboardButton(text="Дневник охотника (Не доступен)")],
-        [KeyboardButton(text="🔙 Назад")],
-    ],
-    resize_keyboard=True)
-
-hunting_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="Продолжить")],
-    ],
-    resize_keyboard=True)
-
-hunt_action_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="Привал"), KeyboardButton(text="Идти дальше")],
-        [KeyboardButton(text="Покинуть лес")],
-    ],
     resize_keyboard=True)
 
 # Admin
 admin_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Изменить характеристику"), KeyboardButton(text="Изменить персонажа")],
-        [KeyboardButton(text="Домой")],
+        [KeyboardButton(text=keyboard['home'])]
     ],
     resize_keyboard=True)
 
@@ -253,28 +211,28 @@ admin_hero_stats_kb = ReplyKeyboardMarkup(
         [KeyboardButton(text="Сила"), KeyboardButton(text="Контроль")],
         [KeyboardButton(text="Скорость"), KeyboardButton(text="Здоровье")],
         [KeyboardButton(text="Свободные очки"), KeyboardButton(text="Очки охоты")],
-        [KeyboardButton(text="🔙 Назад")]
+        [KeyboardButton(text=keyboard['back'])]
     ],
     resize_keyboard=True)
 
 admin_update_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Продолжить")],
-        [KeyboardButton(text="Отмена")]
+        [KeyboardButton(text=keyboard['next'])],
+        [KeyboardButton(text=keyboard['cancel'])],
     ],
     resize_keyboard=True)
 
 # Team
 team_accept_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Принять")],
-        [KeyboardButton(text="Отклонить")]
+        [KeyboardButton(text=keyboard['accept'])],
+        [KeyboardButton(text=keyboard['declined'])]
     ],
     resize_keyboard=True)
 
 team_private_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Да")],
-        [KeyboardButton(text="Нет")]
+        [KeyboardButton(text=keyboard['yes'])],
+        [KeyboardButton(text=keyboard['no'])]
     ],
     resize_keyboard=True)

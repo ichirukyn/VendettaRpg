@@ -1,19 +1,31 @@
+from tgbot.api.hero import get_hero
+from tgbot.api.hero import get_hero_lvl
+from tgbot.api.hero import get_hero_stats
+from tgbot.api.statistic import get_statistic
+from tgbot.api.user import get_user_chat_id
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.hero import Hero
 from tgbot.models.entity.hero import HeroFactory
 from tgbot.models.entity.race import race_init
 from tgbot.models.entity.skill import skills_init
+from tgbot.models.entity.statistic import Statistic
+from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
 
 async def init_hero(db: DBCommands, user_id=None, hero_id=None, is_full=True) -> Hero:
     if user_id is not None:
-        hero_id = await db.get_hero_id(user_id)
+        hero_db = get_hero(0, user_id)
+        hero_db = hero_db.json
+        hero_id = hero_db['id']
+    else:
+        hero_db = get_hero(hero_id, None).json
 
-    hero_db = await db.get_heroes(hero_id)
+    chat_id = get_user_chat_id(int(hero_db['user_id']))
+    hero_db['chat_id'] = chat_id
 
-    stats_db = await db.get_hero_stats(hero_id)
-    hero_lvl = await db.get_hero_lvl(hero_id)
+    stats_db = get_hero_stats(hero_id)
+    hero_lvl = get_hero_lvl(hero_id).json
 
     hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db)
     hero.flat_init()
@@ -21,21 +33,33 @@ async def init_hero(db: DBCommands, user_id=None, hero_id=None, is_full=True) ->
     hero.init_level(hero_lvl)
 
     if is_full:
-        await full_init_hero(db, hero_id, hero, hero_db)
+        hero = await full_init_hero(db, hero_id, hero, hero_db)
 
     return hero
 
 
 async def full_init_hero(db, hero_id, hero, hero_db):
     team_db = await db.get_hero_team(hero_id)
+    statistic_db = get_statistic(hero_id).json
 
     skills = await db.get_hero_skills(hero_id)
 
     hero_weapon = await db.get_hero_weapons(hero_id)
     weapon = await db.get_weapon(hero_weapon['weapon_id'])
 
-    hero = await race_init(hero, hero_db['race_id'], db)
-    hero = await class_init(hero, hero_db['class_id'], db)
+    hero.active_bonuses = []
+    hero = race_init(hero, hero_db['race_id'])
+    hero = class_init(hero, hero_db['class_id'])
+
+    hero.techniques = []
+    technique_db = await db.get_hero_techniques(hero.id)
+
+    hero.statistic = Statistic()
+    hero.statistic.init_from_db(statistic_db)
+
+    for tech in technique_db:
+        technique_bonuses = await db.get_technique_bonuses(tech['technique_id'])
+        hero = technique_init(hero, tech, technique_bonuses)
 
     if skills:
         hero = await skills_init(hero, skills, db)
@@ -49,6 +73,8 @@ async def full_init_hero(db, hero_id, hero, hero_db):
         if team_db['is_leader']:
             hero.name = f' {hero.name}'
             hero.is_leader = True
+
+    return hero
 
 
 async def init_team(db, team, hero=None):

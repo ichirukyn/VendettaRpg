@@ -5,7 +5,10 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
+from tgbot.api.statistic import statistics_to_json
+from tgbot.api.statistic import update_statistic
 from tgbot.handlers.battle.hook import BattleEngine
+from tgbot.handlers.battle.hook import BattleLogger
 from tgbot.keyboards.reply import arena_kb
 from tgbot.keyboards.reply import battle_main_kb
 from tgbot.keyboards.reply import battle_revival_kb
@@ -15,42 +18,12 @@ from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import list_kb
 from tgbot.keyboards.reply import list_object_kb
 from tgbot.keyboards.reply import next_kb
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
-from tgbot.misc.other import formatted
 from tgbot.misc.state import BattleState
 from tgbot.misc.state import LocationState
 from tgbot.models.entity.hero import Hero
 from tgbot.models.user import DBCommands
-
-
-class BattleLogger:
-    def __init__(self):
-        self.loss = "Ты проиграл и в последствие был убит."
-
-    @staticmethod
-    def enemys_log(order, hero):
-        logs = ''
-
-        for entity in order:
-            if entity.name != hero.name:
-                logs += f"*{entity.name}: \n❤️ {formatted(entity.hp)}  🛡{formatted(entity.durability)}\n\n*"
-            elif isinstance(entity, Hero):
-                logs += f"*🌟 {hero.name}: \n❤️ {formatted(hero.hp)}  🛡{formatted(hero.durability)}\n*" \
-                        f"*🔹{formatted(hero.mana_max)}/{formatted(hero.mana)}*\n" \
-                        f"*{hero.info.active_bonuses()}*\n\n"
-
-        return logs
-
-    @staticmethod
-    def battle_order(order):
-        response = "Последовательность действий:\n"
-
-        i = 1
-        for e in order:
-            response += f"{i}. {e.name}\n"
-            i += 1
-
-        return response
 
 
 class BattleInterface:
@@ -78,6 +51,12 @@ class BattleInterface:
         data = await self.state.get_data()
         order_index = data.get('order_index')
         order = data.get('order')
+
+        if order_index is None:
+            order_index = self.engine.order_index
+
+        if order is None:
+            order = self.engine.order
 
         if order_index == len(order) - 1:
             await self.save_battle('order_index', 0)
@@ -112,12 +91,14 @@ class BattleInterface:
     async def battle(self):
         order, entity, who, i, log = self.engine.battle()
 
-        if log is not None:
+        if log is not None and entity.debuff_control_check('move'):
             if isinstance(entity, Hero):
                 await self.set_state(entity.chat_id, BattleState.load)
 
             await self.send_all(entity, log, log, None, next_kb)
             order, entity, who, i, log = self.engine.battle()
+        elif log is not None:
+            await self.send_all(entity, log, log, None, next_kb)
 
         if who == 'hero':
             self.handler_user_turn_start(order, entity)
@@ -210,6 +191,7 @@ class BattleInterface:
         # TODO: Добавить подтверждение
         if message.text == 'Сбежать':
             hero.hp = 0
+            hero.statistic.escape_count += 1
 
             await state.update_data(hero=hero)
 
@@ -230,8 +212,8 @@ class BattleInterface:
         data = await state.get_data()
         hero = data.get('hero')
 
-        if message.text == 'Атака':
-            hero.action = 'Атака'
+        if message.text == 'Техника':
+            hero.action = 'Техника'
             await self.state.update_data(hero=hero)
 
             techniques = await self.db.get_hero_techniques(hero.id)
@@ -240,8 +222,8 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.select_technique)
             await message.answer('Выбери технику:', reply_markup=kb)
 
-        elif message.text == 'Навыки':
-            hero.action = 'Навыки'
+        elif message.text == 'Заклинания':
+            hero.action = 'Заклинания'
             await self.state.update_data(hero=hero)
 
             kb = list_object_kb(hero.skills)
@@ -261,7 +243,7 @@ class BattleInterface:
         data = await state.get_data()
         hero = data.get('hero')
 
-        if message.text == '🔙 Назад':
+        if message.text == keyboard["back"]:
             await self.set_state(hero.chat_id, BattleState.user_turn)
             return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
@@ -283,7 +265,7 @@ class BattleInterface:
         text = ''
         kb = []
 
-        if message.text == '🔙 Назад':
+        if message.text == keyboard["back"]:
             text = 'Выбери навык:'
             is_return = True
             kb = list_object_kb(hero.skills)
@@ -305,19 +287,28 @@ class BattleInterface:
         data = await state.get_data()
         hero = data.get('hero')
 
-        if message.text == '🔙 Назад':
+        if message.text == keyboard["back"]:
             await self.set_state(hero.chat_id, BattleState.user_turn)
             return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
-        techniques = await self.db.get_hero_techniques(hero.id)
+        for technique in hero.techniques:
+            if message.text in technique.name:
+                root_check = technique.distance != 'distant' or technique.type == 'support'
 
-        for technique in techniques:
-            if message.text in technique['name']:
-                hero.technique_name = technique['name']
-                hero.technique_damage = technique['damage']
-                await self.update_data(hero.chat_id, 'hero', hero)
+                if not hero.debuff_control_check('turn') and not root_check:
+                    text = f'Вы под эффектом контроля и не можете применить {technique.name}'
+                    await self.set_state(hero.chat_id, BattleState.user_turn)
+                    return await message.answer(text, reply_markup=battle_main_kb)
 
-                await self.handler_select_target(message, state)
+                if technique.check():
+                    hero.technique = technique
+                    await self.update_data(hero.chat_id, 'hero', hero)
+
+                    await self.handler_select_target(message, state)
+                else:
+                    text = f'Техника {technique.name} была активирована ранее (КД - {technique.cooldown} хода)'
+                    await self.set_state(hero.chat_id, BattleState.user_turn)
+                    return await message.answer(text, reply_markup=battle_main_kb)
 
     async def process_battle_action(self, hero, target):
         action_result = self.engine.battle_action(hero, target, hero.select_skill)
@@ -334,8 +325,8 @@ class BattleInterface:
 
                 await self.send_all(hero, action_result['log'], action_result['log'], None, battle_sub_kb)
 
-                await self.check_hp()
                 await self.save_battle()
+                await self.check_hp()
             else:
                 await self.send_all(hero, action_result['log'], action_result['log'], None, None)
                 await self.save_battle()
@@ -349,21 +340,45 @@ class BattleInterface:
         data = await state.get_data()
         hero = data.get('hero')
 
-        # Противники текущего существа, а не команда нпс
-        target_enemy_team = self.engine.target_enemy_team(hero)
+        target_team = None
+        text = ''
+        target = hero.technique_target()
 
-        text = 'Выбери противника:'
-        kb = arena_kb(target_enemy_team)
-        await self.update_data(hero.chat_id, 'target_enemy_team', target_enemy_team)
+        if target == 'my':
+            return await self.process_battle_action(hero, hero)
 
-        await self.set_state(hero.chat_id, BattleState.select_target)
-        await message.answer(text, reply_markup=kb)
-        await self.save_battle()
+        elif target == 'enemy':
+            text = 'Выбери противника:'
+            target_team = self.engine.target_enemy_team(hero)
+
+        elif target == 'enemies':
+            target_enemy_team = self.engine.target_enemy_team(hero)
+            return await self.process_battle_action(hero, target_enemy_team)
+
+        elif target == 'teammate':
+            text = 'Выбери союзника:'
+            target_team = self.engine.target_teammate_team(hero)
+
+        elif target == 'teammates':
+            target_teammate_team = self.engine.target_teammate_team(hero)
+            return await self.process_battle_action(hero, target_teammate_team)
+
+        if target_team is not None:
+            kb = arena_kb(target_team)
+            await self.update_data(hero.chat_id, 'target_team', target_team)
+
+            await self.set_state(hero.chat_id, BattleState.select_target)
+            await message.answer(text, reply_markup=kb)
+            await self.save_battle()
 
     async def process_select_target(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
-        target_enemy_team = data.get('target_enemy_team')
+        target_enemy_team = data.get('target_team')
+
+        if message.text == keyboard["back"]:
+            await self.set_state(hero.chat_id, BattleState.user_turn)
+            return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
         for e in target_enemy_team:
             if message.text.strip(' ') == e.name.strip(' '):
@@ -374,7 +389,7 @@ class BattleInterface:
         asyncio.create_task(self.handler_battle_end(order, team_win))
 
     async def handler_battle_end(self, order, team_win):
-        for e in order:
+        for e in self.engine.order:
             log = 'Вы проиграли..'
             kb = battle_revival_kb
             state = BattleState.revival
@@ -389,7 +404,14 @@ class BattleInterface:
                         teammate_count = len(order) - len(team_win)
                         print('teammate_count', teammate_count)
                         mod = teammate_count / 10
+
                         log += await self.battle_reward(e, mod, teammate_count)
+
+                if isinstance(e, Hero) and self.engine.is_dev:
+                    log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
+                    e.statistic.battle_update(e.statistic.battle)
+                    statistics = statistics_to_json(e.statistic)
+                    update_statistic(statistics, e.id)
 
                 if isinstance(e, Hero) and e.sub_action != 'Сбежать':
                     await self.set_state(e.chat_id, state)
@@ -447,21 +469,21 @@ class BattleInterface:
 
 
 class BattleFactory:
-    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb):
+    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb, is_dev=False):
         self.enemy_team = enemy_team
         self.player_team = player_team
 
         self.exit_state = exit_state
         self.exit_message = exit_message
         self.exit_kb = exit_kb
+        self.is_dev = is_dev
 
     def create_battle_engine(self):
         return BattleEngine(self.enemy_team, self.player_team, self.exit_state, self.exit_message,
-                            self.exit_kb)
+                            self.exit_kb, self.is_dev)
 
-    @staticmethod
-    def create_battle_logger():
-        return BattleLogger()
+    def create_battle_logger(self):
+        return BattleLogger(self.is_dev)
 
     @staticmethod
     def create_battle_interface(message, state, db, engine, logger):

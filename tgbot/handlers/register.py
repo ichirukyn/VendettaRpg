@@ -3,11 +3,14 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
+from tgbot.api.race import fetch_race
+from tgbot.api.user import get_user
 from tgbot.keyboards.reply import confirm_kb
 from tgbot.keyboards.reply import entry_kb
 from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import list_kb
 from tgbot.misc.hero import init_hero
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import LocationState
 from tgbot.misc.state import RegState
@@ -64,7 +67,7 @@ async def select_race(message: Message, state: FSMContext):
 
     race_name = message.text
     race_bd = await db.get_races()
-
+    # TODO: Проверить race_name, ничего ли не сломалось
     for race in race_bd:
         if race['name'] == race_name:
             await state.update_data(select_race=race['id'])
@@ -81,7 +84,7 @@ async def select_race(message: Message, state: FSMContext):
 async def select_class(message: Message, state: FSMContext):
     db = DBCommands(message.bot.get('db'))
 
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         races = await db.get_races()
         kb = list_kb(races, is_back=False)
 
@@ -111,7 +114,7 @@ async def select_class_confirm(message: Message, state: FSMContext):
     data = await state.get_data()
     race_id = data.get('select_race')
 
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         classes = await db.get_race_classes(race_id)
         kb = list_kb(classes)
 
@@ -128,17 +131,19 @@ async def entry_point(message: Message, state: FSMContext):
     chat_id = message.chat.id
     print('chat_id: ', chat_id)
 
-    user = await db.get_user_id(chat_id)
+    user = get_user(chat_id)
+    print(user.json['login'])
 
-    if user is None or len(user) == 0:
-        races = await db.get_races()
+    if user is None:
+        races = fetch_race()
+        # TODO: Проверить регистрацию
         kb = list_kb(races, is_back=False)
 
         await RegState.select_race.set()
         return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
     else:
-        hero = await init_hero(db, user_id=user['id'])
+        hero = await init_hero(db, user_id=user.json['id'])
         print(f"hero_id: {hero.id}")
 
         await state.update_data(hero=hero)
@@ -149,7 +154,7 @@ async def entry_point(message: Message, state: FSMContext):
         return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
 
 
-async def started(message: Message, state: FSMContext):
+async def started(message: Message):
     db = DBCommands(message.bot.get('db'))
 
     users = await db.get_users()
@@ -161,7 +166,7 @@ async def started(message: Message, state: FSMContext):
 
 
 # Сброс ОС в СО
-async def change_os_to_so(message: Message, state: FSMContext):
+async def change_os_to_so(message: Message):
     db = DBCommands(message.bot.get('db'))
 
     users = await db.get_users()
@@ -185,8 +190,29 @@ async def change_os_to_so(message: Message, state: FSMContext):
             await db.update_hero_stat('free_stats', new_so, hero_id)
 
 
+async def deactivate(message: Message, state: FSMContext):
+    data = await state.get_data()
+    hero = data.get('hero')
+
+    attr = []
+
+    print('До')
+    for effect in hero.active_bonuses[1].effects:
+        print(f"{effect.name} - {effect.value} ({hero.__getattribute__(effect.attribute)})")
+        attr.append(effect.attribute)
+
+    print('')
+    # hero.active_bonuses[1].deactivate()
+
+    print('')
+    print('После')
+    for a in attr:
+        print(f"{a} - {hero.__getattribute__(a)}")
+
+
 def start(dp: Dispatcher):
     dp.register_message_handler(started, commands=["started"])
+    dp.register_message_handler(deactivate, commands=["deactivate"], state='*')
     dp.register_message_handler(entry_point, commands=["start"], state='*')
     dp.register_message_handler(entry_point, state=RegState.entry)
     dp.register_message_handler(register_user, state=RegState.user_name)

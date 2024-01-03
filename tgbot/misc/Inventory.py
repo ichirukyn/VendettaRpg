@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from tgbot.misc.locale import keyboard
 from tgbot.models.user import DBCommands
 
 
@@ -32,12 +33,12 @@ class WeaponItem(Item):
         if self.is_equip:
             kb.add(
                 InlineKeyboardButton(text='Снять', callback_data='Снять'),
-                InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад')
+                InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
             )
         else:
             kb.add(
                 InlineKeyboardButton(text='Экипировать', callback_data='Экипировать'),
-                InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад')
+                InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
             )
 
         return {

@@ -19,11 +19,11 @@ from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import inventory_kb
 from tgbot.keyboards.reply import team_accept_kb
 from tgbot.keyboards.reply import town_kb
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
 from tgbot.misc.state import ArenaState
 from tgbot.misc.state import CharacterState
-from tgbot.misc.state import HuntState
 from tgbot.misc.state import LocationState
 from tgbot.misc.state import ShopState
 from tgbot.misc.state import TeamState
@@ -33,14 +33,14 @@ from tgbot.models.user import DBCommands
 
 
 async def location_main_select(message: Message, state: FSMContext):
-    if message.text == '🚪 Локации':
+    if message.text == keyboard['location']:
         await LocationState.town.set()
         return await message.answer(locale['town'], reply_markup=town_kb)
 
-    elif message.text == '👤 Персонаж':
+    elif message.text == keyboard['character']:
         await location_character(message, state)
 
-    elif message.text == '🔝 Топ':
+    elif message.text == keyboard['top']:
         await LocationState.top.set()
         await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
         await message.answer(locale['top'], reply_markup=top_inline)
@@ -49,10 +49,10 @@ async def location_main_select(message: Message, state: FSMContext):
 async def location_town(message: Message, state: FSMContext):
     data = await state.get_data()
 
-    if message.text == '🛕 Небесная башня':
+    if message.text == keyboard['tower']:
         return await location_tower(message, state)
 
-    if message.text == '🏟 Арена':
+    if message.text == keyboard['arena']:
         try:
             pvp_hero = data['pvp_hero']
 
@@ -65,7 +65,7 @@ async def location_town(message: Message, state: FSMContext):
         await LocationState.arena.set()
         await message.answer(locale['arena'], reply_markup=arena_type_kb)
 
-    if message.text == '🔰 Команды':
+    if message.text == keyboard['team']:
         invite_team_id = data.get('invite_team_id')
         if invite_team_id is not None:
             await TeamState.accept_invite.set()
@@ -78,10 +78,10 @@ async def location_town(message: Message, state: FSMContext):
 
         await to_team_main(message, state)
 
-    if message.text == '🕘 Тренировочная зона':
+    if message.text == keyboard['training']:
         await message.answer('В разработке...\nПланируется манекен, которого можно будет пинать, для теста урона')
 
-    if message.text == '🧺 Торговая лавка':
+    if message.text == keyboard['shop']:
         db = DBCommands(message.bot.get('db'))
         items = await db.get_trader_items(1)
 
@@ -91,21 +91,21 @@ async def location_town(message: Message, state: FSMContext):
         await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
         return await message.answer(locale['shop'], reply_markup=kb)
 
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         return await to_home(message)
 
 
 async def location_arena(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await LocationState.town.set()
         return await message.answer(locale['town'], reply_markup=town_kb)
 
-    if message.text == 'Командный бой':
+    if message.text == keyboard['battle_solo']:
         await state.update_data(pvp_type='team')
         await ArenaState.select_type.set()
         return await message.answer(f'Введите ID команды:', reply_markup=back_kb)
 
-    if message.text == 'Одиночный бой':
+    if message.text == keyboard['battle_group']:
         await state.update_data(pvp_type='solo')
         await ArenaState.select_type.set()
         return await message.answer(f'Введите ID игрока:', reply_markup=back_kb)
@@ -115,7 +115,7 @@ async def location_team(cb: CallbackQuery, state: FSMContext):
     db = DBCommands(cb.message.bot.get('db'))
     data = await state.get_data()
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await LocationState.town.set()
         await cb.message.delete()
         return await cb.message.answer(locale['town'], reply_markup=town_kb)
@@ -168,56 +168,38 @@ async def location_tower(message: Message, state: FSMContext):
     await message.answer(locale['tower'], reply_markup=kb)
 
 
-async def location_hunt(cb: CallbackQuery, state: FSMContext):
-    if cb.data == 'Зона охоты':
-        db = DBCommands(cb.message.bot.get('db'))
-
-        locations = await db.get_hunt_locations()
-        kb = list_inline(locations)
-
-        await HuntState.select_location.set()
-
-        await cb.message.edit_text(locale['hunt'], reply_markup=kb)
-
-    elif cb.data == 'Дневник охотника':
-        pass
-
-    elif cb.data == '🔙 Назад':
-        await to_home(cb.message)
-
-
 async def location_character(message: Message, state: FSMContext):
-    if message.text == '🎓 Распределение СО':
+    if message.text == keyboard['distribution']:
         await CharacterState.distribution_menu.set()
         await message.answer(locale['distribution_tip'], parse_mode='Markdown')
         return await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
 
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await LocationState.home.set()
         return await message.answer(locale['home'], reply_markup=home_kb)
 
-    if message.text == '🧤 Экипировка':
+    if message.text == keyboard['equipment']:
         await CharacterState.equip.set()
         return await message.answer(locale['equip'], reply_markup=equip_kb)
 
-    if message.text == '👝 Инвентарь':
+    if message.text == keyboard['inventory']:
         await CharacterState.inventory.set()
         return await message.answer(locale['inventory'], reply_markup=inventory_kb)
 
-    if message.text == '🏵 Мастерство':
-        db = DBCommands(message.bot.get('db'))
-
-        skills = await db.get_skills()
-        kb = list_inline(skills)
-
-        await CharacterState.skills.set()
-        await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
-        return await message.answer(locale['skills_select'], reply_markup=kb)
+    # if message.text == '🏵 Мастерство':
+    #     db = DBCommands(message.bot.get('db'))
+    #
+    #     skills = await db.get_skills()
+    #     kb = list_inline(skills)
+    #
+    #     await CharacterState.skills.set()
+    #     await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
+    #     return await message.answer(locale['skills_select'], reply_markup=kb)
 
     data = await state.get_data()
     hero = data['hero']
 
-    if message.text == '📊 Информация':
+    if message.text == keyboard['info']:
         await CharacterState.info_menu.set()
         return await message.answer(hero.info.status_all(), reply_markup=character_info_kb,
                                     parse_mode='Markdown')
@@ -231,7 +213,7 @@ async def location_store(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     hero_id = data['hero_id']
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
         return await to_town(cb.message)
 
@@ -262,18 +244,18 @@ async def location_store(cb: CallbackQuery, state: FSMContext):
             await state.update_data(item_id=item['item_id'])
             await state.update_data(item_count=item['item_count'])
 
-            text = f"<b>{item['name']}</b>\n{item['desc']}\n\n" \
+            text = f"*{item['name']}*\n{item['desc']}\n\n" \
                    f"Цена: {formatted(item['price'])}\n" \
                    f"Введите количество: (доступно {item['item_count']})"
 
             await ShopState.buy.set()
 
             if cb.message.text != text:
-                await cb.message.edit_text(text, reply_markup=shop_buy_inline, parse_mode='HTML')
+                await cb.message.edit_text(text, reply_markup=shop_buy_inline)
 
 
 async def location_top(cb: CallbackQuery, state: FSMContext):
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
         return await to_home(cb.message)
 
@@ -292,15 +274,18 @@ async def location_top(cb: CallbackQuery, state: FSMContext):
 
     for hero in heroes:
         if hero['hero_id'] == _hero.id:
-            hero_data = f"<u>{i + 1}. {hero['name']} — {formatted(hero[cb.data])}</u>"
+            hero_data = f"{i + 1}. 👤 *{hero['name']} — {formatted(hero[cb.data])}*"
             hero_top = i
             top.append(hero_data)
         else:
-            top.append(f"{i + 1}. {hero['name']}— {formatted(hero[cb.data])}")
+            top.append(f"{i + 1}. {hero['name']} — {formatted(hero[cb.data])}")
 
         i += 1
 
     top_ten = top[:11]
+    top_ten[1] = f"🥇{top_ten[1][2:]}"
+    top_ten[2] = f"🥈{top_ten[2][2:]}"
+    top_ten[3] = f"🥉{top_ten[3][2:]}"
 
     if hero_top >= 10:
         top_ten.append('...')
@@ -310,7 +295,7 @@ async def location_top(cb: CallbackQuery, state: FSMContext):
 
     # Сбрасывает top, потому что функция не умеет это делать сама
     top = []
-    return await check_before_send(cb, text, top_inline, 'HTML')
+    return await check_before_send(cb, text, top_inline)
 
 
 async def to_home(message):
@@ -332,7 +317,6 @@ def location(dp: Dispatcher):
     dp.register_callback_query_handler(location_top, state=LocationState.top)
 
     dp.register_message_handler(location_town, state=LocationState.town)
-    dp.register_callback_query_handler(location_hunt, state=LocationState.hunt)
     dp.register_message_handler(location_arena, state=LocationState.arena)
     dp.register_message_handler(location_tower, state=LocationState.tower)
     dp.register_callback_query_handler(location_team, state=LocationState.team)

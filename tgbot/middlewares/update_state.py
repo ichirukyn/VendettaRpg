@@ -7,14 +7,14 @@ from tgbot.misc.hero import init_team
 from tgbot.models.user import DBCommands
 
 list_update = [
-    'LocationState:home',
-    'LocationState:town',
+    # 'LocationState:home',
     # 'LocationState:tower',
-    'TeamState',
+    # 'TeamState',
 ]
 
 list_ignore = [
-    'BattleState'
+    'BattleState',
+    'LocationState:town',
 ]
 
 
@@ -57,8 +57,8 @@ class UpdateStatsMiddleware(BaseMiddleware):
                     await dp.storage.update_data(chat=chat_id, player_team=[hero])
 
             # Иначе, обновляем только частично
-            else:
-                hero = await init_hero(db, hero_id=hero.id)
+            # else:
+            #     hero = await init_hero(db, hero_id=hero.id)
 
             await dp.storage.update_data(chat=chat_id, hero=hero)
             logger(hero.id, state, message.text)

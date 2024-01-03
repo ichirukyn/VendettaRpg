@@ -12,6 +12,7 @@ class DBCommands:
                         " VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
         self.ADD_HERO_STATS = "INSERT INTO hero_stats (hero_id, strength, health, speed, dexterity, soul, intelligence, submission, crit_rate, crit_damage, resist, total_stats) " \
                               "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id"
+        self.ADD_HERO_STATISTIC = "INSERT INTO hero_statistics (hero_id) VALUES ($1)"
 
         self.GET_RACES = "SELECT * FROM races"
         self.GET_RACE = "SELECT * FROM races WHERE id = $1"
@@ -28,6 +29,7 @@ class DBCommands:
         self.GET_HEROES = "SELECT * FROM heroes h INNER JOIN users u ON u.id = h.user_id WHERE h.id = $1"
         self.GET_HERO_ID = "SELECT h.id FROM heroes h INNER JOIN users u ON u.id = h.user_id WHERE user_id = $1"
         self.GET_HERO_STATS = "SELECT * FROM hero_stats WHERE hero_id = $1"
+        self.GET_HERO_STATISTICS = "SELECT * FROM hero_statistics WHERE hero_id = $1"
 
         self.GET_CLANS = "SELECT * FROM clans ORDER BY id"
         self.GET_HERO_CLAN = "SELECT * FROM clans WHERE name = $1"
@@ -62,6 +64,7 @@ class DBCommands:
         # TODO: Убрать type="None". Нужно будет подставлять nen_type
         self.ADD_HERO_TECHNIQUE = "INSERT INTO hero_technique (hero_id, technique_id, lvl) VALUES ($1, $2, $3)"
         self.GET_TECHNIQUES = "SELECT * FROM techniques WHERE id = $1 AND type='None'"
+        self.GET_TECHNIQUE_BONUSES = "SELECT * FROM technique_bonuses WHERE technique_id = $1"
         self.GET_HERO_TECHNIQUE = "SELECT * FROM hero_technique INNER JOIN  techniques " \
                                   "ON hero_technique.technique_id = techniques.id WHERE hero_id = $1"
         self.GET_ENEMY_TECHNIQUE = "SELECT * FROM enemy_technique e INNER JOIN techniques " \
@@ -116,15 +119,10 @@ class DBCommands:
         command = self.ADD_USER
 
         try:
-            # check_user = await self.pool.fetchrow(self.GET_USER, chat_id)
-            #
-            # if check_user:
-            #     return print('Юзер уже зареган')
-
             record_id = await self.pool.fetchval(command, chat_id, login, is_admin, is_baned, ref_id)
             return record_id
         except UniqueViolationError:
-            print('`add_user` error!!')
+            print('`add_user` error')
 
     async def add_lvl(self, exp_to_lvl, exp_total):
         command = self.ADD_LVL
@@ -179,8 +177,8 @@ class DBCommands:
         try:
             record_id = await self.pool.fetchval(command, user_id, name, clan, race_id, class_id, rank)
             return record_id
-        except UniqueViolationError:
-            print('`add_hero` error!!')
+        except UniqueViolationError as e:
+            print('`add_hero` error!!', e)
 
     async def add_hero_stats(self, hero_id, hero):
         strength = hero.strength
@@ -201,8 +199,17 @@ class DBCommands:
             record_id = await self.pool.fetchval(command, hero_id, strength, health, speed, dexterity, soul,
                                                  intelligence, submission, crit_rate, crit_damage, resist, total_stats)
             return record_id
-        except UniqueViolationError:
-            print('`add_hero_stats` error!!')
+        except UniqueViolationError as e:
+            print('`add_hero_stats` error!!', e)
+
+    async def add_hero_statistic(self, hero_id):
+        command = self.ADD_HERO_STATISTIC
+
+        try:
+            record_id = await self.pool.fetchval(command, hero_id)
+            return record_id
+        except UniqueViolationError as e:
+            print('`add_hero_statistic` error!!', e)
 
     async def add_hero_inventory(self, hero_id, item_id, count=1, is_stack=True, is_transfer=True):
         command = self.ADD_HERO_INVENTORY
@@ -210,8 +217,8 @@ class DBCommands:
         try:
             record_id = await self.pool.fetchval(command, hero_id, item_id, count, is_stack, is_transfer)
             return record_id
-        except UniqueViolationError:
-            print('`add_hero_inventory` error!!')
+        except UniqueViolationError as e:
+            print('`add_hero_inventory` error!!', e)
 
     async def get_hero_inventory(self, type, hero_id):
         command = f"SELECT * FROM hero_inventory hi INNER JOIN items ON hi.item_id = items.id  " \
@@ -236,8 +243,8 @@ class DBCommands:
         try:
             record_id = await self.pool.fetchval(command, hero_id, trader_id, item_id, item_count)
             return record_id
-        except UniqueViolationError:
-            print('`add_trader_hero` error!!')
+        except UniqueViolationError as e:
+            print('`add_trader_hero` error!!', e)
 
     async def get_trader_items(self, trader_id=1):
         command = self.GET_TRADER_ITEMS
@@ -323,6 +330,11 @@ class DBCommands:
 
         return await self.pool.fetchrow(command, hero_id)
 
+    async def get_hero_statistics(self, hero_id):
+        command = self.GET_HERO_STATISTICS
+
+        return await self.pool.fetchrow(command, hero_id)
+
     async def update_hero_stat(self, stat_name, stat_value, hero_id):
         command = f"UPDATE hero_stats SET {stat_name} = $1 WHERE hero_id = $2"
 
@@ -350,8 +362,8 @@ class DBCommands:
 
         try:
             return await self.pool.fetchval(command, hero_id, weapon_id, lvl)
-        except UniqueViolationError:
-            print('`add_hero_weapon` error!!')
+        except UniqueViolationError as e:
+            print('`add_hero_weapon` error!!', e)
 
     async def get_weapon(self, weapon_id):
         command = self.GET_WEAPONS
@@ -374,8 +386,8 @@ class DBCommands:
 
         try:
             return await self.pool.fetchval(command, hero_id, technique_id, lvl)
-        except UniqueViolationError:
-            print('`add_hero_technique` error!!')
+        except UniqueViolationError as e:
+            print('`add_hero_technique` error!!', e)
 
     async def get_technique(self, technique_id):
         command = self.GET_TECHNIQUES
@@ -386,6 +398,11 @@ class DBCommands:
         command = self.GET_HERO_TECHNIQUE
 
         return await self.pool.fetch(command, hero_id)
+
+    async def get_technique_bonuses(self, technique_id):
+        command = self.GET_TECHNIQUE_BONUSES
+
+        return await self.pool.fetch(command, technique_id)
 
     # Teams
     async def add_team(self, leader_id, name, is_private):
@@ -430,8 +447,8 @@ class DBCommands:
 
         try:
             return await self.pool.fetchval(command, hero_id, skill_id, lvl)
-        except UniqueViolationError:
-            pass
+        except UniqueViolationError as e:
+            print(e)
 
     async def del_hero_skill(self, hero_id, skill_id):
         command = self.DEL_HERO_SKILL

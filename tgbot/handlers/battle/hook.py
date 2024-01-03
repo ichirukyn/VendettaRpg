@@ -1,9 +1,16 @@
 from tgbot.misc.other import formatted
+from tgbot.models.entity._class import Class
+from tgbot.models.entity.enemy import Enemy
+from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.hero import Hero
+from tgbot.models.entity.hero import HeroInfo
+from tgbot.models.entity.race import Race
+from tgbot.models.entity.statistic import Statistic
+from tgbot.models.entity.statistic import StatisticBattle
 
 
 class BattleEngine:
-    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb):
+    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb, is_dev=False):
         self.enemy_team = enemy_team
         self.player_team = player_team
         self.order = []
@@ -18,9 +25,17 @@ class BattleEngine:
         self.battle_result = None
         self.team_win = None
         self.logs = ''
+        self.is_dev = is_dev
 
     def initialize(self):
         self.order = self.update_order()
+
+        # Очистка статистики предыдущей битвы
+        for entity in self.order:
+            if entity.statistic is not None:
+                entity.statistic.battle = StatisticBattle()
+            else:
+                entity.statistic = Statistic()
 
     def update_order(self):
         order = self.player_team + self.enemy_team
@@ -38,9 +53,10 @@ class BattleEngine:
 
         while i < len(self.order):
             entity = self.order[i]
-            entity.check_active_skill()
 
-            log = self.check_durability(entity)
+            entity.check_active_skill()
+            log = entity.debuff_round_check()
+
             self.order_index += 1
 
             if entity.hp <= 0:
@@ -50,15 +66,16 @@ class BattleEngine:
                 who = 'hero'
 
             else:
-                target_enemy_team = self.target_enemy_team(entity)
+                enemies = self.target_enemy_team(entity)
+                teammates = self.target_teammate_team(entity)
 
-                if len(target_enemy_team) == 0:
+                if len(enemies) == 0:
                     return self.check_hp()
 
-                entity.select_target(target_enemy_team)
                 entity.define_action()
-                entity.define_sub_action(target_enemy_team)
+                entity.define_sub_action(enemies)
                 entity.choice_technique()
+                entity.select_target(teammates, enemies)
 
                 who = 'enemy'
 
@@ -67,20 +84,36 @@ class BattleEngine:
         self.order_index = 0
         return self.battle()
 
-    def battle_action(self, attacker, defender, skill):
+    def battle_action(self, attacker: Entity, defender, skill):
         action_return = {'name': attacker.action, 'target': defender, 'attacker': attacker, 'log': '⁢'}
 
-        if attacker.action == 'Атака':
-            action_return['log'] = self.entity_attack(attacker, defender)
+        if attacker.action == 'Техника':
+            if not isinstance(defender, Hero) or not isinstance(defender, Enemy):
+                action_return['log'] = self.entity_attack(attacker, defender)
+            else:
+                action_return['log'] = ''
+                for target in defender:
+                    action_return['log'] += self.entity_attack(attacker, target) + '\n'
 
             if action_return['target'].hp <= 0:
                 log = f"\n💀 {action_return['target'].name} побежден."
                 action_return['log'] += log
 
-        elif attacker.action == 'Навыки':
-            log = skill.skill_activate()
+                # stats get
+                defender.statistic.battle.death += 1
+
+                if defender.id != 0:
+                    attacker.statistic.battle.kill_hero += 1
+                else:
+                    attacker.statistic.battle.kill_enemy += 1
+
+        elif attacker.action == 'Заклинания':
+            log = skill.activate()
             action_return['log'] = log
             action_return['attacker'] = skill.hero
+
+        logger = BattleLogger(self.is_dev)
+        action_return['log'] = logger.turn_log(attacker, defender, action_return['log'])
 
         return action_return
 
@@ -97,6 +130,19 @@ class BattleEngine:
         for enemy in self.enemy_team:
             if target.name == enemy.name:
                 team = self.player_team
+
+        if check_hp:
+            team = [e for e in team if e.hp > 0]
+
+        return team
+
+    # TODO: Протестировать, правильно ли работает
+    def target_teammate_team(self, target, check_hp=True):
+        team = self.player_team
+
+        for player in self.player_team:
+            if target.name != player.name:
+                team = self.enemy_team
 
         if check_hp:
             team = [e for e in team if e.hp > 0]
@@ -145,21 +191,48 @@ class BattleEngine:
         log = ''
         hp = attacker.hp
 
-        if attacker.durability <= 0:
-            log = f"🌀 Стойкость {attacker.name} пробита, он пропускает ход."
-            attacker.durability = attacker.durability_max
+        log += attacker.technique.activate(defender)
+
+        if attacker.name == defender.name:
+            for attr in vars(defender):
+                setattr(attacker, attr, getattr(defender, attr))
+
+        if attacker.technique.type == 'support' and attacker.technique.damage == 0:
+            if attacker.name == defender.name:
+                log = f"{attacker.name} применил технику {attacker.technique.name}\n"
+            else:
+                log = f"{attacker.name} применил технику {attacker.technique.name} к {defender.name}\n"
+
+            if hp < attacker.hp:
+                delta = attacker.hp - hp
+                attacker.statistic.battle.healing += delta
+                attacker.statistic.battle.check_max('healing_max', delta)
+                log = f"{defender.name} восстановил ❤️{formatted(delta)}"
+
+            attacker.update_stats_percent()
+            defender.update_stats_percent()
+            defender.sub_action = ''
+
             return log
 
         if defender.hp > 0:
-            # TODO: Заменить хардкод на класс техники
-            total_damage = attacker.damage(defender, 'phys_damage')
+            total_damage = attacker.damage(defender, attacker.technique.type_damage)
             defender.hp -= total_damage
+
+            attacker.statistic.battle.damage += total_damage
+            attacker.statistic.battle.check_max('damage_max', total_damage)
+            defender.statistic.battle.damage_taken += total_damage
+            defender.statistic.battle.check_max('damage_taken_max', total_damage)
 
             if total_damage == 0:
                 # TODO: Добавить условие для вывода клана, если есть
                 log = f"⚔️ {attacker.name} промахнулся"
+
+                attacker.statistic.battle.miss_count += 1
+                defender.statistic.battle.evasion_success_count += 1
+
             else:
-                defender.durability -= 20
+                attacker.statistic.battle.hits_count += 1
 
                 if attacker.technique_name != '':
                     log = f"⚔️ {attacker.name} использовал \"{attacker.technique_name}\" по {defender.name} " \
@@ -172,21 +245,13 @@ class BattleEngine:
                 delta = hp - attacker.hp
                 log += f'🪃 {defender.name} контратаковал на {formatted(delta)} урона.'
 
-        # if attacker.hp <= 0:
-        #     log = f"{attacker.name} побежден."
+                attacker.statistic.battle.damage_taken += delta
+                defender.statistic.battle.counter_strike_damage += delta
+                defender.statistic.battle.counter_strike_count += 1
 
+        attacker.update_stats_percent()
+        defender.update_stats_percent()
         defender.sub_action = ''
-
-        return log
-
-    # TODO: Расширить функцию, на проверку станов, и отрицательных эффектов
-    @staticmethod
-    def check_durability(entity):
-        log = None
-
-        if entity.durability <= 0:
-            log = f"🌀 Стойкость {entity.name} пробита, он пропускает ход."
-            entity.durability = entity.durability_max
 
         return log
 
@@ -198,3 +263,96 @@ class BattleEngine:
         speed_ratio = enemy_speed / hero_speed
 
         return speed_ratio > success_threshold
+
+
+class BattleLogger:
+    def __init__(self, is_dev):
+        self.loss = "Ты проиграл и в последствие был убит."
+        self.is_dev = is_dev
+
+    @staticmethod
+    def enemys_log(order, hero):
+        logs = ''
+
+        for entity in order:
+            if entity.name != hero.name:
+                logs += f"*{entity.name}: \n❤️ {formatted(entity.hp)}\n\n*"
+            elif isinstance(entity, Hero):
+                logs += f"*🌟 {hero.name}: \n❤️ {formatted(hero.hp)}\n*" \
+                        f"*🔹{formatted(hero.mana_max)}/{formatted(hero.mana)}*\n" \
+                        f"*{hero.info.active_bonuses()}*\n" \
+                        f"*{hero.info.active_debuff()}*\n"
+
+        return logs
+
+    @staticmethod
+    def battle_order(order):
+        response = "Последовательность действий:\n"
+
+        i = 1
+        for e in order:
+            response += f"{i}. {e.name}\n"
+            i += 1
+
+        return response
+
+    def turn_log(self, attacker, defender, log):
+        if not self.is_dev:
+            return log
+
+        bonuses_a = self.get_effects(attacker)
+        bonuses_d = self.get_effects(defender)
+
+        debuffs_a = self.get_debuff(attacker)
+        debuffs_d = self.get_debuff(defender)
+
+        log = ''.join([
+            log,
+            f"\n\n",
+            f"Атакующий: {attacker.name}\n",
+            f"Тип: {attacker.action}\n",
+            f"Цель: {defender.name}\n",
+            f"\n",
+            bonuses_a,
+            debuffs_a,
+            f"\n\n",
+            defender.name,
+            f"\n",
+            bonuses_d,
+            debuffs_d,
+        ])
+
+        return log
+
+    @staticmethod
+    def get_effects(entity):
+        info = HeroInfo(entity)
+
+        name_list = []
+        bonuses = ''
+        ignore_list = [Race, Class]  # Skill, Technique, etc..
+
+        for bonus_wrap in entity.active_bonuses:
+            if any(isinstance(bonus_wrap, ignored_class) for ignored_class in ignore_list):
+                continue
+
+            if bonus_wrap.name not in name_list:
+                name_list.append(bonus_wrap.name)
+                text = info.bonus_info(f'{entity.name} -- {bonus_wrap.name}\n', bonus_wrap.effects, True, True, True)
+
+                if text is not None:
+                    bonuses += text
+        return bonuses
+
+    @staticmethod
+    def get_debuff(entity):
+        debuffs = ''
+
+        for debuff in entity.debuff_list:
+            if debuff['type'] == 'control':
+                debuffs += f"{debuff['name']} ({debuff.get('duration')})\n"
+            if debuff['type'] == 'period':
+                debuffs += f"{debuff.get('name', 'Периодический')}: " \
+                           f"{entity.prev_period}/{entity.total_period} ({debuff.get('duration')})\n"
+
+        return debuffs

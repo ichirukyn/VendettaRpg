@@ -1,46 +1,38 @@
+from tgbot.api.race import fetch_race_bonuses
+from tgbot.api.race import get_race
 from tgbot.models.entity.effect import EffectFactory
+from tgbot.models.entity.effect import EffectParent
 
 
 class RaceFactory:
     @staticmethod
-    def create_race(hero, data, bonuses):
-        race_id = data['id']
-        race_name = data['name']
-        race_desc = data['desc']
+    def create_race(entity, data, bonuses):
+        id = data['id']
+        name = data['name']
+        desc = data['desc']
+        desc_short = data['desc_short']
 
         race = Race()
-        race.init_race(hero, race_id, race_name, race_desc, bonuses)
+        race.init_race(entity, id, name, desc, desc_short, bonuses)
         return race
 
 
-class Race:
-    hero = None
-    race_id = 0
-    race_name = ''
-    race_desc = ''
-    bonuses = []
-    effects = []
+class Race(EffectParent):
+    def init_race(self, entity, id, name, desc, desc_short, bonuses):
+        self.id = id
+        self.name = name
+        self.desc = desc
+        self.desc_short = desc_short
+        self.entity = entity
 
-    def init_race(self, hero, race_id, race_name, race_desc, bonuses):
-        self.hero = hero
-        self.race_id = race_id
-        self.race_name = race_name
-        self.race_desc = race_desc
         self.bonuses = bonuses
         self.effects = []
 
-    def race_apply(self):
-        for bonus in self.bonuses:
-            self.effects.append(bonus)
-            bonus.apply(self.hero)
 
-        self.hero.active_bonuses.append(self)
-
-
-async def race_init(entity, race_id, db):
+def race_init(entity, race_id):
     try:
-        bonuses = await db.get_race_bonuses(race_id)
-        race_db = await db.get_race(race_id)
+        bonuses = fetch_race_bonuses(race_id)
+        race_db = get_race(race_id).json
 
         new_bonuses = []
 
@@ -48,10 +40,9 @@ async def race_init(entity, race_id, db):
             new_bonuses.append(EffectFactory.create_effect(bonus, source=('race', race_id)))
 
         race = RaceFactory.create_race(entity, race_db, new_bonuses)
-        # print(race.race_name)
 
         entity.race = race
-        entity.race.race_apply()
+        entity.race.apply()
 
         return entity
     except KeyError:

@@ -9,6 +9,7 @@ from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import town_kb
 from tgbot.misc.hero import init_hero
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
 from tgbot.misc.state import BattleState
@@ -37,6 +38,7 @@ async def battle_init(message: Message, state: FSMContext):
 
     else:
         hero = data.get('hero')
+        hero = await init_hero(db, hero_id=hero.id)
         player_team = [hero]
 
     engine_data = {
@@ -47,7 +49,10 @@ async def battle_init(message: Message, state: FSMContext):
         "exit_kb": home_kb,
     }
 
-    factory = BattleFactory(enemy_team, player_team, LocationState.home, '', home_kb)
+    config = message.bot.get('config')
+    is_dev = config.tg_bot.is_dev
+
+    factory = BattleFactory(enemy_team, player_team, LocationState.home, '', home_kb, is_dev)
 
     logger = factory.create_battle_logger()
     engine = factory.create_battle_engine()
@@ -70,7 +75,7 @@ async def battle_start(cb: CallbackQuery, state: FSMContext):
 
     floor_id = data.get('floor_id')
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         enemies = await floor_enemies(db, floor_id)
         kb = list_inline(enemies)
 
@@ -81,7 +86,7 @@ async def battle_start(cb: CallbackQuery, state: FSMContext):
 
 
 async def select_floor(cb: CallbackQuery, state: FSMContext):
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await LocationState.town.set()
         await cb.message.delete()
         return await cb.message.answer(locale['town'], reply_markup=town_kb)
@@ -95,7 +100,7 @@ async def select_floor(cb: CallbackQuery, state: FSMContext):
     kb = list_inline(enemies)
 
     await TowerState.select_enemy.set()
-    await cb.message.edit_text('Доступные противники:', reply_markup=kb, parse_mode='MarkdownV2')
+    await cb.message.edit_text('Доступные противники:', reply_markup=kb)
 
 
 async def select_enemy(cb: CallbackQuery, state: FSMContext):
@@ -104,7 +109,7 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
 
     floor_id = data.get('floor_id')
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         floors = await db.get_arena_floors()
         kb = list_inline(floors)
 
@@ -143,7 +148,7 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
             text += stats
     else:
         entity = enemy_team[0]
-        name = f"{entity.name} {entity.race_name}"
+        name = f"{entity.name} {entity.name}"
         text = f"Выбран противник: {name} — {formatted(entity.lvl)} Уровень"
 
     await state.update_data(enemy_team=enemy_team)

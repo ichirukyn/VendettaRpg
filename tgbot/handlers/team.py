@@ -4,6 +4,7 @@ from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 
 from tgbot.keyboards.inline import team_main_inline, list_inline, yes_no_inline, teammate_menu_inline
 from tgbot.keyboards.reply import team_private_kb
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import TeamState, LocationState
 from tgbot.models.user import DBCommands
@@ -36,7 +37,7 @@ async def team_add(message: Message, state: FSMContext):
 
 
 async def team_add_name(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await to_team_main(message, state)
 
     name = message.text
@@ -66,7 +67,7 @@ async def team_add_private(message: Message, state: FSMContext):
 async def team_list(cb: CallbackQuery, state: FSMContext):
     db = DBCommands(cb.message.bot.get('db'))
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         return await to_team_main(cb.message, state)
 
     data = await state.get_data()
@@ -129,7 +130,7 @@ async def team_accept_leader(message: Message, state: FSMContext):
 
 
 async def team_send_invite(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await to_team_main(message, state)
 
     db = DBCommands(message.bot.get('db'))
@@ -180,7 +181,7 @@ async def team_accept_invite(message: Message, state: FSMContext):
 
 
 async def teammate_list(cb: CallbackQuery, state: FSMContext):
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
         return await to_team_main(cb.message, state)
 
@@ -194,7 +195,7 @@ async def teammate_list(cb: CallbackQuery, state: FSMContext):
 
 
 async def teammate_menu(cb: CallbackQuery, state: FSMContext):
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
         return await to_team_main(cb.message, state)
 

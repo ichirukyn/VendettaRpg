@@ -14,6 +14,7 @@ from tgbot.keyboards.reply import character_info_kb
 from tgbot.keyboards.reply import character_kb
 from tgbot.keyboards.reply import inventory_kb
 from tgbot.misc.Inventory import WeaponItem
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import CharacterState
 from tgbot.misc.state import LocationState
@@ -44,10 +45,9 @@ async def train(message: Message, state: FSMContext):
     hero = data['hero']
     hero_id = data['hero_id']
 
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await LocationState.character.set()
-        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
 
     if hero.energy < 3:
         await LocationState.character.set()
@@ -71,11 +71,10 @@ async def distribution_menu(message: Message, state: FSMContext):
     data = await state.get_data()
     hero = data['hero']
 
-    if message.text == '🔙 Назад' or hero.free_stats <= 0:
+    if message.text == keyboard["back"] or hero.free_stats <= 0:
         await LocationState.character.set()
 
-        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
 
     stat = stats.get(message.text)
 
@@ -99,7 +98,7 @@ async def distribution(message: Message, state: FSMContext):
     try:
         count = int(message.text)
     except ValueError:
-        if message.text == '🔙 Назад':
+        if message.text == keyboard["back"]:
             await CharacterState.distribution_menu.set()
             return await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
 
@@ -123,8 +122,7 @@ async def distribution(message: Message, state: FSMContext):
 
         if hero.free_stats <= 0:
             await LocationState.character.set()
-            return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                                        parse_mode='Markdown')
+            return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
         else:
             await CharacterState.distribution_menu.set()
             await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
@@ -137,12 +135,11 @@ async def character_skills(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     hero = data['hero']
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
         await LocationState.character.set()
 
-        return await cb.message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                                       parse_mode='Markdown')
+        return await cb.message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
 
     skill_id = int(cb.data)
 
@@ -197,10 +194,9 @@ async def character_equip(message: Message, state: FSMContext):
     if message.text == 'Артефакты (В разработке)':
         pass
 
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await LocationState.character.set()
-        await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                             parse_mode='Markdown')
+        await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
 
 
 async def character_inventory(message: Message, state: FSMContext):
@@ -209,12 +205,11 @@ async def character_inventory(message: Message, state: FSMContext):
     data = await state.get_data()
     hero = data['hero']
 
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await message.delete()
         await LocationState.character.set()
 
-        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
 
     if message.text not in inventory:
         return
@@ -232,7 +227,7 @@ async def character_inventory(message: Message, state: FSMContext):
 
 
 async def character_inventory_items(cb: CallbackQuery, state: FSMContext):
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
 
         await CharacterState.inventory.set()
@@ -291,28 +286,26 @@ async def character_info_menu(message: Message, state: FSMContext):
     hero = data['hero']
 
     if message.text == 'Статус':
-        return await message.answer(hero.info.status(), reply_markup=character_info_kb,
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.status(), reply_markup=character_info_kb)
+
+    if message.text == 'Статистика':
+        return await message.answer(hero.statistic.get_statistic(), reply_markup=character_info_kb)
 
     if message.text == 'Полный статус':
-        return await message.answer(hero.info.status_all(), reply_markup=character_info_kb,
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.status_all(), reply_markup=character_info_kb)
 
     if message.text == 'Чистый статус':
-        return await message.answer(hero.info.status_flat(), reply_markup=character_info_kb,
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.status_flat(), reply_markup=character_info_kb)
 
     if message.text == 'Раса':
-        return await message.answer(hero.info.character_info('race'), reply_markup=character_info_kb,
-                                    parse_mode='Markdown')
-    if message.text == 'Класс':
-        return await message.answer(hero.info.character_info('class'), reply_markup=character_info_kb,
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.character_info('race'), reply_markup=character_info_kb)
 
-    if message.text == '🔙 Назад':
+    if message.text == 'Класс':
+        return await message.answer(hero.info.character_info('class'), reply_markup=character_info_kb)
+
+    if message.text == keyboard["back"]:
         await LocationState.character.set()
-        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                                    parse_mode='Markdown')
+        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
 
 
 def character(dp: Dispatcher):

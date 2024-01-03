@@ -25,13 +25,6 @@ class BattleState(StatesGroup):
     load = State()
 
 
-class HuntState(StatesGroup):
-    select_location = State()
-    hunter_diary = State()
-    hunting = State()
-    hunting_action = State()
-
-
 class CharacterState(StatesGroup):
     train = State()
     equip = State()
@@ -67,7 +60,6 @@ class LocationState(StatesGroup):
 
     town = State()
     tower = State()
-    hunt = State()
     arena = State()
     team = State()
 
