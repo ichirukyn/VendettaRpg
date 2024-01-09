@@ -2,7 +2,6 @@ from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
-from tgbot.config import Config
 from tgbot.handlers.battle.interface import BattleFactory
 from tgbot.keyboards.reply import arena_type_kb
 from tgbot.keyboards.reply import home_kb
@@ -21,6 +20,7 @@ async def arena_select_type(message: Message, state: FSMContext):
         await LocationState.arena.set()
         return await message.answer(locale['arena'], reply_markup=arena_type_kb)
 
+    session = message.bot.get('session')
     db = DBCommands(message.bot.get('db'))
     dp = message.bot.get('dp')
 
@@ -45,7 +45,7 @@ async def arena_select_type(message: Message, state: FSMContext):
             player_team = []
             enemy_team = []
 
-            player = await init_hero(db, hero_id=id)
+            player = await init_hero(db, session, hero_id=id)
 
             enemy_team.append(player)
             player_team.append(hero)
@@ -59,10 +59,10 @@ async def arena_select_type(message: Message, state: FSMContext):
 
         if pvp_type == 'team':
             team = await db.get_team_heroes(hero.team_id)
-            player_team = await init_team(db, team)
+            player_team = await init_team(db, session, team)
 
             team_bd = await db.get_team_heroes(id)
-            enemy_team = await init_team(db, team_bd)
+            enemy_team = await init_team(db, session, team_bd)
 
             await state.update_data(player_team=player_team)
             await state.update_data(enemy_team=enemy_team)

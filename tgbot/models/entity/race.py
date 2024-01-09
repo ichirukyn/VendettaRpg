@@ -29,10 +29,11 @@ class Race(EffectParent):
         self.effects = []
 
 
-def race_init(entity, race_id):
+async def race_init(session, entity, race_id):
     try:
-        bonuses = fetch_race_bonuses(race_id)
-        race_db = get_race(race_id).json
+        bonuses = await fetch_race_bonuses(session, race_id)
+        race_data = await get_race(session, race_id)
+        race_db = await race_data.json()
 
         new_bonuses = []
 

@@ -1,5 +1,4 @@
 # Статистика конкретного боя
-from tgbot.models.api.statistic import StatisticType
 
 
 class StatisticBattle:

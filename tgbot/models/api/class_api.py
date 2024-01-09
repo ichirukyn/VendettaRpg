@@ -7,7 +7,7 @@ class ClassType(TypedDict):
     desc: str
     desc_short: bool
     race_id: int
-    naim_attr: str
+    main_attr: str
 
 
 class ClassBonusType(TypedDict):

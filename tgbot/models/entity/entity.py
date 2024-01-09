@@ -232,7 +232,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
         def_res = defender.__getattribute__(damage_type)
         dmg_attr = self.__getattribute__(self._class.main_attr)
 
-        base_dmg = self.technique_damage * (dmg_attr + self.weapon_damage)
+        base_dmg = self.technique.damage * (dmg_attr + self.weapon_damage)
         bonus_type = self.__getattribute__(damage_type) + 1
 
         # TODO 1 - 0 -- Сопротивления элем. урону | 1 - 0 -- Игнорирование защиты

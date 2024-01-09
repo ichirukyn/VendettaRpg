@@ -1,9 +1,10 @@
+import copy
+
 from tgbot.misc.other import formatted
 from tgbot.models.entity._class import Class
 from tgbot.models.entity.effect import Effect
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import Race
-import copy
 
 
 class HeroFactory:
@@ -182,7 +183,7 @@ class HeroInfo:
                 f"• Описание: {self.hero.race.desc_short}\n"
             )
 
-            return self.bonus_info(header, self.hero.race.bonuses, True, True)
+            return self.bonus_info(header, self.hero.race.bonuses, True, True, True)
 
         if bonus == 'class':
             header = (
@@ -221,14 +222,13 @@ class HeroInfo:
         text = header
 
         if is_mod and len(others) != 0:
-            text += self.effects_info(others, 'Модификаторы')
+            text += self.effects_info(others, '*Модификаторы*')
 
         if is_damage and len(elements) != 0:
-            text += self.effects_info(elements, 'Стихийный урон')
-            text += f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n"
+            text += self.effects_info(elements, '*Урон стихий*')
 
         if is_resist and len(resists) != 0:
-            text += self.effects_info(resists, 'Стихийная защита')
+            text += self.effects_info(resists, '*Защита стихий*')
             text += f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n"
 
         return text

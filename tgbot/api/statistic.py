@@ -1,35 +1,31 @@
-import json
-
-import requests
-
 from tgbot.api import url
 from tgbot.models.api.api import Response
 from tgbot.models.api.statistic import StatisticType
 
 
-def create_statistic(body: StatisticType) -> StatisticType:
-    res = requests.post(url(f'/statistic'), json=body)
-    return res.json()
+async def create_statistic(session, body: StatisticType) -> StatisticType:
+    res = await session.post(url(f'/statistic'), json=body)
+    return await res.json()
 
 
-def update_statistic(body: StatisticType, hero_id: int) -> StatisticType:
-    res = requests.put(url(f'/statistic/{hero_id}'), json=body)
-    return res.json()
+async def update_statistic(session, body: StatisticType, hero_id: int) -> StatisticType:
+    res = await session.put(url(f'/statistic/{hero_id}'), json=body)
+    return await res.json()
 
 
-def get_statistic(hero_id: str) -> Response[StatisticType]:
-    res = requests.get(url(f'/statistic/{hero_id}'))
+async def get_statistic(session, hero_id: str) -> Response[StatisticType]:
+    res = await session.get(url(f'/statistic/{hero_id}'))
     return Response(res, StatisticType)
 
 
-def get_statistic_chat_id(statistic_id: int) -> str:
-    res = requests.get(url(f'/statistic/{statistic_id}/chat_id'))
-    return res.json()
+async def get_statistic_chat_id(session, statistic_id: int) -> str:
+    res = await session.get(url(f'/statistic/{statistic_id}/chat_id'))
+    return await res.json()
 
 
-def fetch_statistic() -> [StatisticType]:
-    res = requests.get(url(f'/statistic'))
-    return res.json()
+async def fetch_statistic(session, ) -> [StatisticType]:
+    res = await session.get(url(f'/statistic'))
+    return await res.json()
 
 
 def statistics_to_json(statistics):

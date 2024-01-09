@@ -1,29 +1,30 @@
-import requests
+import aiohttp
 
 from tgbot.api import url
 from tgbot.models.api.api import Response
-from tgbot.models.api.user_api import UserType, CreateUserType
+from tgbot.models.api.user_api import CreateUserType
+from tgbot.models.api.user_api import UserType
 
 
-def create_user(body: CreateUserType) -> UserType:
-    print(body)
-    res = requests.post(url(f'/user'), data=body)
-    return res.json()
+async def create_user(body: CreateUserType):
+    async with aiohttp.ClientSession() as session:
+        res = await session.post(url(f'/user'), json=body)
+        return await res.json()
 
 
-def get_user(chat_id: str) -> Response[UserType]:
-    res = requests.get(url(f'/user/{chat_id}'))
+async def get_user(session, chat_id: str) -> Response[UserType]:
+    res = await session.get(url(f'/user/{chat_id}'))
     return Response(res, UserType)
 
 
-def get_user_chat_id(user_id: int) -> str:
-    res = requests.get(url(f'/user/{user_id}/chat_id'))
-    return res.json()
+async def get_user_chat_id(session, user_id: int) -> str:
+    res = await session.get(url(f'/user/{user_id}/chat_id'))
+    return await res.text()
 
 
-def fetch_user() -> [UserType]:
-    res = requests.get(url(f'/user'))
-    return res.json()
+async def fetch_user(session) -> [UserType]:
+    res = await session.get(url(f'/user'))
+    return await res.json()
 
 # data = {
 #     'chat_id': '792451145',

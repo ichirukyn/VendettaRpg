@@ -21,6 +21,7 @@ from tgbot.models.user import DBCommands
 
 async def battle_init(message: Message, state: FSMContext):
     db = DBCommands(message.bot.get('db'))
+    session = message.bot.get('session')
     data = await state.get_data()
 
     enemy_team = data.get('enemy_team')
@@ -29,7 +30,7 @@ async def battle_init(message: Message, state: FSMContext):
     if player_team:
         player_team_update = []
         for player in player_team:
-            new = await init_hero(db, hero_id=player.id)
+            new = await init_hero(db, session, hero_id=player.id)
             new.name = player.name
 
             player_team_update.append(new)
@@ -38,7 +39,7 @@ async def battle_init(message: Message, state: FSMContext):
 
     else:
         hero = data.get('hero')
-        hero = await init_hero(db, hero_id=hero.id)
+        hero = await init_hero(db, session, hero_id=hero.id)
         player_team = [hero]
 
     engine_data = {

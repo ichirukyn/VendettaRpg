@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+import aiohttp
 from aiogram import Bot
 from aiogram import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -64,12 +65,10 @@ async def main():
 
     db = await create_pool(config)
 
-    # Пример как подключить к боту SqlAlchemyORM
-    # engine = create_async_engine("postgresql+asyncpg://vendetta:vendetta@localhost:5432/vendetta", echo=True)
-    # async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    # bot['db_new'] = async_session()
+    session = aiohttp.ClientSession()
 
     bot['config'] = config
+    bot['session'] = session
     bot['db'] = db
     bot['dp'] = dp
 
@@ -83,6 +82,7 @@ async def main():
     try:
         await dp.start_polling()
     finally:
+        await session.close()
         await dp.storage.close()
         await dp.storage.wait_closed()
         await bot.session.close()

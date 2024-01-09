@@ -3,7 +3,11 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
+from tgbot.api.class_ import fetch_class_race
+from tgbot.api.hero import create_hero
+from tgbot.api.hero import get_hero
 from tgbot.api.race import fetch_race
+from tgbot.api.user import create_user
 from tgbot.api.user import get_user
 from tgbot.keyboards.reply import confirm_kb
 from tgbot.keyboards.reply import entry_kb
@@ -20,61 +24,58 @@ from tgbot.models.user import DBCommands
 
 async def register_user(message: Message, state: FSMContext):
     db = DBCommands(message.bot.get('db'))
-
-    # clans = await db.get_clans()
-    # clan_name = clans[randint(0, len(clans) - 1)]
+    session = message.bot.get('session')
 
     name = message.text
 
     data = await state.get_data()
-    race_id = data.get('select_race')
-    class_id = data.get('select_class')
 
     chat_id = message.from_user.id
-    login = message.from_user.first_name
+    race_id = data.get('select_race', 1)
+    class_id = data.get('select_class', 1)
 
-    # ref_id = message.get_args  # TODO: Сделать рефку
+    user_data = await create_user({'chat_id': chat_id, 'login': message.from_user.first_name, 'ref_id': 1})
+    user_id = user_data['id']
 
-    user_id = await db.add_user(chat_id, login, True, ref_id=1)
-    if user_id is not None:
+    try:
         hero = HeroFactory.create_init_hero(user_id, chat_id, name)
 
-        hero_id = await db.add_hero(user_id, hero.name, race_id, class_id)
-        hero.id = hero_id
+        hero_data = await create_hero({'user_id': user_id, 'name': hero.name, 'race_id': race_id, 'class_id': class_id})
+        hero.id = hero_data['id']
 
-        await db.add_hero_stats(hero_id, hero)
-        await db.add_hero_lvl(hero_id, 1, 0)
-        await db.add_hero_weapon(hero_id, 1)
-        await db.add_hero_technique(hero_id, 1)  # TODO: Добавить новые техники с привязкой к классу
+        await db.add_hero_stats(hero.id, hero)
+        await db.add_hero_lvl(hero.id, 1, 0)
+        await db.add_hero_weapon(hero.id, 1)
 
-        # TODO: Переименовать в "поддержка", и переписать на взаимодействие со своей группой
+        # TODO: Добавить новые техники с привязкой к классу , стопорится тут, из-за пустой БД
+        await db.add_hero_technique(hero.id, 1)
         # await db.add_hero_skill(hero_id, 1)
 
         # await db.add_trader_hero(hero_id, 3, 1, 1)
         # await db.add_trader_hero(hero_id, 4, 1, 1)
 
         await state.update_data(hero=hero)
-        await state.update_data(hero_id=hero_id)
+        await state.update_data(hero_id=hero.id)
 
         await RegState.entry.set()
         await message.answer(f"Добро пожаловать в мир Vendetta, {name}!", reply_markup=entry_kb)
-    else:
+    except:
         await message.answer("Произошла ошибка! Напишите @Ichirukyn, разберёмся..")
 
 
 async def select_race(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
+    session = message.bot.get('session')
 
     race_name = message.text
-    race_bd = await db.get_races()
+    races = await fetch_race(session)
     # TODO: Проверить race_name, ничего ли не сломалось
-    for race in race_bd:
+    for race in races:
         if race['name'] == race_name:
             await state.update_data(select_race=race['id'])
             text = race['desc']
             text += '\n\nТеперь выберите стартовый класс:'
 
-            classes = await db.get_race_classes(race['id'])
+            classes = await fetch_class_race(session, race['id'])
             kb = list_kb(classes)
 
             await RegState.select_class.set()
@@ -82,10 +83,10 @@ async def select_race(message: Message, state: FSMContext):
 
 
 async def select_class(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
+    session = message.bot.get('session')
 
     if message.text == keyboard["back"]:
-        races = await db.get_races()
+        races = await fetch_race(session)
         kb = list_kb(races, is_back=False)
 
         await RegState.select_race.set()
@@ -95,7 +96,7 @@ async def select_class(message: Message, state: FSMContext):
     race_id = data.get('select_race')
 
     class_name = message.text
-    classes_bd = await db.get_race_classes(race_id)
+    classes_bd = await fetch_class_race(session, race_id)
 
     for _class in classes_bd:
         if _class['name'] == class_name:
@@ -109,13 +110,13 @@ async def select_class(message: Message, state: FSMContext):
 
 
 async def select_class_confirm(message: Message, state: FSMContext):
-    db = DBCommands(message.bot.get('db'))
+    session = message.bot.get('session')
 
     data = await state.get_data()
     race_id = data.get('select_race')
 
     if message.text == keyboard["back"]:
-        classes = await db.get_race_classes(race_id)
+        classes = fetch_class_race(session, race_id)
         kb = list_kb(classes)
 
         await RegState.select_class.set()
@@ -127,23 +128,26 @@ async def select_class_confirm(message: Message, state: FSMContext):
 
 async def entry_point(message: Message, state: FSMContext):
     db = DBCommands(message.bot.get('db'))
+    session = message.bot.get('session')
 
     chat_id = message.chat.id
     print('chat_id: ', chat_id)
 
-    user = get_user(chat_id)
-    print(user.json['login'])
+    res = await get_user(session, chat_id)
+    user = await res.json()
 
-    if user is None:
-        races = fetch_race()
-        # TODO: Проверить регистрацию
+    if res.status != 200:
+        races = await fetch_race(session)
         kb = list_kb(races, is_back=False)
 
         await RegState.select_race.set()
         return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
     else:
-        hero = await init_hero(db, user_id=user.json['id'])
+        hero_data = await get_hero(session, 0, user['id'])
+        hero_db = await hero_data.json()
+
+        hero = await init_hero(db, session, hero_db.get('id'))
         print(f"hero_id: {hero.id}")
 
         await state.update_data(hero=hero)

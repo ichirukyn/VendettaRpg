@@ -389,6 +389,8 @@ class BattleInterface:
         asyncio.create_task(self.handler_battle_end(order, team_win))
 
     async def handler_battle_end(self, order, team_win):
+        session = self.message.bot.get('session')
+
         for e in self.engine.order:
             log = 'Вы проиграли..'
             kb = battle_revival_kb
@@ -411,7 +413,7 @@ class BattleInterface:
                     log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
                     e.statistic.battle_update(e.statistic.battle)
                     statistics = statistics_to_json(e.statistic)
-                    update_statistic(statistics, e.id)
+                    await update_statistic(session, statistics, e.id)
 
                 if isinstance(e, Hero) and e.sub_action != 'Сбежать':
                     await self.set_state(e.chat_id, state)

@@ -1,4 +1,3 @@
-from typing import Optional
 from typing import TypedDict
 
 
@@ -14,5 +13,4 @@ class UserType(TypedDict):
 class CreateUserType(TypedDict):
     chat_id: str
     login: str
-    is_admin: Optional[bool]
     ref_id: int

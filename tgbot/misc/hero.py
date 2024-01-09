@@ -13,19 +13,17 @@ from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
 
-async def init_hero(db: DBCommands, user_id=None, hero_id=None, is_full=True) -> Hero:
-    if user_id is not None:
-        hero_db = get_hero(0, user_id)
-        hero_db = hero_db.json
-        hero_id = hero_db['id']
-    else:
-        hero_db = get_hero(hero_id, None).json
+async def init_hero(db: DBCommands, session, hero_id, is_full=True) -> Hero:
+    hero_data = await get_hero(session, hero_id, 0)
+    hero_db = await hero_data.json()
 
-    chat_id = get_user_chat_id(int(hero_db['user_id']))
-    hero_db['chat_id'] = chat_id
+    stats_db = await get_hero_stats(session, hero_id)
 
-    stats_db = get_hero_stats(hero_id)
-    hero_lvl = get_hero_lvl(hero_id).json
+    hero_lvl_data = await get_hero_lvl(session, hero_id)
+    hero_lvl = await hero_lvl_data.json()
+
+    chat_id: str = await get_user_chat_id(session, int(hero_db['user_id']))
+    hero_db['chat_id'] = int(chat_id)
 
     hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db)
     hero.flat_init()
@@ -33,14 +31,15 @@ async def init_hero(db: DBCommands, user_id=None, hero_id=None, is_full=True) ->
     hero.init_level(hero_lvl)
 
     if is_full:
-        hero = await full_init_hero(db, hero_id, hero, hero_db)
+        hero = await full_init_hero(db, session, hero_id, hero, hero_db)
 
     return hero
 
 
-async def full_init_hero(db, hero_id, hero, hero_db):
+async def full_init_hero(db, session, hero_id, hero, hero_db):
     team_db = await db.get_hero_team(hero_id)
-    statistic_db = get_statistic(hero_id).json
+    statistic_data = await get_statistic(session, hero_id)
+    statistic_db = await statistic_data.json()
 
     skills = await db.get_hero_skills(hero_id)
 
@@ -48,8 +47,8 @@ async def full_init_hero(db, hero_id, hero, hero_db):
     weapon = await db.get_weapon(hero_weapon['weapon_id'])
 
     hero.active_bonuses = []
-    hero = race_init(hero, hero_db['race_id'])
-    hero = class_init(hero, hero_db['class_id'])
+    hero = await race_init(session, hero, hero_db['race_id'])
+    hero = await class_init(session, hero, hero_db['class_id'])
 
     hero.techniques = []
     technique_db = await db.get_hero_techniques(hero.id)
@@ -77,11 +76,11 @@ async def full_init_hero(db, hero_id, hero, hero_db):
     return hero
 
 
-async def init_team(db, team, hero=None):
+async def init_team(db, session, team, hero=None):
     entity_team = []
 
     for entity in team:
-        h = await init_hero(db, hero_id=entity['hero_id'])
+        h = await init_hero(db, session, hero_id=entity['hero_id'])
 
         if len(entity['prefix']) > 0:
             prefix = f" \"{entity['prefix']}\""

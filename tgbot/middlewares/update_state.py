@@ -28,6 +28,7 @@ class UpdateStatsMiddleware(BaseMiddleware):
         self.kwargs = kwargs
 
     async def on_pre_process_message(self, message: Message, data: dict):
+        session = message.bot.get('session')
         db = DBCommands(message.bot.get('db'))
         dp: Dispatcher = self.kwargs['dp']
 
@@ -43,13 +44,13 @@ class UpdateStatsMiddleware(BaseMiddleware):
 
             # Если игрок в списке "обновляемых" локаций, его состояние обновляется полностью
             if state in list_update or state.split(':')[0] in list_update:
-                hero = await init_hero(db, hero_id=hero.id)
+                hero = await init_hero(db, session, hero_id=hero.id)
 
                 # Если состоит в группе, обновить группу в state
                 if hero.team_id > 0:
                     team = await db.get_team_heroes(hero.team_id)
 
-                    player_team = await init_team(db, team, hero)
+                    player_team = await init_team(db, session, team, hero)
 
                     await dp.storage.update_data(chat=chat_id, player_team=player_team)
                     await dp.storage.update_data(chat=chat_id, leader_id=team[0]['leader_id'])

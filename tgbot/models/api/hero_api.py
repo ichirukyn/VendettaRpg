@@ -1,3 +1,4 @@
+from typing import Optional
 from typing import TypedDict
 
 from tgbot.models.api.level_api import LevelType
@@ -5,6 +6,7 @@ from tgbot.models.api.level_api import LevelType
 
 class HeroType(TypedDict):
     id: int
+    chat_id: Optional[str]
     user_id: int
     name: str
     clan: str
@@ -40,3 +42,10 @@ class HeroLvlType(TypedDict):
     lvl: int
     exp: int
     level: LevelType
+
+
+class CreateHeroType(TypedDict):
+    user_id: int
+    name: str
+    race_id: int
+    class_id: int

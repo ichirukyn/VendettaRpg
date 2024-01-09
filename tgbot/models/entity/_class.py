@@ -35,10 +35,11 @@ class Class(EffectParent):
         self.effects = []
 
 
-def class_init(entity, id):
+async def class_init(session, entity, id):
     try:
-        bonuses = fetch_class_bonuses(id)
-        class_db = get_class(id).json
+        bonuses = await fetch_class_bonuses(session, id)
+        class_data = await get_class(session, id)
+        class_db = await class_data.json()
 
         new_bonuses = []
 
@@ -46,7 +47,6 @@ def class_init(entity, id):
             new_bonuses.append(EffectFactory.create_effect(bonus, source=('class', id)))
 
         _class = ClassFactory.create_class(entity, class_db, new_bonuses)
-        # print(_class.name)
 
         entity._class = _class
         entity._class.apply()
