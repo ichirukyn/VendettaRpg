@@ -14,11 +14,6 @@ async def fetch_class(session, ) -> [ClassType]:
     return await res.json()
 
 
-async def fetch_class_race(session, race_id) -> [ClassType]:
-    res = await session.get(url(f'/class/race/{race_id}'))
-    return await res.json()
-
-
 async def fetch_class_bonuses(session, class_id: int) -> [ClassBonusType]:
-    res = await session.get(url(f'/class/{class_id}/bonus'))
+    res = await session.get(url(f'/class/{class_id}/effect'))
     return await res.json()

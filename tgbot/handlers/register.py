@@ -3,10 +3,10 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
-from tgbot.api.class_ import fetch_class_race
 from tgbot.api.hero import create_hero
 from tgbot.api.hero import get_hero
 from tgbot.api.race import fetch_race
+from tgbot.api.race import fetch_race_classes
 from tgbot.api.user import create_user
 from tgbot.api.user import get_user
 from tgbot.keyboards.reply import confirm_kb
@@ -75,7 +75,7 @@ async def select_race(message: Message, state: FSMContext):
             text = race['desc']
             text += '\n\nТеперь выберите стартовый класс:'
 
-            classes = await fetch_class_race(session, race['id'])
+            classes = await fetch_race_classes(session, race['id'])
             kb = list_kb(classes)
 
             await RegState.select_class.set()
@@ -96,7 +96,7 @@ async def select_class(message: Message, state: FSMContext):
     race_id = data.get('select_race')
 
     class_name = message.text
-    classes_bd = await fetch_class_race(session, race_id)
+    classes_bd = await fetch_race_classes(session, race_id)
 
     for _class in classes_bd:
         if _class['name'] == class_name:
@@ -116,7 +116,7 @@ async def select_class_confirm(message: Message, state: FSMContext):
     race_id = data.get('select_race')
 
     if message.text == keyboard["back"]:
-        classes = fetch_class_race(session, race_id)
+        classes = fetch_race_classes(session, race_id)
         kb = list_kb(classes)
 
         await RegState.select_class.set()

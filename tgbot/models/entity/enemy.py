@@ -1,5 +1,6 @@
 from random import choice
 
+from tgbot.misc.locale import keyboard
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import race_init
@@ -83,11 +84,11 @@ class Enemy(Entity):
 
     def define_action(self):
         # TODO: Расширить проверку и отдельно вывести переменную для сложных нпс (== 4, а не 0, например)
-        if len(self.active_bonuses) == 0 and len(self.skills) != 0:
+        if len(self.active_bonuses) == 2 and len(self.skills) != 0:
             self.select_skill = choice(self.skills)
-            self.action = 'Заклинания'
+            self.action = keyboard['spell_list']
         else:
-            self.action = 'Техника'
+            self.action = keyboard['technique_list']
 
     def define_sub_action(self, team):
         if len(team) > 1:
@@ -111,7 +112,7 @@ class Enemy(Entity):
                 return 'Защита'
 
 
-async def init_enemy(db: DBCommands, enemy_id) -> Enemy:
+async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     print('Enemy init')
 
     stats_db = await db.get_enemy_stats(enemy_id)
@@ -134,8 +135,8 @@ async def init_enemy(db: DBCommands, enemy_id) -> Enemy:
         technique_bonuses = await db.get_technique_bonuses(tech['technique_id'])
         enemy = technique_init(enemy, tech, technique_bonuses)
 
-    enemy = race_init(enemy, stats_db['race_id'])
-    enemy = class_init(enemy, stats_db['class_id'])
+    enemy = await class_init(session, enemy, int(stats_db['class_id']))
+    enemy = await race_init(session, enemy, int(stats_db['race_id']))
 
     return enemy
 

@@ -77,10 +77,10 @@ class HeroInfo:
 
     def equip_stat(self):
         return (
-            f"Оружие: {self.hero.weapon_name} {f'{self.hero.weapon_lvl} ур.' if self.hero.weapon_lvl > 0 else ''} \n"
+            f"Оружие: *{self.hero.weapon_name}* {f'({self.hero.weapon_lvl} ур.)' if self.hero.weapon_lvl > 0 else ''} \n"
             f"Описание: {self.hero.weapon_desc}\n"
             f"\n"
-            f"Урон: {self.hero.weapon_damage}\n"
+            f"• Урон: {formatted(self.hero.weapon_damage)}\n"
         )
 
     def active_bonuses(self):

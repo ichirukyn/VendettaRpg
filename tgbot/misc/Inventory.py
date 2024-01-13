@@ -1,4 +1,5 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup
 
 from tgbot.misc.locale import keyboard
 from tgbot.models.user import DBCommands
@@ -26,8 +27,7 @@ class WeaponItem(Item):
             self.is_equip = True
 
     def inventory(self):
-        text = f"Рюкзак вмещает предметы необходимые в путешествии.\n" \
-               f"{self.name}\n{self.desc}\nУрон — {self.value}\n\n"
+        text = f"*{self.name}*\n{self.desc}\n•Урон — {self.value}\n\n"
         kb = InlineKeyboardMarkup(row_width=1)
 
         if self.is_equip:

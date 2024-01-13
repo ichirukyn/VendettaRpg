@@ -45,7 +45,32 @@ class HeroLvlType(TypedDict):
 
 
 class CreateHeroType(TypedDict):
-    user_id: int
+    id: int
     name: str
     race_id: int
     class_id: int
+
+
+class HeroTechniqueType(TypedDict):
+    id: int
+    hero_id: int
+    technique_id: int
+    lvl: int
+    name: str
+    desc: str
+    desc_short: str
+    damage: int
+    type_damage: str
+    distance: str
+    is_stack: bool
+    class_id: int
+    race_id: int
+    type: str
+    cooldown: int
+
+
+class CreateHeroTechniqueType(TypedDict):
+    id: int
+    hero_id: int
+    technique_id: int
+    lvl: int

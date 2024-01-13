@@ -15,6 +15,7 @@ from tgbot.handlers.admin import register_admin
 from tgbot.handlers.arena import arena
 from tgbot.handlers.battle.handlers import battle
 from tgbot.handlers.character import character
+from tgbot.handlers.fortress import fortress
 from tgbot.handlers.location import location
 from tgbot.handlers.register import start
 from tgbot.handlers.shop import shop
@@ -48,6 +49,7 @@ def register_all_handlers(dp):
 
     arena(dp)
     tower(dp)
+    fortress(dp)
     battle(dp)
 
 

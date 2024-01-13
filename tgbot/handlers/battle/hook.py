@@ -1,3 +1,4 @@
+from tgbot.misc.locale import keyboard
 from tgbot.misc.other import formatted
 from tgbot.models.entity._class import Class
 from tgbot.models.entity.enemy import Enemy
@@ -73,7 +74,7 @@ class BattleEngine:
                     return self.check_hp()
 
                 entity.define_action()
-                entity.define_sub_action(enemies)
+                entity.sub_action = entity.define_sub_action(enemies)
                 entity.choice_technique()
                 entity.select_target(teammates, enemies)
 
@@ -87,7 +88,7 @@ class BattleEngine:
     def battle_action(self, attacker: Entity, defender, skill):
         action_return = {'name': attacker.action, 'target': defender, 'attacker': attacker, 'log': '⁢'}
 
-        if attacker.action == 'Техника':
+        if attacker.action == keyboard['technique_list']:
             if not isinstance(defender, Hero) or not isinstance(defender, Enemy):
                 action_return['log'] = self.entity_attack(attacker, defender)
             else:
@@ -107,7 +108,7 @@ class BattleEngine:
                 else:
                     attacker.statistic.battle.kill_enemy += 1
 
-        elif attacker.action == 'Заклинания':
+        elif attacker.action == keyboard['spell_list']:
             log = skill.activate()
             action_return['log'] = log
             action_return['attacker'] = skill.hero

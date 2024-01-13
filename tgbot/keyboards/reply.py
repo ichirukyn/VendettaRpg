@@ -12,7 +12,7 @@ entry_kb = ReplyKeyboardMarkup(
     resize_keyboard=True)
 
 back_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text=keyboard['start'])]],
+    keyboard=[[KeyboardButton(text=keyboard['back'])]],
     resize_keyboard=True)
 
 next_kb = ReplyKeyboardMarkup(
@@ -162,6 +162,7 @@ def character_kb(free_stats=0):
     kb = [
         [KeyboardButton(text=keyboard['info'])],
         [KeyboardButton(text=keyboard['equipment']), KeyboardButton(text=keyboard['inventory'])],
+        [KeyboardButton(text=keyboard['techniques'])],
         [KeyboardButton(text=keyboard['back'])]
     ]
 
@@ -183,7 +184,8 @@ equip_kb = ReplyKeyboardMarkup(
 # Inventory
 inventory_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text=keyboard['weapon'])],
+        [KeyboardButton(text=keyboard['weapon']), KeyboardButton(text=keyboard['quest'])],
+        [KeyboardButton(text=keyboard['other'])],
         [KeyboardButton(text=keyboard['back'])]
     ],
 

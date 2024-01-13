@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
+from tgbot.api.technique import fetch_technique
 from tgbot.handlers.team import to_team_main
 from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.inline import shop_buy_inline
@@ -186,15 +187,15 @@ async def location_character(message: Message, state: FSMContext):
         await CharacterState.inventory.set()
         return await message.answer(locale['inventory'], reply_markup=inventory_kb)
 
-    # if message.text == '🏵 Мастерство':
-    #     db = DBCommands(message.bot.get('db'))
-    #
-    #     skills = await db.get_skills()
-    #     kb = list_inline(skills)
-    #
-    #     await CharacterState.skills.set()
-    #     await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
-    #     return await message.answer(locale['skills_select'], reply_markup=kb)
+    if message.text == keyboard['techniques']:
+        session = message.bot.get('session')
+
+        techniques = await fetch_technique(session)
+        kb = list_inline(techniques)
+
+        await CharacterState.technique.set()
+        await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
+        return await message.answer(locale['techniques_select'], reply_markup=kb)
 
     data = await state.get_data()
     hero = data['hero']

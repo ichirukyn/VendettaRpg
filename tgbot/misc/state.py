@@ -1,4 +1,5 @@
-from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.dispatcher.filters.state import State
+from aiogram.dispatcher.filters.state import StatesGroup
 
 
 class RegState(StatesGroup):
@@ -33,6 +34,8 @@ class CharacterState(StatesGroup):
     inventory_action = State()
     skills = State()
     skill_fix = State()
+    technique = State()
+    technique_fix = State()
     distribution = State()
     distribution_menu = State()
     all_stats = State()
@@ -68,6 +71,11 @@ class TowerState(StatesGroup):
     arena = State()
     select_enemy = State()
     select_floor = State()
+
+
+class FortressState(StatesGroup):
+    select_floor = State()
+    select_enemy = State()
 
 
 class ArenaState(StatesGroup):

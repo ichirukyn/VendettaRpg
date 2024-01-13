@@ -212,8 +212,8 @@ class BattleInterface:
         data = await state.get_data()
         hero = data.get('hero')
 
-        if message.text == 'Техника':
-            hero.action = 'Техника'
+        if message.text == keyboard['technique_list']:
+            hero.action = keyboard['technique_list']
             await self.state.update_data(hero=hero)
 
             techniques = await self.db.get_hero_techniques(hero.id)
@@ -222,8 +222,8 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.select_technique)
             await message.answer('Выбери технику:', reply_markup=kb)
 
-        elif message.text == 'Заклинания':
-            hero.action = 'Заклинания'
+        elif message.text == keyboard['spell_list']:
+            hero.action = keyboard['spell_list']
             await self.state.update_data(hero=hero)
 
             kb = list_object_kb(hero.skills)

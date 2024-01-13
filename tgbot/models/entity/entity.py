@@ -5,11 +5,10 @@ from tgbot.models.entity.entity_base.entity_damage import EntityDamage
 from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
-from tgbot.models.entity.race import Race
 from tgbot.models.entity.skill import Skill
 
 
-class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
+class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
     lvl = 1
     team_id = 0
     is_leader = False
@@ -124,8 +123,15 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
         self.total_stats = self.sum_stats()
 
     def update_stats_percent(self):
-        self.hp_percent = round(self.hp_max / self.hp)
-        self.mana_percent = round(self.mana_max / self.mana)
+        if self.hp < 1:
+            self.hp_percent = 0
+        else:
+            self.hp_percent = round(self.hp_max / self.hp)
+
+        if self.mana < 1:
+            self.mana_percent = 0
+        else:
+            self.mana_percent = round(self.mana_max / self.mana)
 
     def sum_stats(self):
         return self.flat_strength + self.flat_health + self.flat_speed + self.flat_dexterity + self.flat_soul + \
@@ -248,7 +254,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
                 (base_dmg * bonus_type * defense * self.bonus_damage * (defs * defender.resist + defense)) + 0
             total_damage = total_damage_def
 
-            self.statistic.battle.block_damage += total_damage - total_damage_def
+            self.statistic.battle.block_damage += round(total_damage - total_damage_def)
 
         if random() < self.crit_rate:
             total_damage = total_damage + (total_damage * self.crit_damage)
@@ -267,5 +273,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, Race):
         if defender.sub_action == 'Уворот' and random() < evasion_chance:
             self.statistic.battle.evasion_count += 1
             return 0
+
+        if defender.sub_action != 'Уворот' and round(total_damage) < 1:
+            total_damage = 1
 
         return round(total_damage)
