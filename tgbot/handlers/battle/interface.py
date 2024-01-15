@@ -70,14 +70,14 @@ class BattleInterface:
 
         await self.dp.storage.update_data(chat=chat_id, **data)
 
-    async def check_hp(self):
+    async def check_hp(self, order=None):
         team_win = self.engine.check_hp()
 
         if team_win is not None:
-            data = await self.state.get_data()
-            order = data.get('order')
+            if order is None:
+                data = await self.state.get_data()
+                order = data.get('order')
 
-            # await self.handler_battle_end(order, team_win)
             self.handler_battle_end_start(order, team_win)
             return True
 
@@ -90,12 +90,18 @@ class BattleInterface:
 
     async def battle(self):
         order, entity, who, i, log = self.engine.battle()
+        move = entity.debuff_control_check('move')
 
-        if log is not None and entity.debuff_control_check('move'):
+        if who == 'win':
+            return self.check_hp()
+
+        if not move:
             if isinstance(entity, Hero):
                 await self.set_state(entity.chat_id, BattleState.load)
 
-            await self.send_all(entity, log, log, None, next_kb)
+            if log is not None:
+                await self.send_all(entity, log, log, None, next_kb)
+
             order, entity, who, i, log = self.engine.battle()
         elif log is not None:
             await self.send_all(entity, log, log, None, next_kb)
@@ -206,6 +212,7 @@ class BattleInterface:
             await self.save_battle('order', self.engine.order)
             await self.send_all(hero, text, text, None, home_kb)
 
+            await self.battle()
             await self.check_hp()
 
     async def process_user_turn(self, message: Message, state: FSMContext):
@@ -216,8 +223,7 @@ class BattleInterface:
             hero.action = keyboard['technique_list']
             await self.state.update_data(hero=hero)
 
-            techniques = await self.db.get_hero_techniques(hero.id)
-            kb = list_kb(techniques)
+            kb = list_kb(hero.techniques)
 
             await self.set_state(hero.chat_id, BattleState.select_technique)
             await message.answer('Выбери технику:', reply_markup=kb)
@@ -396,6 +402,11 @@ class BattleInterface:
             kb = battle_revival_kb
             state = BattleState.revival
 
+            if isinstance(e, Hero):
+                e.statistic.battle_update(e.statistic.battle)
+                statistics = statistics_to_json(e.statistic)
+                await update_statistic(session, statistics, e.id)
+
             for winner in team_win:
                 if isinstance(e, Hero) and isinstance(winner, Hero):
                     if e.chat_id == winner.chat_id:
@@ -411,9 +422,6 @@ class BattleInterface:
 
                 if isinstance(e, Hero) and self.engine.is_dev:
                     log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
-                    e.statistic.battle_update(e.statistic.battle)
-                    statistics = statistics_to_json(e.statistic)
-                    await update_statistic(session, statistics, e.id)
 
                 if isinstance(e, Hero) and e.sub_action != 'Сбежать':
                     await self.set_state(e.chat_id, state)

@@ -1,5 +1,4 @@
 from tgbot.api.class_ import fetch_class_bonuses
-from tgbot.api.class_ import get_class
 from tgbot.models.entity.effect import EffectFactory
 from tgbot.models.entity.effect import EffectParent
 
@@ -35,11 +34,10 @@ class Class(EffectParent):
         self.effects = []
 
 
-async def class_init(session, entity, id):
+async def class_init(session, entity, class_db):
     try:
+        id = class_db.get('id')
         bonuses = await fetch_class_bonuses(session, id)
-        class_data = await get_class(session, id)
-        class_db = await class_data.json()
 
         new_bonuses = []
 

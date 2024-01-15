@@ -51,32 +51,35 @@ class Technique(EffectParent):
         if not self.is_activated() or self.is_stack:
             if self.cooldown_current == 0:
                 return True
-        else:
-            return False
+
+        return False
 
     def activate(self, target=None) -> str:
         if self.check:
-            self.apply(target)
             self.cooldown_current = self.cooldown
+            self.apply(target)
             return f"💥 {self.entity.name} использовал {self.name}\n"
         else:
             return "Техника была активирована раньше\n"
 
     def deactivate(self) -> str:
-        self.remove()
+        self.cancel()
         return f"Техника {self.name} была деактивирована"
 
     def apply(self, target=None):
         tech = deepcopy(self)
 
         for bonus in self.bonuses:
+            if bonus.direction != 'my' and target is not None:
+                bonus.target = target
+
             if not bonus.is_single:
-                if bonus.apply(self.entity, target) and bonus.direction == 'my':
+                if bonus.apply(self.entity) and bonus.direction == 'my':
                     self.effects.append(bonus)
                 else:
                     tech.effects.append(bonus)
             else:
-                bonus.apply(self.entity, target)
+                bonus.apply(self.entity)
 
         if len(self.effects) != 0:
             self.entity.active_bonuses.append(self)
@@ -101,14 +104,14 @@ def technique_init(entity, technique_db, technique_bonuses):
         new_bonuses = []
 
         for bonus in technique_bonuses:
-            new_bonuses.append(EffectFactory.create_effect(bonus, source=('Technique', technique_db['technique_id'])))
+            new_bonuses.append(
+                EffectFactory.create_effect(bonus, source=('Technique', technique_db.get('technique_id', 0)))
+            )
 
         technique = TechniqueFactory.create_technique(entity, technique_db)
         technique.bonuses = new_bonuses
 
-        entity.techniques.append(technique)
-
-        return entity
+        return technique
     except KeyError as e:
         print(e)
-        return entity
+        return None

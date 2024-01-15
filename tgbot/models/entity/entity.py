@@ -4,11 +4,13 @@ from random import random
 from tgbot.models.entity.entity_base.entity_damage import EntityDamage
 from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
+from tgbot.models.entity.entity_base.entity_stats import EntityStats
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
 from tgbot.models.entity.skill import Skill
+from tgbot.models.entity.techniques import Technique
 
 
-class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
+class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats):
     lvl = 1
     team_id = 0
     is_leader = False
@@ -21,17 +23,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
     hp_percent = 1  # 1 - 100%
     hp_max = 1
 
-    # Deprecated
-    technique_damage = 1
-    # Deprecated
-    technique_name = ''
+    technique: Technique | None = None
 
-    technique = None
-
-    active_bonuses = []
-    effects = []
-    skills = []
-    techniques = []
     select_skill = None
     race = None
     _class = None
@@ -41,8 +34,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
     sub_action = ''
     target = None
 
-    mana_modify = 10
-    hp_modify = 10
+    mana_modify = 5
+    hp_modify = 5
 
     flat_strength = 0
     flat_health = 0
@@ -89,6 +82,11 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
         self.debuff_list = []
 
         self.total_stats = self.sum_stats()
+
+        self.active_bonuses = []
+        self.effects = []
+        self.skills = []
+        self.techniques = []
 
     # Stats
     def flat_init(self):
@@ -145,9 +143,19 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
             if isinstance(bonus, Skill):
                 bonus.turn_check()
 
-    # def init_race_bonus(self, race_bonus: Race):
-    #     self.race_bonus = race_bonus
-    #     self.race_bonus.race_apply()
+            if isinstance(bonus, Technique):
+                if bonus.cooldown_current <= 0 and bonus.cooldown != 0:
+                    bonus.deactivate()
+
+                    if bonus in self.active_bonuses:
+                        self.active_bonuses.remove(bonus)
+
+                bonus.cooldown_decrease()
+                bonus.check_effect()
+
+    def technique_cooldown(self):
+        for technique in self.techniques:
+            technique.cooldown_decrease()
 
     def is_active_skill(self, name):
         for skill in self.active_bonuses:
@@ -160,9 +168,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
         check = True
 
         for debuff in self.debuff_list:
-            if action == 'move' and debuff['type'] == 'stun':
+            if action == 'move' and debuff.get('attribute') == 'stun':
                 check = False
-            if action == 'turn' and debuff['type'] == 'root':
+            if action == 'turn' and debuff.get('attribute') == 'root':
                 check = False
 
         return check
@@ -172,7 +180,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
         for debuff in self.debuff_list:
             if debuff['duration'] <= 0:
                 self.debuff_list.remove(debuff)
-                log = f"{self.name} снял ослабление ({debuff.get('name')})"
+                return f"{self.name} снял ослабление ({debuff.get('name')})"
 
             debuff['duration'] -= 1
 
@@ -214,7 +222,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
         main_attr = attacker.__getattribute__(attacker._class.main_attr)
         def_res = self.__getattribute__(debuff['element'])
 
-        damage = main_attr * (1 + debuff['damage']) * (1 + element_damage)
+        damage = main_attr * (1 + element_damage)
         defs = (100 + attacker.lvl) / \
                ((100 + self.lvl) * (1 - def_res) * (1 - attacker.ignore_resist) + (100 + attacker.lvl))
 
@@ -247,11 +255,11 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel):
         total_damage = (base_dmg * bonus_type * self.bonus_damage * (defs + defender.resist)) + 1
 
         if defender.sub_action == 'Защита':
-            defense = randint(5, 40) / 100
+            defense = randint(1, 15) / 100
 
             # TODO 0 -- бонус экипировки
             total_damage_def = \
-                (base_dmg * bonus_type * defense * self.bonus_damage * (defs * defender.resist + defense)) + 0
+                (base_dmg * bonus_type * defense * self.bonus_damage * (defs + defender.resist + defense)) + 0
             total_damage = total_damage_def
 
             self.statistic.battle.block_damage += round(total_damage - total_damage_def)

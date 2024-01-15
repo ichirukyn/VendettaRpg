@@ -83,7 +83,10 @@ def list_kb(lists, columns=2, is_back=True):
         row = []
 
         for list in sublist:
-            row.append(KeyboardButton(text=list['name']))
+            try:
+                row.append(KeyboardButton(text=list['name']))
+            except:
+                row.append(KeyboardButton(text=list.__getattribute__('name')))
 
         kb.append(row)
     if is_back:

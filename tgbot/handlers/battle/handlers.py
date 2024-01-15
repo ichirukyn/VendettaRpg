@@ -2,7 +2,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
 from tgbot.handlers.battle.interface import BattleFactory
+from tgbot.keyboards.reply import home_kb
 from tgbot.misc.state import BattleState
+from tgbot.misc.state import LocationState
 from tgbot.models.user import DBCommands
 
 
@@ -15,6 +17,15 @@ async def battle_handler_init(message: Message, state: FSMContext, ):
 
     config = message.bot.get('config')
     is_dev = config.tg_bot.is_dev
+
+    if engine_data is None:
+        engine_data = {
+            "enemy_team": [data.get('hero')],
+            "player_team": [],
+            "exit_state": LocationState.home,
+            "exit_message": 'Была ошибка...',
+            "exit_kb": home_kb,
+        }
 
     factory = BattleFactory(is_dev=is_dev, **engine_data)
     ui = factory.create_battle_interface(message, state, db, engine, logger)

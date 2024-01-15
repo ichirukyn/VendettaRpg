@@ -9,6 +9,7 @@ from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import town_kb
 from tgbot.misc.hero import init_hero
+from tgbot.misc.hero import init_team
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
@@ -24,19 +25,13 @@ async def battle_init(message: Message, state: FSMContext):
     session = message.bot.get('session')
     data = await state.get_data()
 
-    enemy_team = data.get('enemy_team')
-    player_team = data.get('player_team')
+    hero = data.get('hero')
 
-    if player_team:
-        player_team_update = []
-        for player in player_team:
-            new = await init_hero(db, session, hero_id=player.id)
-            new.name = player.name
+    enemy_team = data.get('enemy_team', [])
 
-            player_team_update.append(new)
-
-        player_team = player_team_update
-
+    if hero.team_id > 0 and hero.is_leader:
+        team = await db.get_team_heroes(hero.team_id)
+        player_team = await init_team(db, session, team, hero)
     else:
         hero = data.get('hero')
         hero = await init_hero(db, session, hero_id=hero.id)

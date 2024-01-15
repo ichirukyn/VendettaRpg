@@ -1,12 +1,18 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
+from aiogram.types import CallbackQuery
+from aiogram.types import Message
+from aiogram.types import ReplyKeyboardRemove
 
-from tgbot.keyboards.inline import team_main_inline, list_inline, yes_no_inline, teammate_menu_inline
+from tgbot.keyboards.inline import list_inline
+from tgbot.keyboards.inline import team_main_inline
+from tgbot.keyboards.inline import teammate_menu_inline
+from tgbot.keyboards.inline import yes_no_inline
 from tgbot.keyboards.reply import team_private_kb
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
-from tgbot.misc.state import TeamState, LocationState
+from tgbot.misc.state import LocationState
+from tgbot.misc.state import TeamState
 from tgbot.models.user import DBCommands
 
 
@@ -22,13 +28,13 @@ async def team_add(message: Message, state: FSMContext):
         team_private = data.get('team_private')
 
         # TODO: Переписать на возвращение id с создания команды
+        team = await db.add_team(hero.id, team_name, team_private)
+        await db.add_hero_team(hero.id, team['id'], True)
 
-        test = await db.add_team(hero.id, team_name, team_private)
+        hero.is_leader = True
+        hero.team_id = team['id']
 
-        team_db = await db.get_hero_team(hero.id)
-
-        await db.add_hero_team(hero.id, test['id'], True)
-
+        await state.update_data(hero=hero)
         await state.update_data(team_name='')
         await state.update_data(team_private=False)
 
@@ -171,8 +177,11 @@ async def team_accept_invite(message: Message, state: FSMContext):
     try:
         invite_team_id = data.get('invite_team_id')
         hero = data.get('hero')
+        hero.team_id = invite_team_id
 
         await db.add_hero_team(hero.id, invite_team_id)
+        await state.update_data(hero=hero)
+
         await message.answer('Вы вступили в команду!')
         await to_team_main(message, state)
 

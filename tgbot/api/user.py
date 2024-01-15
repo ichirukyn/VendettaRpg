@@ -1,7 +1,6 @@
 import aiohttp
 
 from tgbot.api import url
-from tgbot.models.api.api import Response
 from tgbot.models.api.user_api import CreateUserType
 from tgbot.models.api.user_api import UserType
 
@@ -12,19 +11,28 @@ async def create_user(body: CreateUserType):
         return await res.json()
 
 
-async def get_user(session, chat_id: str) -> Response[UserType]:
-    res = await session.get(url(f'/user/{chat_id}'))
-    return Response(res, UserType)
+async def get_user(session, chat_id: str) -> UserType | None:
+    async with session.get(url(f'/user/{chat_id}')) as res:
+        if res.status == 200:
+            return await res.json()
+        return None
 
 
 async def get_user_chat_id(session, user_id: int) -> str:
-    res = await session.get(url(f'/user/{user_id}/chat_id'))
-    return await res.text()
+    async with session.get(url(f'/user/{user_id}/chat_id')) as res:
+        return await res.text()
+
+
+async def get_user_hero(session, user_id: int) -> UserType | None:
+    async with session.get(url(f'/user/{user_id}/hero')) as res:
+        if res.status == 200:
+            return await res.json()
+        return None
 
 
 async def fetch_user(session) -> [UserType]:
-    res = await session.get(url(f'/user'))
-    return await res.json()
+    async with session.get(url(f'/user')) as res:
+        return await res.json()
 
 # data = {
 #     'chat_id': '792451145',

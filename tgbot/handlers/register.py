@@ -4,11 +4,11 @@ from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
 from tgbot.api.hero import create_hero
-from tgbot.api.hero import get_hero
 from tgbot.api.race import fetch_race
 from tgbot.api.race import fetch_race_classes
 from tgbot.api.user import create_user
 from tgbot.api.user import get_user
+from tgbot.api.user import get_user_hero
 from tgbot.keyboards.reply import confirm_kb
 from tgbot.keyboards.reply import entry_kb
 from tgbot.keyboards.reply import home_kb
@@ -34,10 +34,10 @@ async def register_user(message: Message, state: FSMContext):
     race_id = data.get('select_race', 1)
     class_id = data.get('select_class', 1)
 
-    user_data = await create_user({'chat_id': chat_id, 'login': message.from_user.first_name, 'ref_id': 1})
-    user_id = user_data['id']
-
     try:
+        user_data = await create_user({'chat_id': chat_id, 'login': message.from_user.first_name, 'ref_id': 1})
+        user_id = user_data.get('id')
+
         hero = HeroFactory.create_init_hero(user_id, chat_id, name)
 
         hero_data = await create_hero({'user_id': user_id, 'name': hero.name, 'race_id': race_id, 'class_id': class_id})
@@ -59,8 +59,9 @@ async def register_user(message: Message, state: FSMContext):
 
         await RegState.entry.set()
         await message.answer(f"Добро пожаловать в мир Vendetta, {name}!", reply_markup=entry_kb)
-    except:
-        await message.answer("Произошла ошибка! Напишите @Ichirukyn, разберёмся..")
+    except Exception as e:
+        text = f"Произошла ошибка! Напишите @Ichirukyn, разберёмся..\nОшибка:{e}"
+        await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
 
 async def select_race(message: Message, state: FSMContext):
@@ -116,7 +117,7 @@ async def select_class_confirm(message: Message, state: FSMContext):
     race_id = data.get('select_race')
 
     if message.text == keyboard["back"]:
-        classes = fetch_race_classes(session, race_id)
+        classes = await fetch_race_classes(session, race_id)
         kb = list_kb(classes)
 
         await RegState.select_class.set()
@@ -133,29 +134,34 @@ async def entry_point(message: Message, state: FSMContext):
     chat_id = message.chat.id
     print('chat_id: ', chat_id)
 
-    res = await get_user(session, chat_id)
-    user = await res.json()
+    user = await get_user(session, chat_id)
 
-    if res.status != 200:
-        races = await fetch_race(session)
-        kb = list_kb(races, is_back=False)
+    try:
+        if user is None:
+            races = await fetch_race(session)
+            kb = list_kb(races, is_back=False)
 
-        await RegState.select_race.set()
-        return await message.answer('Выбери стартовую расу:', reply_markup=kb)
+            await RegState.select_race.set()
+            return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
-    else:
-        hero_data = await get_hero(session, 0, user['id'])
-        hero_db = await hero_data.json()
+        else:
+            hero_data = await get_user_hero(session, user.get('id'))
 
-        hero = await init_hero(db, session, hero_db.get('id'))
-        print(f"hero_id: {hero.id}")
+            if hero_data is None:
+                text = 'Ошибка получения героя, звоните Ichiru..'
+                return await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
-        await state.update_data(hero=hero)
-        await state.update_data(hero_id=hero.id)
+            hero = await init_hero(db, session, hero_data=hero_data)
+            print(f"hero_id: {hero.id}")
 
-        print('-- Exit on /start -- \n')
-        await LocationState.home.set()
-        return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
+            await state.update_data(hero=hero)
+            await state.update_data(hero_id=hero.id)
+
+            print('-- Exit on /start -- \n')
+            await LocationState.home.set()
+            return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
+    except Exception as e:
+        await message.answer(f'Ошибка..\n {e}', reply_markup=ReplyKeyboardRemove())
 
 
 async def started(message: Message):

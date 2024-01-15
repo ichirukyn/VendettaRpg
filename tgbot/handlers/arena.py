@@ -73,8 +73,8 @@ async def arena_select_type(message: Message, state: FSMContext):
             await dp.storage.update_data(chat=leader.chat_id, pvp_type=pvp_type)
             await message.bot.send_message(chat_id=leader.chat_id, text=text_team)
 
-    except TypeError:
-        print('Arena Error')
+    except TypeError as e:
+        print(f'Arena Error\n{e}')
 
     if message.text == 'В бой':
         return await arena_team_battle(message, state)

@@ -1,4 +1,5 @@
-from abc import abstractmethod, ABC
+from abc import ABC
+from abc import abstractmethod
 
 
 class EffectABC(ABC):
@@ -8,11 +9,11 @@ class EffectABC(ABC):
     value = int
 
     @abstractmethod
-    def apply(self, hero, target) -> bool:
+    def apply(self, hero) -> bool:
         pass
 
     @abstractmethod
-    def remove(self, hero, target):
+    def cancel(self, hero):
         pass
 
     @abstractmethod
@@ -47,5 +48,5 @@ class EffectParentABC(ABC):
         pass
 
     @abstractmethod
-    def remove(self):
+    def cancel(self):
         pass

@@ -1,5 +1,4 @@
 from tgbot.api import url
-from tgbot.models.api.api import Response
 from tgbot.models.api.statistic import StatisticType
 
 
@@ -9,23 +8,21 @@ async def create_statistic(session, body: StatisticType) -> StatisticType:
 
 
 async def update_statistic(session, body: StatisticType, hero_id: int) -> StatisticType:
-    res = await session.put(url(f'/statistic/{hero_id}'), json=body)
-    return await res.json()
+    async with session.put(url(f'/statistic/{hero_id}'), json=body) as res:
+        return await res.json()
 
 
-async def get_statistic(session, hero_id: str) -> Response[StatisticType]:
-    res = await session.get(url(f'/statistic/{hero_id}'))
-    return Response(res, StatisticType)
+async def get_statistic(session, hero_id: str) -> StatisticType | None:
+    async with session.get(url(f'/statistic/{hero_id}')) as res:
+        if res.status == 200:
+            return await res.json()
 
-
-async def get_statistic_chat_id(session, statistic_id: int) -> str:
-    res = await session.get(url(f'/statistic/{statistic_id}/chat_id'))
-    return await res.json()
+        return None
 
 
 async def fetch_statistic(session, ) -> [StatisticType]:
-    res = await session.get(url(f'/statistic'))
-    return await res.json()
+    async with session.get(url(f'/statistic')) as res:
+        return await res.json()
 
 
 def statistics_to_json(statistics):
@@ -59,5 +56,3 @@ def statistics_to_json(statistics):
     }
 
     return data
-
-# print(create_statistic(data))

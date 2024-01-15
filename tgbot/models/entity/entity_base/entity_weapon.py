@@ -5,7 +5,7 @@ class EntityWeapon:
     weapon_modify = 0
     weapon_damage = 1
 
-    def add_weapon(self, weapon, lvl):
+    def init_weapon(self, weapon, lvl):
         self.weapon_name = weapon['name']
         self.weapon_desc = weapon['desc']
         self.weapon_modify = weapon['modify']

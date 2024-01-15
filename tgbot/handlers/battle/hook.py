@@ -51,14 +51,19 @@ class BattleEngine:
 
     def battle(self):
         i = self.order_index
+        log = None
 
         while i < len(self.order):
             entity = self.order[i]
 
             entity.check_active_skill()
+            entity.technique_cooldown()
             log = entity.debuff_round_check()
 
             self.order_index += 1
+
+            if self.check_hp() is not None:
+                return self.order, entity, 'win', i, log
 
             if entity.hp <= 0:
                 return self.battle()
@@ -69,9 +74,6 @@ class BattleEngine:
             else:
                 enemies = self.target_enemy_team(entity)
                 teammates = self.target_teammate_team(entity)
-
-                if len(enemies) == 0:
-                    return self.check_hp()
 
                 entity.define_action()
                 entity.sub_action = entity.define_sub_action(enemies)
@@ -103,7 +105,7 @@ class BattleEngine:
                 # stats get
                 defender.statistic.battle.death += 1
 
-                if defender.id != 0:
+                if isinstance(defender, Hero):
                     attacker.statistic.battle.kill_hero += 1
                 else:
                     attacker.statistic.battle.kill_enemy += 1
@@ -141,8 +143,8 @@ class BattleEngine:
     def target_teammate_team(self, target, check_hp=True):
         team = self.player_team
 
-        for player in self.player_team:
-            if target.name != player.name:
+        for enemy in self.enemy_team:
+            if target.name == enemy.name:
                 team = self.enemy_team
 
         if check_hp:
@@ -191,6 +193,7 @@ class BattleEngine:
     def entity_attack(attacker, defender):
         log = ''
         hp = attacker.hp
+        hp_def = defender.hp
 
         log += attacker.technique.activate(defender)
 
@@ -198,14 +201,26 @@ class BattleEngine:
             for attr in vars(defender):
                 setattr(attacker, attr, getattr(defender, attr))
 
-        if attacker.technique.type == 'support' and attacker.technique.damage == 0:
-            if attacker.name == defender.name:
-                log = f"{attacker.name} применил технику {attacker.technique.name}\n"
-            else:
-                log = f"{attacker.name} применил технику {attacker.technique.name} к {defender.name}\n"
+        if attacker.name == defender.name:
+            log = f"{attacker.name} применил технику {attacker.technique.name}\n"
+        else:
+            log = f"{attacker.name} применил технику {attacker.technique.name} к {defender.name}\n"
 
+        if attacker.technique.type == 'support' and attacker.technique.damage == 0:
+            if attacker.hp > attacker.hp_max:
+                attacker.hp = attacker.hp_max
+
+            if defender.hp > defender.hp_max:
+                defender.hp = defender.hp_max
+
+            delta = 0
             if hp < attacker.hp:
                 delta = attacker.hp - hp
+
+            if hp_def < defender.hp:
+                delta = defender.hp - hp
+
+            if delta != 0:
                 attacker.statistic.battle.healing += delta
                 attacker.statistic.battle.check_max('healing_max', delta)
                 log = f"{defender.name} восстановил ❤️{formatted(delta)}"
@@ -235,8 +250,8 @@ class BattleEngine:
             else:
                 attacker.statistic.battle.hits_count += 1
 
-                if attacker.technique_name != '':
-                    log = f"⚔️ {attacker.name} использовал \"{attacker.technique_name}\" по {defender.name} " \
+                if attacker.technique.name != '':
+                    log = f"⚔️ {attacker.name} использовал \"{attacker.technique.name}\" по {defender.name} " \
                           f"и нанес {formatted(total_damage)} урона.\n"
 
                 else:

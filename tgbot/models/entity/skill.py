@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 from tgbot.models.entity.effect import EffectFactory
 from tgbot.models.entity.effect import EffectParent
@@ -49,7 +50,7 @@ class Skill(EffectParent):
         print('Check start')
         if self.duration is not None:
             if self.duration == 0:
-                self.remove()
+                self.cancel()
             else:
                 self.duration -= 1
 
@@ -59,7 +60,7 @@ class Skill(EffectParent):
             now = datetime.now()
 
             if now > time:
-                self.remove()
+                self.cancel()
 
 
 async def skills_init(entity, skills, db):

@@ -61,29 +61,36 @@ class Effect(EffectABC, ABC):
         self.name = name
         self.type = effect_type
         self.duration = duration
+        self.duration = duration
+        self.duration_current = 0
         self.direction = direction
         self.is_single = is_single
 
         self.condition_first = condition_first
         self.condition = condition
         self.condition_second = condition_second
+        self.target = None
+
+    def cooldown_decrease(self):
+        if self.duration_current > 0:
+            self.duration_current -= 1
 
     def check(self) -> bool:
         if self.condition_first is not None:
             return condition_operator[self.condition](self.condition_first, self.condition_second)
 
-    def apply(self, hero, target=None) -> bool:
+    def apply(self, hero) -> bool:
         pass
 
-    def remove(self, hero, target=None):
+    def cancel(self, hero):
         pass
 
 
 class BonusEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero):
         entity = hero
-        if target is not None and self.direction != 'my':
-            entity = target
+        if self.target is not None and self.direction != 'my':
+            entity = self.target
 
         if self.condition and not self.check():
             print('Условия не выполнены')
@@ -94,7 +101,7 @@ class BonusEffect(Effect, ABC):
         setattr(entity, 'prev', val)
         return True
 
-    def remove(self, hero, target=None):
+    def cancel(self, hero):
         if self.condition and not self.check():
             return print('Условия не выполнены')
 
@@ -104,10 +111,10 @@ class BonusEffect(Effect, ABC):
 
 
 class PercentBonusEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero):
         entity = hero
-        if target is not None and self.direction != 'my':
-            entity = target
+        if self.target is not None and self.direction != 'my':
+            entity = self.target
 
         if self.condition and not self.check():
             print('Условия не выполнены')
@@ -118,7 +125,7 @@ class PercentBonusEffect(Effect, ABC):
         setattr(entity, 'prev_percent', val)
         return True
 
-    def remove(self, hero, target=None):
+    def cancel(self, hero):
         # TODO: Проверить баффы
         if self.condition and not self.check():
             return print('Условия не выполнены')
@@ -129,32 +136,40 @@ class PercentBonusEffect(Effect, ABC):
 
 
 class ControlEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero):
         if self.condition and not self.check():
             print('Условия не выполнены')
             return False
 
-        if target.effect_chance_check(self.value, hero):
-            target.debuff_list.append(
-                {'type': self.type, 'duration': self.duration, 'target': hero, 'name': self.name}.copy())
+        self.duration_current = self.duration
+
+        if self.target.effect_chance_check(self.value, hero):
+            self.target.debuff_list.append(
+                {
+                    'name': self.name,
+                    'type': self.type,
+                    'attribute': self.attribute,
+                    'duration': self.duration,
+                    'target': hero,
+                }.copy())
             return True
 
 
 class PeriodEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero):
         if self.condition and not self.check():
             print('Условия не выполнены')
             return False
 
-        if target.effect_chance_check(self.value, hero):
-            target.debuff_list.append({
-                'name': self.name,
-                'type': self.type,
-                'duration': self.duration,
-                'element': self.attribute,
-                'damage': self.value,
-                'target': hero,
-            })
+        if self.target.effect_chance_check(self.value, hero):
+            self.target.debuff_list.append(
+                {
+                    'name': self.name,
+                    'type': self.type,
+                    'element': self.attribute,
+                    'duration': self.duration,
+                    'target': hero,
+                }.copy())
             return True
 
 
@@ -168,45 +183,36 @@ class EffectParent(EffectParentABC, ABC):
     bonuses = []  # Текущие бонусы
     effects = []  # Активированные бонусы
 
-    def activate(self, target=None) -> str:
+    def check_effect(self):
+        for effect in self.effects:
+            if effect.duration_current <= 0 and effect.duration != 0:
+                effect.cancel(self.entity)
+                self.effects.remove(effect)
+
+            effect.cooldown_decrease()
+
+    def activate(self) -> str:
         self.apply()
         return f"{self.name} активировано"
 
     def deactivate(self) -> str:
-        self.remove()
+        self.cancel()
         return f"{self.name} деактивировано"
 
     def check(self) -> bool:
         pass
 
-    def apply(self, target=None):
+    def apply(self):
         for bonus in self.bonuses:
             self.effects.append(bonus)
-            bonus.apply(self.entity, target)
+            bonus.apply(self.entity)
 
         self.entity.active_bonuses.append(self)
 
-    def remove(self):
-        for effect in self.bonuses:
-            effect.remove(self.entity)
+    def cancel(self):
+        for effect in self.effects:
+            effect.cancel(self.entity)
             self.effects.remove(effect)
 
-        self.entity.active_bonuses.remove(self)
-
-# Под вопросом
-# class ToggleBonusEffect(Effect):
-#     def apply(self, hero):
-#         bonuses = []
-#
-#         for bonus in hero.active_bonuses:
-#             if bonus.name != self.attribute:
-#                 bonuses.append(bonus)
-#             else:
-#                 bonus.remove(hero)
-#
-#         hero.active_bonuses = bonuses
-#
-#     # def remove(self, hero):
-#     #     for skill in hero.skills:
-#     #         if skill.name == self.attribute:
-#     #             skill.skill_apply()
+        if self in self.entity.active_bonuses:
+            self.entity.active_bonuses.remove(self)

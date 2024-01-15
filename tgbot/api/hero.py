@@ -1,3 +1,5 @@
+from typing import List
+
 import aiohttp
 
 from tgbot.api import url
@@ -15,14 +17,14 @@ async def create_hero(body: CreateHeroType):
         return await res.json()
 
 
-async def get_hero(session, hero_id: int, user_id: int) -> Response[HeroType]:
-    res = await session.get(url(f'/hero/{str(hero_id)}'), params={'user_id': user_id})
-    return Response(res, HeroType)
+async def get_hero(session, hero_id: int) -> HeroType:
+    async with session.get(url(f'/hero/{hero_id}')) as res:
+        return await res.json()
 
 
 async def fetch_hero(session, ) -> [HeroType]:
-    res = await session.get(url(f'/hero'))
-    return await res.json()
+    async with session.get(url(f'/hero')) as res:
+        return await res.json()
 
 
 # Stats
@@ -38,9 +40,11 @@ async def get_hero_lvl(session, hero_id) -> Response[HeroLvlType]:
 
 
 # Technique
-async def fetch_hero_technique(session, hero_id) -> Response[HeroTechniqueType]:
+async def fetch_hero_technique(session, hero_id) -> List[HeroTechniqueType] | None:
     async with session.get(url(f'/hero/{hero_id}/technique')) as res:
-        return Response(res, HeroTechniqueType)
+        if res.status == 200:
+            return await res.json()
+        return None
 
 
 async def get_hero_technique(session, hero_id, technique_id) -> HeroTechniqueType | None:

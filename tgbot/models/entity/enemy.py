@@ -1,5 +1,6 @@
 from random import choice
 
+from tgbot.api.enemy import get_enemy
 from tgbot.misc.locale import keyboard
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.entity import Entity
@@ -79,8 +80,6 @@ class Enemy(Entity):
 
         tech = choice(self.techniques)
         self.technique = tech
-        # Deprecated
-        self.technique_damage = tech.damage
 
     def define_action(self):
         # TODO: Расширить проверку и отдельно вывести переменную для сложных нпс (== 4, а не 0, например)
@@ -113,8 +112,7 @@ class Enemy(Entity):
 
 
 async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
-    print('Enemy init')
-
+    enemy_db = await get_enemy(session, enemy_id)
     stats_db = await db.get_enemy_stats(enemy_id)
     skills = await db.get_enemy_skills(enemy_id)
 
@@ -125,7 +123,7 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     enemy.lvl = stats_db['lvl']
 
     enemy = await skills_init(enemy, skills, db)
-    enemy.add_weapon(weapon, enemy_weapon['lvl'])
+    enemy.init_weapon(weapon, enemy_weapon['lvl'])
     enemy.update_stats_all()
 
     enemy.techniques = []
@@ -133,10 +131,13 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
 
     for tech in technique_db:
         technique_bonuses = await db.get_technique_bonuses(tech['technique_id'])
-        enemy = technique_init(enemy, tech, technique_bonuses)
+        technique = technique_init(enemy, tech, technique_bonuses)
 
-    enemy = await class_init(session, enemy, int(stats_db['class_id']))
-    enemy = await race_init(session, enemy, int(stats_db['race_id']))
+        if technique is not None:
+            enemy.techniques.append(technique)
+
+    enemy = await class_init(session, enemy, enemy_db.get('class'))
+    enemy = await race_init(session, enemy, enemy_db.get('race'))
 
     return enemy
 

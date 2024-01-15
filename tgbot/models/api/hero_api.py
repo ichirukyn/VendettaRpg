@@ -2,6 +2,8 @@ from typing import Optional
 from typing import TypedDict
 
 from tgbot.models.api.level_api import LevelType
+from tgbot.models.api.technique import TechniqueType
+from tgbot.models.api.user_api import UserType
 
 
 class HeroType(TypedDict):
@@ -16,6 +18,7 @@ class HeroType(TypedDict):
     money: int
     limit_os: int
     evolution: int
+    user: UserType
 
 
 class HeroStatsType(TypedDict):
@@ -45,8 +48,8 @@ class HeroLvlType(TypedDict):
 
 
 class CreateHeroType(TypedDict):
-    id: int
     name: str
+    user_id: int
     race_id: int
     class_id: int
 
@@ -56,17 +59,7 @@ class HeroTechniqueType(TypedDict):
     hero_id: int
     technique_id: int
     lvl: int
-    name: str
-    desc: str
-    desc_short: str
-    damage: int
-    type_damage: str
-    distance: str
-    is_stack: bool
-    class_id: int
-    race_id: int
-    type: str
-    cooldown: int
+    technique: TechniqueType
 
 
 class CreateHeroTechniqueType(TypedDict):

@@ -96,7 +96,7 @@ class HeroInfo:
         debuff_list = ''
 
         for debuff in self.hero.debuff_list:
-            debuff_list += f'{debuff.name}, '
+            debuff_list += f'{debuff.get("name")}, '
 
         return debuff_list
 

@@ -1,5 +1,4 @@
 from tgbot.api.race import fetch_race_bonuses
-from tgbot.api.race import get_race
 from tgbot.models.entity.effect import EffectFactory
 from tgbot.models.entity.effect import EffectParent
 
@@ -29,11 +28,10 @@ class Race(EffectParent):
         self.effects = []
 
 
-async def race_init(session, entity, race_id):
+async def race_init(session, entity, race_db):
     try:
+        race_id = race_db.get('id')
         bonuses = await fetch_race_bonuses(session, race_id)
-        race_data = await get_race(session, race_id)
-        race_db = await race_data.json()
 
         new_bonuses = []
 
