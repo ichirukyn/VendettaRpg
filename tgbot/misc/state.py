@@ -63,6 +63,7 @@ class LocationState(StatesGroup):
 
     town = State()
     tower = State()
+    fortress = State()
     arena = State()
     team = State()
 
@@ -74,8 +75,12 @@ class TowerState(StatesGroup):
 
 
 class FortressState(StatesGroup):
+    map_nav = State()
     select_floor = State()
     select_enemy = State()
+    town = State()
+    battle = State()
+    battle_exit = State()
 
 
 class ArenaState(StatesGroup):

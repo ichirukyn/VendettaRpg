@@ -25,6 +25,7 @@ from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
 from tgbot.misc.state import ArenaState
 from tgbot.misc.state import CharacterState
+from tgbot.misc.state import FortressState
 from tgbot.misc.state import LocationState
 from tgbot.misc.state import ShopState
 from tgbot.misc.state import TeamState
@@ -52,6 +53,9 @@ async def location_town(message: Message, state: FSMContext):
 
     if message.text == keyboard['tower']:
         return await location_tower(message, state)
+
+    if message.text == keyboard['fortress']:
+        return await location_fortress(message, state)
 
     if message.text == keyboard['arena']:
         try:
@@ -165,6 +169,17 @@ async def location_tower(message: Message, state: FSMContext):
     kb = list_inline(floors)
 
     await TowerState.select_floor.set()
+    await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
+    await message.answer(locale['tower'], reply_markup=kb)
+
+
+async def location_fortress(message: Message, state: FSMContext):
+    db = DBCommands(message.bot.get('db'))
+    floors = await db.get_arena_floors()
+
+    kb = list_inline(floors)
+
+    await FortressState.select_floor.set()
     await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
     await message.answer(locale['tower'], reply_markup=kb)
 
@@ -320,4 +335,5 @@ def location(dp: Dispatcher):
     dp.register_message_handler(location_town, state=LocationState.town)
     dp.register_message_handler(location_arena, state=LocationState.arena)
     dp.register_message_handler(location_tower, state=LocationState.tower)
+    dp.register_message_handler(location_fortress, state=LocationState.fortress)
     dp.register_callback_query_handler(location_team, state=LocationState.team)

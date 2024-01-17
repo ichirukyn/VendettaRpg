@@ -32,7 +32,7 @@ home_kb = ReplyKeyboardMarkup(
 town_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=keyboard['tower']), KeyboardButton(text=keyboard['arena'])],
-        [KeyboardButton(text=keyboard['training']), KeyboardButton(text=keyboard['team'])],
+        [KeyboardButton(text=keyboard['fortress']), KeyboardButton(text=keyboard['team'])],
         [KeyboardButton(text=keyboard['shop'])],
         [KeyboardButton(text=keyboard['back'])],
     ],

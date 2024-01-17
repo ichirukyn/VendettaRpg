@@ -93,7 +93,7 @@ class BattleInterface:
         move = entity.debuff_control_check('move')
 
         if who == 'win':
-            return self.check_hp()
+            return await self.check_hp()
 
         if not move:
             if isinstance(entity, Hero):
@@ -401,6 +401,7 @@ class BattleInterface:
             log = 'Вы проиграли..'
             kb = battle_revival_kb
             state = BattleState.revival
+            is_inline = False
 
             if isinstance(e, Hero):
                 e.statistic.battle_update(e.statistic.battle)
@@ -410,9 +411,12 @@ class BattleInterface:
             for winner in team_win:
                 if isinstance(e, Hero) and isinstance(winner, Hero):
                     if e.chat_id == winner.chat_id:
-                        log = 'Вы победили!\n'
-                        kb = self.engine.exit_kb
-                        state = self.engine.exit_state
+                        log = self.engine_data.get('exit_message', '')
+                        kb = self.engine_data.get('exit_kb', home_kb)
+                        state = self.engine_data.get('exit_state', LocationState.home)
+                        is_inline = self.engine_data.get('is_inline', False)
+
+                        log += 'Вы победили!\n'
 
                         teammate_count = len(order) - len(team_win)
                         print('teammate_count', teammate_count)
@@ -424,6 +428,11 @@ class BattleInterface:
                     log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
 
                 if isinstance(e, Hero) and e.sub_action != 'Сбежать':
+                    if is_inline:
+                        await self.message.bot.send_message(
+                            chat_id=e.chat_id, text='⁢', reply_markup=ReplyKeyboardRemove()
+                        )
+
                     await self.set_state(e.chat_id, state)
                     await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
 
@@ -479,7 +488,7 @@ class BattleInterface:
 
 
 class BattleFactory:
-    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb, is_dev=False):
+    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb, is_dev=False, is_inline=False):
         self.enemy_team = enemy_team
         self.player_team = player_team
 

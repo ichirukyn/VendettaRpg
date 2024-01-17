@@ -25,6 +25,7 @@ async def battle_handler_init(message: Message, state: FSMContext, ):
             "exit_state": LocationState.home,
             "exit_message": 'Была ошибка...',
             "exit_kb": home_kb,
+            "is_inline": False,
         }
 
     factory = BattleFactory(is_dev=is_dev, **engine_data)

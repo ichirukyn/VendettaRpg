@@ -67,6 +67,51 @@ battle_start_inline.add(
     InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
 )
 
+
+# Fortress
+
+def map_nav_inline(is_move=True, is_town=False, is_battle=False, is_exit=False, is_explorer=False):
+    map_nav_kb = InlineKeyboardMarkup(row_width=3)
+
+    if is_move:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='Влево', callback_data='left'),
+            InlineKeyboardButton(text='Вперёд', callback_data='up'),
+            InlineKeyboardButton(text='Вправо', callback_data='right'),
+        )
+
+    if is_town:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='В город', callback_data='town'),
+        )
+    if is_battle:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='В бой', callback_data='battle'),
+            InlineKeyboardButton(text='Попробовать сбежать', callback_data='escape'),
+        )
+    if is_explorer:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='Исследовать', callback_data='explorer'),
+        )
+    if is_exit:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='Выйти', callback_data='exit'),
+        )
+
+    return map_nav_kb
+
+
+fortress_town_inline = InlineKeyboardMarkup(row_width=3)
+
+fortress_town_inline.add(
+    InlineKeyboardButton(text='Площадь', callback_data='square'),
+    InlineKeyboardButton(text='Таверна', callback_data='tavern'),
+)
+
+fortress_town_inline.add(
+    InlineKeyboardButton(text='Выйти', callback_data='exit'),
+)
+
 # Top
 top_inline = InlineKeyboardMarkup(row_width=2)
 

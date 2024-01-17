@@ -34,8 +34,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
     sub_action = ''
     target = None
 
-    mana_modify = 5
-    hp_modify = 5
+    mana_modify = 10
+    hp_modify = 10
 
     flat_strength = 0
     flat_health = 0
@@ -273,7 +273,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
             self.hp -= cs
             self.statistic.battle.counter_strike_count += 1
 
-        evasion_chance = defender.speed / (defender.speed + self.speed)
+        # evasion_chance = defender.speed / (defender.speed + self.speed)
+        evasion_chance = (100 + self.lvl) / ((100 + defender.speed) + (100 + defender.dexterity) + (100 + self.lvl))
 
         if self._class.type == 'Лучник':
             evasion_chance = defender.speed / (defender.speed + self.speed + (self.accuracy * 1.5))
