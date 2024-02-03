@@ -14,3 +14,5 @@ class EntityWeapon:
 
         if self.weapon_lvl > 0:
             self.weapon_damage = weapon['value'] + self.weapon_modify * self.weapon_lvl
+
+        return self

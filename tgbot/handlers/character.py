@@ -9,6 +9,7 @@ from tgbot.api.hero import delete_hero_technique
 from tgbot.api.hero import get_hero_technique
 from tgbot.api.technique import fetch_technique
 from tgbot.api.technique import get_technique
+from tgbot.keyboards.inline import back_inline
 from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.inline import skill_add_inline
 from tgbot.keyboards.inline import skill_del_inline
@@ -19,10 +20,13 @@ from tgbot.keyboards.reply import character_kb
 from tgbot.keyboards.reply import inventory_kb
 from tgbot.misc.Inventory import WeaponItem
 from tgbot.misc.hero import init_hero
+from tgbot.misc.hero import update_hero_weapon
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import CharacterState
 from tgbot.misc.state import LocationState
+from tgbot.models.entity.techniques import race_prefix
+from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
 stats = {
@@ -50,7 +54,7 @@ async def distribution_menu(message: Message, state: FSMContext):
     if message.text == keyboard["back"] or hero.free_stats <= 0:
         await LocationState.character.set()
 
-        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
+        return await message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
 
     stat = stats.get(message.text)
 
@@ -100,7 +104,7 @@ async def distribution(message: Message, state: FSMContext):
 
         if hero.free_stats <= 0:
             await LocationState.character.set()
-            return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
+            return await message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
         else:
             await CharacterState.distribution_menu.set()
             await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
@@ -109,7 +113,7 @@ async def distribution(message: Message, state: FSMContext):
         await message.answer(f"Доступно {hero.free_stats} СО\nВведите количество:", reply_markup=back_kb)
 
 
-async def character_technique(cb: CallbackQuery, state: FSMContext):
+async def character_techniques(cb: CallbackQuery, state: FSMContext):
     session = cb.message.bot.get('session')
 
     data = await state.get_data()
@@ -119,12 +123,12 @@ async def character_technique(cb: CallbackQuery, state: FSMContext):
         await cb.message.delete()
         await LocationState.character.set()
 
-        return await cb.message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
+        return await cb.message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
 
     technique_id = int(cb.data)
 
     hero_technique = await get_hero_technique(session, hero.id, technique_id)
-    technique = await get_technique(session, technique_id)
+    res = await get_technique(session, technique_id)
 
     kb = skill_add_inline
     fix = 'Не закреплён'
@@ -135,7 +139,15 @@ async def character_technique(cb: CallbackQuery, state: FSMContext):
 
     await state.update_data(technique_fix=technique_id)
 
-    text = f"{technique.get('name', '')}\n{technique.get('desc', '')}\n\n{fix}"
+    if res is not None:
+        technique = technique_init(res)
+
+        text = (
+            f"{technique.technique_info()}\n"
+            f"{fix}"
+        )
+    else:
+        text = locale['error_repeat']
 
     await CharacterState.technique_fix.set()
     await cb.message.edit_text(text, reply_markup=kb)
@@ -148,6 +160,25 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
     hero = data['hero']
     technique_id = data['technique_fix']
 
+    if cb.data == keyboard['back']:
+        skills = await fetch_technique(session)
+
+        # TODO: Заменить префиксы, на более красивую функцию внутри клавиатуры
+        for tech in skills:
+            if isinstance(tech.get('race_id', None), int):
+                prefix = f"{race_prefix[tech.get('race_id') - 1]} "
+            else:
+                prefix = ''
+            tech['name'] = prefix + tech['name']
+
+        kb = list_inline(skills)
+
+        await CharacterState.techniques.set()
+        await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
+
+    if technique_id == 1 and cb.data == 'Открепить':
+        return await cb.message.edit_text('Открепить эту технику нельзя..', reply_markup=back_inline)
+
     if cb.data == 'Прикрепить':
         data = {'hero_id': hero.id, 'technique_id': technique_id}
         await create_hero_technique(data, hero.id)
@@ -156,10 +187,19 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
         await delete_hero_technique(session, hero.id, technique_id)
 
     skills = await fetch_technique(session)
+
+    # TODO: Заменить префиксы, на более красивую функцию внутри клавиатуры
+    for tech in skills:
+        if isinstance(tech.get('race_id', None), int):
+            prefix = f"{race_prefix[tech.get('race_id') - 1]} "
+        else:
+            prefix = ''
+        tech['name'] = prefix + tech['name']
+
     kb = list_inline(skills)
 
-    await CharacterState.technique.set()
-    return await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
+    await CharacterState.techniques.set()
+    await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
 
 
 async def character_equip(message: Message, state: FSMContext):
@@ -167,14 +207,14 @@ async def character_equip(message: Message, state: FSMContext):
     hero = data['hero']
 
     if message.text == 'Текущее оружие':
-        await message.answer(hero.info.equip_stat())
+        await message.answer(hero.info.equip_stat(hero))
 
     if message.text == 'Артефакты (В разработке)':
         pass
 
     if message.text == keyboard["back"]:
         await LocationState.character.set()
-        await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
+        await message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
 
 
 async def character_inventory(message: Message, state: FSMContext):
@@ -187,7 +227,7 @@ async def character_inventory(message: Message, state: FSMContext):
         await message.delete()
         await LocationState.character.set()
 
-        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
+        return await message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
 
     if message.text not in inventory:
         return
@@ -243,17 +283,17 @@ async def character_inventory_action(cb: CallbackQuery, state: FSMContext):
     type = data['inventory']
 
     if cb.data == 'Экипировать':
-        await db.del_hero_weapons(hero.id)
-        await db.add_hero_weapon(hero.id, item_id)
-        print('Экипировать')
+        await db.update_hero_weapon(hero.id, item_id, 0)
 
     elif cb.data == 'Снять':
-        await db.del_hero_weapons(hero.id)
-        await db.add_hero_weapon(hero.id, 1)
-        print('Снять')
+        await db.update_hero_weapon(hero.id, item_id, 0)
+
+    hero = await update_hero_weapon(db, hero)
 
     items = await db.get_hero_inventory(type, hero.id)
     kb = list_inline(items)
+
+    await state.update_data(hero=hero)
 
     await CharacterState.inventory_items.set()
     return await cb.message.edit_text(locale['inventory'], reply_markup=kb)
@@ -264,26 +304,26 @@ async def character_info_menu(message: Message, state: FSMContext):
     hero = data['hero']
 
     if message.text == 'Статус':
-        return await message.answer(hero.info.status(), reply_markup=character_info_kb)
+        return await message.answer(hero.info.status(hero), reply_markup=character_info_kb)
 
     if message.text == 'Статистика':
         return await message.answer(hero.statistic.get_statistic(), reply_markup=character_info_kb)
 
     if message.text == 'Полный статус':
-        return await message.answer(hero.info.status_all(), reply_markup=character_info_kb)
+        return await message.answer(hero.info.status_all(hero), reply_markup=character_info_kb)
 
     if message.text == 'Чистый статус':
-        return await message.answer(hero.info.status_flat(), reply_markup=character_info_kb)
+        return await message.answer(hero.info.status_flat(hero), reply_markup=character_info_kb)
 
     if message.text == 'Раса':
-        return await message.answer(hero.info.character_info('race'), reply_markup=character_info_kb)
+        return await message.answer(hero.info.character_info(hero, 'race'), reply_markup=character_info_kb)
 
     if message.text == 'Класс':
-        return await message.answer(hero.info.character_info('class'), reply_markup=character_info_kb)
+        return await message.answer(hero.info.character_info(hero, 'class'), reply_markup=character_info_kb)
 
     if message.text == keyboard["back"]:
         await LocationState.character.set()
-        return await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats))
+        return await message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
 
 
 def character(dp: Dispatcher):
@@ -293,7 +333,7 @@ def character(dp: Dispatcher):
     dp.register_message_handler(character_inventory, state=CharacterState.inventory)
     dp.register_callback_query_handler(character_inventory_items, state=CharacterState.inventory_items)
     dp.register_callback_query_handler(character_inventory_action, state=CharacterState.inventory_action)
-    dp.register_callback_query_handler(character_technique, state=CharacterState.technique)
+    dp.register_callback_query_handler(character_techniques, state=CharacterState.techniques)
     dp.register_callback_query_handler(character_technique_fix, state=CharacterState.technique_fix)
 
     dp.register_message_handler(character_info_menu, state=CharacterState.info_menu)

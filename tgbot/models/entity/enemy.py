@@ -1,5 +1,6 @@
 from random import choice
 
+from tgbot.api.enemy import fetch_enemy_technique
 from tgbot.api.enemy import get_enemy
 from tgbot.misc.locale import keyboard
 from tgbot.models.entity._class import class_init
@@ -47,20 +48,25 @@ class Enemy(Entity):
             self.target = enemy_team[0]
 
     def select_target(self, teammates, enemies):
-        if self.technique_target() == 'my':
+        target = self.technique_target()
+
+        if target == 'my' and self.technique.damage == 0:
             self.target = self
 
-        elif self.technique_target() == 'enemy':
+        elif target == 'enemy':
             self.select_enemy(enemies)
 
-        elif self.technique_target() == 'enemies':
+        elif target == 'enemies':
             self.target = enemies
 
-        elif self.technique_target() == 'teammate':
+        elif target == 'teammate':
             self.select_enemy(teammates)
 
-        elif self.technique_target() == 'teammates':
+        elif target == 'teammates':
             self.target = teammates
+
+        elif target == 'enemy' or self.technique.damage != 0:
+            self.select_enemy(enemies)
 
     def choice_technique(self):
         check_list = []
@@ -71,15 +77,16 @@ class Enemy(Entity):
             if not self.debuff_control_check('turn') and not root_tech_check:
                 continue
 
-            if not tech.is_activated() or tech.is_stack:
+            if tech.check(self):
                 check_list.append(tech)
 
         if len(check_list) == 0:
             self.action = 'Пас'
-            return
+            return False
 
-        tech = choice(self.techniques)
+        tech = choice(check_list)
         self.technique = tech
+        return True
 
     def define_action(self):
         # TODO: Расширить проверку и отдельно вывести переменную для сложных нпс (== 4, а не 0, например)
@@ -124,21 +131,22 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
 
     enemy = await skills_init(enemy, skills, db)
     enemy.init_weapon(weapon, enemy_weapon['lvl'])
-    enemy.update_stats_all()
 
     enemy.techniques = []
-    technique_db = await db.get_enemy_techniques(enemy_id)
+    technique_db = await fetch_enemy_technique(session, enemy_id)
 
-    for tech in technique_db:
-        technique_bonuses = await db.get_technique_bonuses(tech['technique_id'])
-        technique = technique_init(enemy, tech, technique_bonuses)
+    if technique_db is not None:
+        for tech in technique_db:
+            technique = tech.get('technique')
+            technique = technique_init(technique)
 
-        if technique is not None:
-            enemy.techniques.append(technique)
+            if technique is not None:
+                enemy.techniques.append(technique)
 
     enemy = await class_init(session, enemy, enemy_db.get('class'))
     enemy = await race_init(session, enemy, enemy_db.get('race'))
 
+    enemy.update_stats_all()
     return enemy
 
 

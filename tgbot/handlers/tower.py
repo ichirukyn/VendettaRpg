@@ -42,7 +42,9 @@ async def battle_init(message: Message, state: FSMContext):
         "player_team": player_team,
         "exit_state": LocationState.home,
         "exit_message": '',
+        "battle_type": 'tower',
         "exit_kb": home_kb,
+        "is_inline": False,
     }
 
     config = message.bot.get('config')
@@ -129,6 +131,10 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
         enemy = await init_enemy(db, enemy_id, session)
         enemy_team.append(enemy)
 
+        # dop_enemy = deepcopy(enemy)
+        # dop_enemy.name += '2'
+        # enemy_team.append(dop_enemy)
+
     elif team_id is not None:
         team_id = await db.get_enemy_team_id(team_id)
         for entity in team_id:
@@ -145,8 +151,8 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
             text += stats
     else:
         entity = enemy_team[0]
-        name = f"{entity.name} {entity.name}"
-        text = f"Выбран противник: {name} — {formatted(entity.lvl)} Уровень"
+        name = f"{entity.name}"
+        text = f"Выбран противник:\n`{name} — {formatted(entity.lvl)} Уровень`"
 
     await state.update_data(enemy_team=enemy_team)
 
@@ -165,7 +171,7 @@ async def floor_enemies(db, floor_id):
         else:
             enemy = await db.get_enemy(enemy['id'])
             enemies_list.append(enemy)
-
+    print()
     return enemies_list
 
 

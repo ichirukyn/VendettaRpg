@@ -66,7 +66,7 @@ async def create_hero_technique(body, hero_id) -> HeroTechniqueType | None:
 
 
 async def delete_hero_technique(session, hero_id, technique_id) -> bool:
-    async with session.get(url(f'/hero/{hero_id}/technique/{technique_id}')) as res:
+    async with session.delete(url(f'/hero/{hero_id}/technique/{technique_id}')) as res:
         if res.status == 200:
             return True
 

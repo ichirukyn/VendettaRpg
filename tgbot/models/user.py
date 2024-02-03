@@ -365,6 +365,11 @@ class DBCommands:
         except UniqueViolationError as e:
             print('`add_hero_weapon` error!!', e)
 
+    async def update_hero_weapon(self, hero_id, weapon_id, lvl):
+        command = f"UPDATE hero_weapons SET hero_id={hero_id}, weapon_id={weapon_id}, lvl={lvl} WHERE hero_id = $1"
+
+        return await self.pool.fetchval(command, hero_id)
+
     async def get_weapon(self, weapon_id):
         command = self.GET_WEAPONS
 

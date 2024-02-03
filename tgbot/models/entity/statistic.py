@@ -89,6 +89,8 @@ class Statistic:
         self.win_team_to_team = 0
         self.lose_one_to_one = 0
         self.lose_team_to_team = 0
+        self.count_one_to_one = 0
+        self.count_team_to_team = 0
         self.kill_enemy = 0
         self.kill_hero = 0
         self.death = 0
@@ -117,6 +119,8 @@ class Statistic:
         self.win_team_to_team = stats.get('win_team_to_team')
         self.lose_one_to_one = stats.get('lose_one_to_one')
         self.lose_team_to_team = stats.get('lose_team_to_team')
+        self.count_one_to_one = stats.get('count_one_to_one')
+        self.count_team_to_team = stats.get('count_team_to_team')
         self.kill_enemy = stats.get('kill_enemy')
         self.kill_hero = stats.get('kill_hero')
         self.death = stats.get('death')
@@ -179,6 +183,8 @@ class Statistic:
             f"• Побед команда на команду: `{self.win_team_to_team}`\n"
             f"• Поражений 1 на 1: `{self.lose_one_to_one}`\n"
             f"• Поражений команда на команду: `{self.lose_team_to_team}`\n"
+            f"• Количество сражений 1 на 1: `{self.count_one_to_one}`\n"
+            f"• Количество сражений команда на команду: `{self.count_team_to_team}`\n"
             f"\n"
             f"• Убито противников: `{self.kill_enemy}`\n"
             f"• Убито героев: `{self.kill_hero}`\n"

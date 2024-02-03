@@ -9,15 +9,15 @@ class EffectABC(ABC):
     value = int
 
     @abstractmethod
-    def apply(self, hero) -> bool:
+    def apply(self, hero, target=None) -> bool:
         pass
 
     @abstractmethod
-    def cancel(self, hero):
+    def cancel(self, hero, target=None):
         pass
 
     @abstractmethod
-    def check(self):
+    def check(self, entity):
         pass
 
 
@@ -26,27 +26,26 @@ class EffectParentABC(ABC):
     name = str
     desc = str
     desc_short = str
-    entity = None
 
     bonuses = []
     effects = []
 
     @abstractmethod
-    def activate(self) -> str:
+    def activate(self, entity) -> str:
         pass
 
     @abstractmethod
-    def deactivate(self) -> str:
+    def deactivate(self, entity) -> str:
         pass
 
     @abstractmethod
-    def check(self) -> bool:
+    def check(self, entity) -> bool:
         pass
 
     @abstractmethod
-    def apply(self):
+    def apply(self, entity):
         pass
 
     @abstractmethod
-    def cancel(self):
+    def cancel(self, entity):
         pass

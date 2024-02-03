@@ -16,6 +16,7 @@ from tgbot.keyboards.reply import list_kb
 from tgbot.misc.hero import init_hero
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
+from tgbot.misc.state import BattleState
 from tgbot.misc.state import LocationState
 from tgbot.misc.state import RegState
 from tgbot.models.entity.hero import HeroFactory
@@ -129,7 +130,12 @@ async def select_class_confirm(message: Message, state: FSMContext):
 
 async def entry_point(message: Message, state: FSMContext):
     db = DBCommands(message.bot.get('db'))
+    config = message.bot.get('config')
     session = message.bot.get('session')
+
+    if message.chat.id not in config.tg_bot.admin_ids and config.tg_bot.is_dev:
+        await BattleState.load.set()
+        return await message.answer('Доступ пока только для админов..', reply_markup=ReplyKeyboardRemove())
 
     chat_id = message.chat.id
     print('chat_id: ', chat_id)

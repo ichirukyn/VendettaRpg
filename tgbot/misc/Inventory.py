@@ -27,7 +27,7 @@ class WeaponItem(Item):
             self.is_equip = True
 
     def inventory(self):
-        text = f"*{self.name}*\n{self.desc}\n•Урон — {self.value}\n\n"
+        text = f"*{self.name}*\n{self.desc}\n• Урон — {self.value}\n\n"
         kb = InlineKeyboardMarkup(row_width=1)
 
         if self.is_equip:

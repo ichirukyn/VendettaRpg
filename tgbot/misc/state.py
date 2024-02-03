@@ -18,6 +18,7 @@ class BattleState(StatesGroup):
     user_sub_turn = State()
     select_target = State()
     select_technique = State()
+    select_technique_confirm = State()
     select_skill = State()
     select_skill_confirm = State()
     user_escape_confirm = State()
@@ -34,7 +35,7 @@ class CharacterState(StatesGroup):
     inventory_action = State()
     skills = State()
     skill_fix = State()
-    technique = State()
+    techniques = State()
     technique_fix = State()
     distribution = State()
     distribution_menu = State()
@@ -72,6 +73,11 @@ class TowerState(StatesGroup):
     arena = State()
     select_enemy = State()
     select_floor = State()
+
+
+class CampusState(StatesGroup):
+    select_floor = State()
+    select_enemy = State()
 
 
 class FortressState(StatesGroup):

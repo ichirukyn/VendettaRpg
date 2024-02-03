@@ -7,7 +7,7 @@ from tgbot.models.entity.effect import EffectParent
 
 class SkillFactory:
     @staticmethod
-    def create_skill(hero, data):
+    def create_skill(data):
         skill_id = data['skill_id']
         name = data['name']
         lvl = data['lvl']
@@ -19,12 +19,11 @@ class SkillFactory:
 
         bonuses = data['bonuses']
 
-        return Skill(hero, skill_id, name, lvl, desc, desc_short, duration, duration_time, bonuses)
+        return Skill(skill_id, name, lvl, desc, desc_short, duration, duration_time, bonuses)
 
 
 class Skill(EffectParent):
-    def __init__(self, hero, skill_id, name, lvl, desc, desc_short, duration, duration_time, bonuses):
-        self.hero = hero
+    def __init__(self, skill_id, name, lvl, desc, desc_short, duration, duration_time, bonuses):
         self.skill_id = skill_id
         self.name = name
         self.lvl = lvl
@@ -37,20 +36,20 @@ class Skill(EffectParent):
         self.duration = duration
         self.duration_time = duration_time
 
-    def activate(self):
+    def activate(self, entity):
         # TODO: Подключить ману к заклинаниям
-        if self.hero.mana <= 0:
+        if entity.mana <= 0:
             return f'Недостаточно Маны для активации.'
 
-        self.apply()
+        self.apply(entity)
 
-        return f"🔮 {self.hero.name} использовал {self.name}"
+        return f"🔮 {entity.name} использовал {self.name}"
 
-    def turn_check(self):
+    def turn_check(self, entity):
         print('Check start')
         if self.duration is not None:
             if self.duration == 0:
-                self.cancel()
+                self.cancel(entity)
             else:
                 self.duration -= 1
 
@@ -60,7 +59,7 @@ class Skill(EffectParent):
             now = datetime.now()
 
             if now > time:
-                self.cancel()
+                self.cancel(entity)
 
 
 async def skills_init(entity, skills, db):
@@ -83,7 +82,7 @@ async def skills_init(entity, skills, db):
             i += 1
 
         for skill in skills:
-            entity.skills.append(SkillFactory.create_skill(entity, skill))
+            entity.skills.append(SkillFactory.create_skill(skill))
 
         return entity
     except KeyError:

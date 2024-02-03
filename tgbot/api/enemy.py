@@ -1,3 +1,5 @@
+from typing import List
+
 import aiohttp
 
 from tgbot.api import url
@@ -30,7 +32,7 @@ async def get_enemy_stats(session, enemy_id) -> [EnemyStatsType]:
 
 
 # Technique
-async def fetch_enemy_technique(session, enemy_id) -> EnemyTechniqueType | None:
+async def fetch_enemy_technique(session, enemy_id) -> List[EnemyTechniqueType] | None:
     async with session.get(url(f'/enemy/{enemy_id}/technique')) as res:
         if res.status == 200:
             return await res.json()

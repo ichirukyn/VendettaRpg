@@ -49,6 +49,7 @@ async def battle_init(message: Message, state: FSMContext):
         "exit_state": FortressState.map_nav,
         "exit_message": 'Вы победили и готовы к новым подвигам\n',
         "exit_kb": map_nav_inline(),
+        "battle_type": 'fort',
         "is_inline": True,
     }
 

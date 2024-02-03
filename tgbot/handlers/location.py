@@ -24,6 +24,7 @@ from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.other import formatted
 from tgbot.misc.state import ArenaState
+from tgbot.misc.state import CampusState
 from tgbot.misc.state import CharacterState
 from tgbot.misc.state import FortressState
 from tgbot.misc.state import LocationState
@@ -31,6 +32,8 @@ from tgbot.misc.state import ShopState
 from tgbot.misc.state import TeamState
 from tgbot.misc.state import TowerState
 from tgbot.misc.utils import check_before_send
+from tgbot.models.entity.hero import HeroInfo
+from tgbot.models.entity.techniques import race_prefix
 from tgbot.models.user import DBCommands
 
 
@@ -57,15 +60,15 @@ async def location_town(message: Message, state: FSMContext):
     if message.text == keyboard['fortress']:
         return await location_fortress(message, state)
 
-    if message.text == keyboard['arena']:
-        try:
-            pvp_hero = data['pvp_hero']
+    if message.text == keyboard['campus']:
+        return await location_campus(message, state)
 
-            if pvp_hero is not None:
-                await ArenaState.select_type.set()
-                return await message.answer('Принять вызов?', reply_markup=battle_start_kb)
-        except KeyError:
-            pass
+    if message.text == keyboard['arena']:
+        pvp_hero = data.get('pvp_hero', None)
+
+        if pvp_hero is not None:
+            await ArenaState.select_type.set()
+            return await message.answer('Принять вызов?', reply_markup=battle_start_kb)
 
         await LocationState.arena.set()
         await message.answer(locale['arena'], reply_markup=arena_type_kb)
@@ -105,12 +108,12 @@ async def location_arena(message: Message, state: FSMContext):
         await LocationState.town.set()
         return await message.answer(locale['town'], reply_markup=town_kb)
 
-    if message.text == keyboard['battle_solo']:
+    if message.text == keyboard['battle_group']:
         await state.update_data(pvp_type='team')
         await ArenaState.select_type.set()
         return await message.answer(f'Введите ID команды:', reply_markup=back_kb)
 
-    if message.text == keyboard['battle_group']:
+    if message.text == keyboard['battle_solo']:
         await state.update_data(pvp_type='solo')
         await ArenaState.select_type.set()
         return await message.answer(f'Введите ID игрока:', reply_markup=back_kb)
@@ -184,6 +187,17 @@ async def location_fortress(message: Message, state: FSMContext):
     await message.answer(locale['tower'], reply_markup=kb)
 
 
+async def location_campus(message: Message, state: FSMContext):
+    db = DBCommands(message.bot.get('db'))
+    floors = await db.get_arena_floors()
+
+    kb = list_inline(floors)
+
+    await CampusState.select_floor.set()
+    await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
+    await message.answer(locale['campus'], reply_markup=kb)
+
+
 async def location_character(message: Message, state: FSMContext):
     if message.text == keyboard['distribution']:
         await CharacterState.distribution_menu.set()
@@ -206,23 +220,31 @@ async def location_character(message: Message, state: FSMContext):
         session = message.bot.get('session')
 
         techniques = await fetch_technique(session)
+
+        # TODO: Заменить префиксы, на более красивую функцию внутри клавиатуры
+        for tech in techniques:
+            if isinstance(tech.get('race_id', None), int):
+                prefix = f"{race_prefix[tech.get('race_id') - 1]} "
+            else:
+                prefix = ''
+            tech['name'] = prefix + tech['name']
+
         kb = list_inline(techniques)
 
-        await CharacterState.technique.set()
+        await CharacterState.techniques.set()
         await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
         return await message.answer(locale['techniques_select'], reply_markup=kb)
 
     data = await state.get_data()
-    hero = data['hero']
+    hero = data.get('hero')
 
     if message.text == keyboard['info']:
         await CharacterState.info_menu.set()
-        return await message.answer(hero.info.status_all(), reply_markup=character_info_kb,
+        return await message.answer(hero.info.status_all(hero), reply_markup=character_info_kb,
                                     parse_mode='Markdown')
-
+    info = HeroInfo()
     await LocationState.character.set()
-    await message.answer(hero.info.status(), reply_markup=character_kb(hero.free_stats),
-                         parse_mode='Markdown')
+    await message.answer(info.status(hero), reply_markup=character_kb(hero.free_stats), parse_mode='Markdown')
 
 
 async def location_store(cb: CallbackQuery, state: FSMContext):
@@ -289,7 +311,7 @@ async def location_top(cb: CallbackQuery, state: FSMContext):
     i = 0
 
     for hero in heroes:
-        if hero['hero_id'] == _hero.id:
+        if hero.get('hero_id', 0) == _hero.id:
             hero_data = f"{i + 1}. 👤 *{hero['name']} — {formatted(hero[cb.data])}*"
             hero_top = i
             top.append(hero_data)

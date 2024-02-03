@@ -32,8 +32,9 @@ home_kb = ReplyKeyboardMarkup(
 town_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=keyboard['tower']), KeyboardButton(text=keyboard['arena'])],
-        [KeyboardButton(text=keyboard['fortress']), KeyboardButton(text=keyboard['team'])],
-        [KeyboardButton(text=keyboard['shop'])],
+        # [KeyboardButton(text=keyboard['tower']), KeyboardButton(text=keyboard['arena'])],
+        # [KeyboardButton(text=keyboard['fortress']), KeyboardButton(text=keyboard['team'])],
+        [KeyboardButton(text=keyboard['shop']), KeyboardButton(text=keyboard['team'])],
         [KeyboardButton(text=keyboard['back'])],
     ],
     resize_keyboard=True)
@@ -48,7 +49,7 @@ confirm_kb = ReplyKeyboardMarkup(
 # Battle
 battle_start_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text=keyboard['battle_start'])],
+        [KeyboardButton(text=keyboard['battle_start']), KeyboardButton(text=keyboard['pass'])],
         [KeyboardButton(text=keyboard['back'])],
     ],
     resize_keyboard=True)

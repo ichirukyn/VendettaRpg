@@ -50,6 +50,8 @@ def statistics_to_json(statistics):
         'win_team_to_team': statistics.win_team_to_team,
         'lose_one_to_one': statistics.lose_one_to_one,
         'lose_team_to_team': statistics.lose_team_to_team,
+        'count_one_to_one': statistics.count_one_to_one,
+        'count_team_to_team': statistics.count_team_to_team,
         'kill_enemy': statistics.kill_enemy,
         'kill_hero': statistics.kill_hero,
         'death': statistics.death,

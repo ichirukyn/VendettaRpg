@@ -155,6 +155,9 @@ def list_inline(lists, columns=2, label='name', cb_data='id'):
         row = []
 
         for item in sublist:
+            if item is None:
+                continue
+
             name = item[label]
             data = item[cb_data]
             button = InlineKeyboardButton(text=name, callback_data=data)
@@ -193,38 +196,6 @@ shop_buy_inline.add(
     InlineKeyboardButton(text='Купить всё', callback_data='Купить всё'),
     InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )
-
-# Hunt
-hunt_inline = InlineKeyboardMarkup(row_width=1)
-
-hunt_inline.add(
-    InlineKeyboardButton(text='Зона охоты', callback_data='Зона охоты'),
-    InlineKeyboardButton(text='Дневник охотника (Не доступен)', callback_data='(Не доступен)'),
-    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
-)
-
-hunt_action_inline = InlineKeyboardMarkup(row_width=2)
-
-hunt_action_inline.add(
-    InlineKeyboardButton(text='Идти дальше', callback_data='Идти дальше'),
-)
-
-hunt_action_inline.add(
-    InlineKeyboardButton(text='Покинуть лес', callback_data='Покинуть лес'),
-)
-
-hunt_battle_inline = InlineKeyboardMarkup(row_width=2)
-
-hunt_battle_inline.add(
-    InlineKeyboardButton(text='В бой', callback_data='В бой'),
-)
-
-
-# hunting_kb = ReplyKeyboardMarkup(
-#     keyboard=[
-#         [KeyboardButton(text="Продолжить")],
-#     ],
-#     resize_keyboard=True)
 
 
 # Team

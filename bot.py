@@ -14,6 +14,7 @@ from tgbot.filters.register import RegFilter
 from tgbot.handlers.admin import register_admin
 from tgbot.handlers.arena import arena
 from tgbot.handlers.battle.handlers import battle
+from tgbot.handlers.campus import campus
 from tgbot.handlers.character import character
 from tgbot.handlers.fortress import fortress
 from tgbot.handlers.location import location
@@ -50,6 +51,7 @@ def register_all_handlers(dp):
     arena(dp)
     tower(dp)
     fortress(dp)
+    campus(dp)
     battle(dp)
 
 

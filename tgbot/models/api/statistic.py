@@ -26,6 +26,8 @@ class StatisticType(TypedDict):
     win_team_to_team: int
     lose_one_to_one: int
     lose_team_to_team: int
+    count_one_to_one: int
+    count_team_to_team: int
     kill_enemy: int
     kill_hero: int
     death: int
