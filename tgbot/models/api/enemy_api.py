@@ -1,5 +1,7 @@
 from typing import TypedDict
 
+from tgbot.models.api.item import ItemType
+
 
 class EnemyType(TypedDict):
     id: int
@@ -57,3 +59,14 @@ class CreateEnemyTechniqueType(TypedDict):
     enemy_id: int
     technique_id: int
     lvl: int
+
+
+class EnemyItemType(TypedDict):
+    id: int
+    enemy_id: int
+    item_id: int
+    chance: float
+    count_min: int
+    count_max: int
+    count: int
+    item: ItemType

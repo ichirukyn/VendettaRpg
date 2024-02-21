@@ -121,8 +121,9 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
     team_id = None
 
     for e in enemies:
-        if e['id'] == int(cb.data):
+        if e.get('enemy_id', 0) == int(cb.data):
             enemy_id = e['enemy_id']
+        elif e.get('team_id', 0) == int(cb.data):
             team_id = e['team_id']
 
     enemy_team = []
@@ -167,11 +168,11 @@ async def floor_enemies(db, floor_id):
     for enemy in enemies:
         if enemy['team_id'] is not None:
             team = await db.get_team(enemy['team_id'])
-            enemies_list.append({'id': enemy['id'], 'name': team['name']})
+            enemies_list.append({'id': enemy.get('enemy_id', 1), 'name': team['name']})
         else:
-            enemy = await db.get_enemy(enemy['id'])
+            enemy = await db.get_enemy(enemy.get('enemy_id', 1))
             enemies_list.append(enemy)
-    print()
+
     return enemies_list
 
 

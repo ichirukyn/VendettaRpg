@@ -268,4 +268,3 @@ def team(dp: Dispatcher):
     dp.register_callback_query_handler(teammate_list, state=TeamState.teammate_list)
     dp.register_callback_query_handler(teammate_menu, state=TeamState.teammate_menu)
     dp.register_callback_query_handler(team_kik, state=TeamState.kik)
-    # dp.register_callback_query_handler(team_, state=TeamState.)

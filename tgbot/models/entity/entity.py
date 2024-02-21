@@ -204,6 +204,14 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         self.qi += self.qi_max * 0.1
         self.mana += self.mana_max * 0.1
 
+        if self.qi > self.qi_max:
+            self.qi = self.qi_max
+
+        if self.mana > self.mana_max:
+            self.mana = self.mana_max
+
+        self.update_stats_percent()
+
     def check_active_skill(self):
         for bonus in self.active_bonuses:
             if len(bonus.effects) == 0:

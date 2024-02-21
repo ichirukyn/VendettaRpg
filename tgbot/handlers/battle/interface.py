@@ -5,6 +5,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
+from tgbot.api.enemy import get_enemy_loot
 from tgbot.api.statistic import statistics_to_json
 from tgbot.api.statistic import update_statistic
 from tgbot.handlers.battle.hook import BattleEngine
@@ -22,6 +23,7 @@ from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import BattleState
 from tgbot.misc.state import LocationState
+from tgbot.models.api.enemy_api import EnemyItemType
 from tgbot.models.entity.hero import Hero
 from tgbot.models.user import DBCommands
 
@@ -310,7 +312,7 @@ class BattleInterface:
                     hero.technique = technique
                     await self.update_data(hero.chat_id, 'hero', hero)
                     await self.set_state(hero.chat_id, BattleState.select_technique_confirm)
-                    return await message.answer(technique.technique_info(), reply_markup=confirm_kb)
+                    return await message.answer(technique.technique_info(hero), reply_markup=confirm_kb)
                 else:
                     text = technique.log or 'Ошибка активации..'
                     await self.set_state(hero.chat_id, BattleState.user_turn)
@@ -436,7 +438,7 @@ class BattleInterface:
                 teammate_count = len(order) - len(team_win)
                 mod = teammate_count / 10
 
-                log += await self.battle_reward(e, mod, len(team_win))
+                log += await self.battle_reward(e, mod, len(team_win), session)
 
                 if self.engine.battle_type == 'arena_one':
                     e.statistic.win_one_to_one += 1
@@ -465,20 +467,28 @@ class BattleInterface:
                     await self.update_data(e.chat_id, 'hero', e)
 
     # TODO: Навести порядок, вынести в отдельный модуль EXP
-    async def battle_reward(self, e, mod, teammate_count):
+    async def battle_reward(self, e, mod, teammate_count, session):
         enemies = self.engine.target_enemy_team(e, False)
-
+        loot_list: [EnemyItemType] = []
         total_reward = 0
 
         for enemy in enemies:
             total_reward += e.exp_reward(1 + mod, enemy.lvl)
+
+            loot = await get_enemy_loot(session, enemy.id, e.id)
+
+            if loot is not None:
+                loot_list.append(*loot)
 
         reward_exp = round(total_reward / teammate_count)
 
         e.exp += int(reward_exp)
         e.exp_now += int(reward_exp)
 
-        log = f'Вы получили {reward_exp} опыта'
+        log = f'Вы получили:\nОпыт {reward_exp}\n'
+
+        for loot in loot_list:
+            log += f"{loot.get('item').get('name', 'Предмет')} {loot.get('count')}\n"
 
         # TODO: Против "фармил", которые живут ареной и пока не сделаю норм опыт....
         if e.lvl > 20:

@@ -4,6 +4,7 @@ import aiohttp
 
 from tgbot.api import url
 from tgbot.models.api.enemy_api import CreateEnemyType
+from tgbot.models.api.enemy_api import EnemyItemType
 from tgbot.models.api.enemy_api import EnemyStatsType
 from tgbot.models.api.enemy_api import EnemyTechniqueType
 from tgbot.models.api.enemy_api import EnemyType
@@ -63,3 +64,19 @@ async def delete_enemy_technique(session, enemy_id, technique_id) -> bool:
             return True
 
         return False
+
+
+# Technique
+async def fetch_enemy_item(session, enemy_id) -> List[EnemyTechniqueType] | None:
+    async with session.get(url(f'/enemy/{enemy_id}/technique')) as res:
+        if res.status == 200:
+            return await res.json()
+        return None
+
+
+async def get_enemy_loot(session, enemy_id, hero_id) -> List[EnemyItemType] | None:
+    async with session.get(url(f'/enemy/{enemy_id}/loot'), params={'hero_id': hero_id}) as res:
+        if res.status == 200:
+            return await res.json()
+
+        return None

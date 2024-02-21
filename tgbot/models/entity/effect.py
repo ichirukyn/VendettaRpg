@@ -110,12 +110,12 @@ class Effect(EffectABC, ABC):
     def cancel(self, hero, target=None):
         pass
 
-    def info(self):
-        el = f"`{self.condition_first} {self.condition} {self.condition_second}`"
+    def info(self, entity):
+        el = f"{self.condition_first} {self.condition} {self.condition_second}"
         el_text = 'Без условий' if self.condition == '' or self.condition is None else el
         value = f'{self.value}'
 
-        if -1 < self.value < 1:
+        if -1 <= self.value <= 1:
             value = f'{formatted(self.value * 100)}%'
         elif self.type == 'percent':
             value = f'{formatted(self.value * 100)}%'
@@ -293,6 +293,19 @@ class CoastEffect(Effect, ABC):
 
         coast_total = (control + coast_base) * (1 + coast_rank) * (1 - control_mod)
         return coast_total
+
+    def info(self, entity):
+        el = f"{self.condition_first} {self.condition} {self.condition_second}"
+        el_text = 'Без условий' if self.condition == '' or self.condition is None else el
+
+        effect = f"`• {self.name}: {formatted(self.value)} ({formatted(self.coast(entity))})`\n"
+
+        return (
+            f"`———————————————————`\n"
+            f"{effect}"
+            f"`• Длительность: {self.duration}`\n"
+            f"`• Условия: {el_text}`\n"
+        )
 
 
 class EffectParent(EffectParentABC, ABC):

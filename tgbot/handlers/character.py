@@ -143,7 +143,7 @@ async def character_techniques(cb: CallbackQuery, state: FSMContext):
         technique = technique_init(res)
 
         text = (
-            f"{technique.technique_info()}\n"
+            f"{technique.technique_info(hero)}\n"
             f"{fix}"
         )
     else:

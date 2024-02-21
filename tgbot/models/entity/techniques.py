@@ -90,12 +90,12 @@ class Technique(EffectParent):
                 self.log = 'Условия активации не выполнены'
                 check = False
             if effect.type == 'coast' and not effect.check(entity):
-                self.log = 'Не хватает энергии, чтобы активировать'
+                self.log = f'Не хватает {"Маны" if "mana" in effect.attribute else "Ки"}, чтобы активировать'
                 check = False
 
         return check
 
-    def technique_info(self):
+    def technique_info(self, entity):
         return (
             f"*{self.name}*\n"
             f"{self.desc}\n"
@@ -104,7 +104,7 @@ class Technique(EffectParent):
             f"`• КД: {self.cooldown} {f'(Текущие: {self.cooldown_current})' if self.cooldown_current > 0 else ''}\n`"
             f"`• Дистанция: {'Дальняя' if self.distance == 'distant' else 'Ближняя'}\n`"
             f"`• Тип: {'Поддержка' if self.type == 'distant' else 'Атака'}\n`"
-            f"{''.join([effect.info() for effect in self.bonuses])}"
+            f"{''.join([effect.info(entity) for effect in self.bonuses])}"
         )
 
     def activate(self, entity, target=None) -> str:
