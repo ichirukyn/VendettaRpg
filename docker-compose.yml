@@ -2,38 +2,21 @@ version: '3.3'
 
 services:
   bot:
-    image: "${BOT_IMAGE_NAME:-tg_bot-image}"
-    container_name: "${BOT_CONTAINER_NAME:-tg_bot-container}"
-    stop_signal: SIGINT
+    container_name: vendetta-bot
     build:
       context: .
-    working_dir: "/usr/src/app/${BOT_NAME:-tg_bot}"
+    working_dir: "/usr/src/app/vendetta-bot"
     volumes:
-      - .:/usr/src/app/${BOT_NAME:-tg_bot}
+      - .:/usr/src/app/vendetta-bot
+      - postgresDB:/var/lib/postgres
     command: python3 -m bot
-    restart: always
     env_file:
       - ".env"
     networks:
       - tg_bot
-  db:
-    image: postgres:latest
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: vendetta
-      POSTGRES_USER: vendetta
-      POSTGRES_DB: vendetta
-    ports:
-      - 5432:5432
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8081:80"
+
+volumes:
+  postgresDB:
 
 networks:
   tg_bot:

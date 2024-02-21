@@ -1,31 +1,34 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 from tgbot.models.entity.effect import EffectFactory
+from tgbot.models.entity.effect import EffectParent
 
 
 class SkillFactory:
     @staticmethod
-    def create_skill(hero, data):
+    def create_skill(data):
         skill_id = data['skill_id']
         name = data['name']
         lvl = data['lvl']
         desc = data['desc']
+        desc_short = data['desc_short']
+
         duration = data['duration']
         duration_time = data['duration_time']
-        nen_type = data['nen_type']
+
         bonuses = data['bonuses']
 
-        return Skill(hero, skill_id, name, lvl, desc, duration, duration_time, nen_type, bonuses)
+        return Skill(skill_id, name, lvl, desc, desc_short, duration, duration_time, bonuses)
 
 
-class Skill:
-    def __init__(self, hero, skill_id, name, lvl, desc, duration, duration_time, nen_type, bonuses):
-        self.hero = hero
+class Skill(EffectParent):
+    def __init__(self, skill_id, name, lvl, desc, desc_short, duration, duration_time, bonuses):
         self.skill_id = skill_id
         self.name = name
         self.lvl = lvl
         self.desc = desc
-        self.nen_type = nen_type
+        self.desc_short = desc_short
         self.bonuses = bonuses
         self.effects = []
 
@@ -33,39 +36,20 @@ class Skill:
         self.duration = duration
         self.duration_time = duration_time
 
-    #  Активация Навыка, при условии, что хватает энергии,
-    def skill_activate(self):
+    def activate(self, entity):
         # TODO: Подключить ману к заклинаниям
-        if self.hero.mana <= 0:
+        if entity.mana <= 0:
             return f'Недостаточно Маны для активации.'
 
-        self.skill_apply()
+        self.apply(entity)
 
-        return f"🔮 {self.hero.name} использовал {self.name}"
+        return f"🔮 {entity.name} использовал {self.name}"
 
-    #  Добавление эффектов навыку
-    def skill_apply(self):
-        for bonus in self.bonuses:
-            self.effects.append(bonus)
-            bonus.apply(self.hero)
-
-        self.hero.active_bonuses.append(self)
-
-    #  Удаление навыка
-    def skill_remove(self):
-        for effect in self.effects:
-            effect.remove(self.hero)
-
-        for bonus in self.hero.active_bonuses:
-            if bonus.name == self.name:
-                self.hero.active_bonuses.remove(bonus)
-
-    #  Проверка длительности эффектов навыков
-    def skill_check(self):
+    def turn_check(self, entity):
         print('Check start')
         if self.duration is not None:
             if self.duration == 0:
-                self.skill_remove()
+                self.cancel(entity)
             else:
                 self.duration -= 1
 
@@ -75,7 +59,7 @@ class Skill:
             now = datetime.now()
 
             if now > time:
-                self.skill_remove()
+                self.cancel(entity)
 
 
 async def skills_init(entity, skills, db):
@@ -90,14 +74,16 @@ async def skills_init(entity, skills, db):
             new_bonuses = []
 
             for bonus in bonuses:
-                new_bonuses.append(EffectFactory.create_effect(entity, bonus, source=('skill', skill_id)))
+                new_bonuses.append(EffectFactory.create_effect(bonus, source=('skill', skill_id)))
 
             new_skill.append(dict(skill))
             new_skill[i]['bonuses'] = new_bonuses
 
             i += 1
 
-        entity.init_skills(new_skill)
+        for skill in skills:
+            entity.skills.append(SkillFactory.create_skill(skill))
+
         return entity
     except KeyError:
         return entity

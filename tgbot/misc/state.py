@@ -1,4 +1,5 @@
-from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.dispatcher.filters.state import State
+from aiogram.dispatcher.filters.state import StatesGroup
 
 
 class RegState(StatesGroup):
@@ -17,19 +18,13 @@ class BattleState(StatesGroup):
     user_sub_turn = State()
     select_target = State()
     select_technique = State()
+    select_technique_confirm = State()
     select_skill = State()
     select_skill_confirm = State()
     user_escape_confirm = State()
     battle_start = State()
     revival = State()
     load = State()
-
-
-class HuntState(StatesGroup):
-    select_location = State()
-    hunter_diary = State()
-    hunting = State()
-    hunting_action = State()
 
 
 class CharacterState(StatesGroup):
@@ -40,8 +35,14 @@ class CharacterState(StatesGroup):
     inventory_action = State()
     skills = State()
     skill_fix = State()
+    techniques = State()
+    technique_fix = State()
     distribution = State()
     distribution_menu = State()
+    all_stats = State()
+    flat_stats = State()
+
+    info_menu = State()
 
 
 class EquipState(StatesGroup):
@@ -63,7 +64,7 @@ class LocationState(StatesGroup):
 
     town = State()
     tower = State()
-    hunt = State()
+    fortress = State()
     arena = State()
     team = State()
 
@@ -72,6 +73,20 @@ class TowerState(StatesGroup):
     arena = State()
     select_enemy = State()
     select_floor = State()
+
+
+class CampusState(StatesGroup):
+    select_floor = State()
+    select_enemy = State()
+
+
+class FortressState(StatesGroup):
+    map_nav = State()
+    select_floor = State()
+    select_enemy = State()
+    town = State()
+    battle = State()
+    battle_exit = State()
 
 
 class ArenaState(StatesGroup):

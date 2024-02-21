@@ -1,10 +1,13 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup
 from more_itertools import chunked
+
+from tgbot.misc.locale import keyboard
 
 back_inline = InlineKeyboardMarkup(row_width=1)
 
 back_inline.add(
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад')
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
 )
 
 
@@ -28,7 +31,7 @@ def arena_inline(lists, columns=2):
         except IndexError:
             kb.add(row[0])
 
-    kb.add(InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'))
+    kb.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
 
     return kb
 
@@ -52,7 +55,7 @@ def floor_inline(lists, columns=2):
         except IndexError:
             kb.add(row[0])
 
-    kb.add(InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'))
+    kb.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
 
     return kb
 
@@ -61,7 +64,52 @@ battle_start_inline = InlineKeyboardMarkup(row_width=1)
 
 battle_start_inline.add(
     InlineKeyboardButton(text='В бой', callback_data='В бой'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад')
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
+)
+
+
+# Fortress
+
+def map_nav_inline(is_move=True, is_town=False, is_battle=False, is_exit=False, is_explorer=False):
+    map_nav_kb = InlineKeyboardMarkup(row_width=3)
+
+    if is_move:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='Влево', callback_data='left'),
+            InlineKeyboardButton(text='Вперёд', callback_data='up'),
+            InlineKeyboardButton(text='Вправо', callback_data='right'),
+        )
+
+    if is_town:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='В город', callback_data='town'),
+        )
+    if is_battle:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='В бой', callback_data='battle'),
+            InlineKeyboardButton(text='Попробовать сбежать', callback_data='escape'),
+        )
+    if is_explorer:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='Исследовать', callback_data='explorer'),
+        )
+    if is_exit:
+        map_nav_kb.add(
+            InlineKeyboardButton(text='Выйти', callback_data='exit'),
+        )
+
+    return map_nav_kb
+
+
+fortress_town_inline = InlineKeyboardMarkup(row_width=3)
+
+fortress_town_inline.add(
+    InlineKeyboardButton(text='Площадь', callback_data='square'),
+    InlineKeyboardButton(text='Таверна', callback_data='tavern'),
+)
+
+fortress_town_inline.add(
+    InlineKeyboardButton(text='Выйти', callback_data='exit'),
 )
 
 # Top
@@ -85,9 +133,10 @@ top_inline.add(
 )
 top_inline.add(
     InlineKeyboardButton(text='Подчинение', callback_data='submission'),
+    InlineKeyboardButton(text='Меткость', callback_data='accuracy'),
 )
 top_inline.add(
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )
 
 # Character
@@ -95,7 +144,7 @@ battle_start_inline = InlineKeyboardMarkup(row_width=1)
 
 battle_start_inline.add(
     InlineKeyboardButton(text='В бой', callback_data='В бой'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад')
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
 )
 
 
@@ -106,6 +155,9 @@ def list_inline(lists, columns=2, label='name', cb_data='id'):
         row = []
 
         for item in sublist:
+            if item is None:
+                continue
+
             name = item[label]
             data = item[cb_data]
             button = InlineKeyboardButton(text=name, callback_data=data)
@@ -117,7 +169,7 @@ def list_inline(lists, columns=2, label='name', cb_data='id'):
         except IndexError:
             kb.add(row[0])
 
-    kb.add(InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'))
+    kb.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
 
     return kb
 
@@ -127,14 +179,14 @@ skill_add_inline = InlineKeyboardMarkup(row_width=1)
 
 skill_add_inline.add(
     InlineKeyboardButton(text='Прикрепить', callback_data='Прикрепить'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )
 
 skill_del_inline = InlineKeyboardMarkup(row_width=1)
 
 skill_del_inline.add(
     InlineKeyboardButton(text='Открепить', callback_data='Открепить'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )
 
 # Shop
@@ -142,40 +194,8 @@ shop_buy_inline = InlineKeyboardMarkup(row_width=1)
 
 shop_buy_inline.add(
     InlineKeyboardButton(text='Купить всё', callback_data='Купить всё'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )
-
-# Hunt
-hunt_inline = InlineKeyboardMarkup(row_width=1)
-
-hunt_inline.add(
-    InlineKeyboardButton(text='Зона охоты', callback_data='Зона охоты'),
-    InlineKeyboardButton(text='Дневник охотника (Не доступен)', callback_data='(Не доступен)'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
-)
-
-hunt_action_inline = InlineKeyboardMarkup(row_width=2)
-
-hunt_action_inline.add(
-    InlineKeyboardButton(text='Идти дальше', callback_data='Идти дальше'),
-)
-
-hunt_action_inline.add(
-    InlineKeyboardButton(text='Покинуть лес', callback_data='Покинуть лес'),
-)
-
-hunt_battle_inline = InlineKeyboardMarkup(row_width=2)
-
-hunt_battle_inline.add(
-    InlineKeyboardButton(text='В бой', callback_data='В бой'),
-)
-
-
-# hunting_kb = ReplyKeyboardMarkup(
-#     keyboard=[
-#         [KeyboardButton(text="Продолжить")],
-#     ],
-#     resize_keyboard=True)
 
 
 # Team
@@ -204,7 +224,7 @@ def team_main_inline(is_team=False, is_leader=False):
         )
 
     kb.add(
-        InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
+        InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
     )
 
     return kb
@@ -217,14 +237,14 @@ team_setting_inline.add(
     InlineKeyboardButton(text='Изменить лидера', callback_data='Изменить лидера'),
     InlineKeyboardButton(text='Изменить приватность', callback_data='Изменить приватность'),
     InlineKeyboardButton(text='Распустить', callback_data='Распустить'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )
 
 teammate_menu_inline = InlineKeyboardMarkup(row_width=1)
 
 teammate_menu_inline.add(
     InlineKeyboardButton(text='Исключить', callback_data='Исключить'),
-    InlineKeyboardButton(text='🔙 Назад', callback_data='🔙 Назад'),
+    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
     # InlineKeyboardButton(text='Изменить префикс', callback_data='Изменить префикс'),
 )
 

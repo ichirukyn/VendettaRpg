@@ -1,4 +1,4 @@
-import math
+from tgbot.misc.utils import spread
 
 
 class EntityLevel:
@@ -8,23 +8,27 @@ class EntityLevel:
     exp_total = 0
     exp_to_lvl = 50
 
-    base_reward = 1  # Ид ранга
+    # Скорость возрастания уровня, рекомендуется 1.50-1.70,
+    coefficient = 1.1
+    # Скорость возрастания уровня, рекомендуется 3-5,
+    mod = 4
+    # x2, x3, x5 опыт для всех, на ивенты и т.д.
+    global_mod = 1
 
-    def exp_reward(self, difficulty):
-        reward = self.base_reward * self.lvl * math.log(self.exp_total + 1, 2)
+    def exp_reward(self, difficulty, enemy_lvl):
+        # reward = self.global_mod * self.lvl * math.log(self.exp_total + 1, 2)
+        reward = (self.mod * enemy_lvl) ** self.coefficient
+        reward *= self.global_mod
         reward *= difficulty
+        reward = spread(reward, 0.1)
 
-        # need_battle = self.exp_to_lvl / reward
-        # print('need_battle', need_battle)
-        # print('reward', reward)
-
-        return reward
+        return round(reward)
 
     def init_level(self, data):
-        self.lvl = data['lvl']  # 3 ур
-        self.exp = data['exp']  # 213 - 537 --
-        self.exp_to_lvl = data['exp_to_lvl']  # 324
-        self.exp_total = data['exp_total']  # 537
+        self.lvl = data['lvl']
+        self.exp = data['exp']
+        self.exp_to_lvl = data['level']['exp_to_lvl']
+        self.exp_total = data['level']['exp_total']
         self.exp_now = self.exp - (self.exp_total - self.exp_to_lvl)
 
     def check_lvl_up(self):

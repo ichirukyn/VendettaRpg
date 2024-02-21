@@ -1,40 +1,60 @@
-from tgbot.models.entity.hero import Hero, HeroFactory
-from tgbot.models.entity.skill import skills_init
+from tgbot.api.hero import fetch_hero_technique
+from tgbot.api.hero import get_hero
+from tgbot.api.hero import get_hero_lvl
+from tgbot.api.hero import get_hero_stats
+from tgbot.api.statistic import get_statistic
+from tgbot.models.entity._class import class_init
+from tgbot.models.entity.hero import Hero
+from tgbot.models.entity.hero import HeroFactory
+from tgbot.models.entity.race import race_init
+from tgbot.models.entity.statistic import Statistic
+from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
 
-async def init_hero(db: DBCommands, user_id, chat_id=None) -> Hero:
-    print('Hero init')
+async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None) -> Hero:
+    if hero_id is not None and hero_data is None:
+        hero_db = await get_hero(session, hero_id)
+        stats_db = await get_hero_stats(session, hero_id)
 
-    if chat_id:
-        user_db = await db.get_user_id(chat_id)
-        hero_id = await db.get_hero_id(user_db['id'])
+        chat_id: str = hero_db.get('user').get('chat_id', '0')
+        hero_db['chat_id'] = int(chat_id)
     else:
-        hero_id = await db.get_hero_id(user_id)
+        hero_id = hero_data['id']
+        hero_db = hero_data
+        hero_db['chat_id'] = hero_data.get('user').get('chat_id')
+        stats_db = await get_hero_stats(session, hero_id)
 
-    hero_db = await db.get_heroes(hero_id)
+    hero_lvl_data = await get_hero_lvl(session, hero_id)
+    hero_lvl = await hero_lvl_data.json()
 
-    stats_db = await db.get_hero_stats(hero_id)
-    hero_lvl = await db.get_hero_lvl(hero_id)
-
-    team_db = await db.get_hero_team(hero_id)
-
-    race_db = await db.get_race(hero_db['race_id'])
-    class_db = await db.get_class(hero_db['class_id'])
-
-    skills = await db.get_hero_skills(hero_id)
-    hero_weapon = await db.get_hero_weapons(hero_id)
-    weapon = await db.get_weapon(hero_weapon['weapon_id'])
-
-    hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db, race_db, class_db)
-    hero.update_stats_all()
+    hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db)
+    hero.flat_init()
     hero.init_level(hero_lvl)
 
-    if skills:
-        hero = await skills_init(hero, skills, db)
+    team_db = await db.get_hero_team(hero_id)
+    statistic_db = await get_statistic(session, hero_id)
 
-    if hero_weapon:
-        hero.add_weapon(weapon, hero_weapon['lvl'])
+    # skills = await db.get_hero_skills(hero_id)
+    hero.active_bonuses = []
+    hero = await race_init(session, hero, hero_db.get('race'))
+    hero = await class_init(session, hero, hero_db.get('class'))
+
+    hero.techniques = []
+    techniques_db = await fetch_hero_technique(session, hero.id)
+
+    hero.statistic = Statistic()
+    hero.statistic.init_from_db(statistic_db)
+
+    if techniques_db is not None:
+        for tech in techniques_db:
+            technique = tech.get('technique')
+            technique = technique_init(technique)
+
+            if technique is not None:
+                hero.techniques.append(technique)
+
+    hero = await update_hero_weapon(db, hero)
 
     if team_db is not None:
         hero.team_id = team_db['team_id']
@@ -43,14 +63,37 @@ async def init_hero(db: DBCommands, user_id, chat_id=None) -> Hero:
             hero.name = f' {hero.name}'
             hero.is_leader = True
 
+    hero.update_stats_all()
+
     return hero
 
 
-async def init_team(db, team, hero=None):
+async def update_hero_stats(session, hero):
+    stats_db = await get_hero_stats(session, hero.id)
+
+    hero.init_stats_factory(stats_db)
+    hero.flat_init()
+    # Обновить бонусы
+    hero.update_stats_all()
+
+    return hero
+
+
+async def update_hero_weapon(db, hero):
+    hero_weapon = await db.get_hero_weapons(hero.id)
+    weapon = await db.get_weapon(hero_weapon['weapon_id'])
+
+    if hero_weapon:
+        hero.init_weapon(weapon, hero_weapon['lvl'])
+
+    return hero
+
+
+async def init_team(db, session, team, hero=None):
     entity_team = []
 
     for entity in team:
-        h = await init_hero(db, entity['hero_id'])
+        h = await init_hero(db, session, hero_id=entity['hero_id'])
 
         if len(entity['prefix']) > 0:
             prefix = f" \"{entity['prefix']}\""
@@ -72,45 +115,3 @@ def leader_on_team(team):
     for e in team:
         if e.is_leader:
             return e
-
-
-# TODO: Переписать потом, на инициализацию отдельных частей, а не всего hero
-async def update_hero(db: DBCommands, hero) -> Hero:
-    # print(f'Hero update - {hero.id} id')
-
-    hero_db = await db.get_heroes(hero.id)
-    stats_db = await db.get_hero_stats(hero.id)
-    hero_lvl = await db.get_hero_lvl(hero_db['id'])
-
-    skills = await db.get_hero_skills(hero.id)
-    hero_weapon = await db.get_hero_weapons(hero.id)
-
-    team_db = await db.get_hero_team(hero.id)
-
-    race_db = await db.get_race(hero_db['race_id'])
-    class_db = await db.get_class(hero_db['class_id'])
-
-    hero: Hero = HeroFactory.create_hero(hero_db, stats_db, race_db, class_db)
-    hero = await skills_init(hero, skills, db)
-
-    hero.update_stats()
-    hero.init_level(hero_lvl)
-
-    if hero_weapon:
-        weapon = await db.get_weapon(hero_weapon['weapon_id'])
-        hero.add_weapon(weapon, hero_weapon['lvl'])
-
-    try:
-        hero_team_bd = await db.get_hero_team(hero.id)
-        hero.team_id = hero_team_bd['team_id']
-    except TypeError:
-        pass
-
-    if team_db is not None:
-        hero.team_id = team_db['team_id']
-
-        if team_db['is_leader']:
-            hero.name = f' {hero.name}'
-            hero.is_leader = True
-
-    return hero

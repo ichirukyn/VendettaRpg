@@ -1,11 +1,18 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
+from aiogram.types import CallbackQuery
+from aiogram.types import Message
+from aiogram.types import ReplyKeyboardRemove
 
-from tgbot.keyboards.inline import team_main_inline, list_inline, yes_no_inline, teammate_menu_inline
+from tgbot.keyboards.inline import list_inline
+from tgbot.keyboards.inline import team_main_inline
+from tgbot.keyboards.inline import teammate_menu_inline
+from tgbot.keyboards.inline import yes_no_inline
 from tgbot.keyboards.reply import team_private_kb
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
-from tgbot.misc.state import TeamState, LocationState
+from tgbot.misc.state import LocationState
+from tgbot.misc.state import TeamState
 from tgbot.models.user import DBCommands
 
 
@@ -21,13 +28,13 @@ async def team_add(message: Message, state: FSMContext):
         team_private = data.get('team_private')
 
         # TODO: Переписать на возвращение id с создания команды
+        team = await db.add_team(hero.id, team_name, team_private)
+        await db.add_hero_team(hero.id, team['id'], True)
 
-        test = await db.add_team(hero.id, team_name, team_private)
+        hero.is_leader = True
+        hero.team_id = team['id']
 
-        team_db = await db.get_hero_team(hero.id)
-
-        await db.add_hero_team(hero.id, test['id'], True)
-
+        await state.update_data(hero=hero)
         await state.update_data(team_name='')
         await state.update_data(team_private=False)
 
@@ -36,7 +43,7 @@ async def team_add(message: Message, state: FSMContext):
 
 
 async def team_add_name(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await to_team_main(message, state)
 
     name = message.text
@@ -66,7 +73,7 @@ async def team_add_private(message: Message, state: FSMContext):
 async def team_list(cb: CallbackQuery, state: FSMContext):
     db = DBCommands(cb.message.bot.get('db'))
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         return await to_team_main(cb.message, state)
 
     data = await state.get_data()
@@ -129,7 +136,7 @@ async def team_accept_leader(message: Message, state: FSMContext):
 
 
 async def team_send_invite(message: Message, state: FSMContext):
-    if message.text == '🔙 Назад':
+    if message.text == keyboard["back"]:
         await to_team_main(message, state)
 
     db = DBCommands(message.bot.get('db'))
@@ -170,8 +177,11 @@ async def team_accept_invite(message: Message, state: FSMContext):
     try:
         invite_team_id = data.get('invite_team_id')
         hero = data.get('hero')
+        hero.team_id = invite_team_id
 
         await db.add_hero_team(hero.id, invite_team_id)
+        await state.update_data(hero=hero)
+
         await message.answer('Вы вступили в команду!')
         await to_team_main(message, state)
 
@@ -180,7 +190,7 @@ async def team_accept_invite(message: Message, state: FSMContext):
 
 
 async def teammate_list(cb: CallbackQuery, state: FSMContext):
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
         return await to_team_main(cb.message, state)
 
@@ -194,7 +204,7 @@ async def teammate_list(cb: CallbackQuery, state: FSMContext):
 
 
 async def teammate_menu(cb: CallbackQuery, state: FSMContext):
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         await cb.message.delete()
         return await to_team_main(cb.message, state)
 
@@ -258,4 +268,3 @@ def team(dp: Dispatcher):
     dp.register_callback_query_handler(teammate_list, state=TeamState.teammate_list)
     dp.register_callback_query_handler(teammate_menu, state=TeamState.teammate_menu)
     dp.register_callback_query_handler(team_kik, state=TeamState.kik)
-    # dp.register_callback_query_handler(team_, state=TeamState.)

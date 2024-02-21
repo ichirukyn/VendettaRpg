@@ -3,6 +3,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import CallbackQuery
 
 from tgbot.keyboards.inline import list_inline, shop_buy_inline
+from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import ShopState, LocationState
 from tgbot.misc.utils import check_before_send
@@ -17,7 +18,7 @@ async def buy_item(cb: CallbackQuery, state: FSMContext):
     item_id = data['item_id']
     item = await db.get_trader_item(item_id)
 
-    if cb.data == '🔙 Назад':
+    if cb.data == keyboard["back"]:
         items = await db.get_trader_items()
         kb = list_inline(items)
 

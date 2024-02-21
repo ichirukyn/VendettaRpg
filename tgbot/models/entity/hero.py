@@ -1,10 +1,15 @@
+import copy
+
 from tgbot.misc.other import formatted
+from tgbot.models.entity._class import Class
+from tgbot.models.entity.effect import Effect
 from tgbot.models.entity.entity import Entity
+from tgbot.models.entity.race import Race
 
 
 class HeroFactory:
     @staticmethod
-    def create_hero(id, data, stats, race, _class):
+    def create_hero(id, data, stats):
         hero = {
             'entity_id': id,
             'name': data['name'],
@@ -14,6 +19,7 @@ class HeroFactory:
             'health': stats['health'],
             'speed': stats['speed'],
             'dexterity': stats['dexterity'],
+            'accuracy': stats['accuracy'],
             'soul': stats['soul'],
             'intelligence': stats['intelligence'],
             'submission': stats['submission'],
@@ -22,15 +28,11 @@ class HeroFactory:
             'resist': stats['resist'],
             'free_stats': stats['free_stats'],
             'chat_id': data['chat_id'],
-            'race_id': race['id'],
-            'class_id': _class['id'],
-            'race_name': race['name'],
-            'class_name': _class['name'],
         }
         return Hero(**hero)
 
     @staticmethod
-    def create_init_hero(user_id, chat_id, name, race_id, class_id):
+    def create_init_hero(user_id, chat_id, name):
         hero = {
             'entity_id': user_id,
             'name': name,
@@ -40,6 +42,7 @@ class HeroFactory:
             'health': 1,
             'speed': 1,
             'dexterity': 1,
+            'accuracy': 1,
             'soul': 1,
             'intelligence': 1,
             'submission': 1,
@@ -48,22 +51,18 @@ class HeroFactory:
             'resist': 0.1,
             'free_stats': 20,
             'chat_id': chat_id,
-            'race_id': race_id,
-            'class_id': class_id,
-            'race_name': '',
-            'class_name': '',
         }
 
         return Hero(**hero)
 
 
 class Hero(Entity):
-    def __init__(self, entity_id, name, rank, money, strength, health, speed, dexterity, soul, intelligence, submission,
-                 crit_rate, crit_damage, resist, free_stats, chat_id, race_id, class_id, race_name, class_name):
-        super().__init__(entity_id, name, rank, strength, health, speed, dexterity, soul, intelligence, submission,
-                         crit_rate, crit_damage, resist, race_id, class_id, race_name, class_name)
+    def __init__(self, entity_id, name, rank, money, strength, health, speed, dexterity, accuracy, soul, intelligence,
+                 submission, crit_rate, crit_damage, resist, free_stats, chat_id):
+        super().__init__(entity_id, name, rank, strength, health, speed, dexterity, accuracy, soul, intelligence,
+                         submission, crit_rate, crit_damage, resist)
         self.chat_id = chat_id
-        self.info = HeroInfo(self)
+        self.info = HeroInfo()
 
         self.money = money
         self.free_stats = free_stats
@@ -73,56 +72,198 @@ class Hero(Entity):
 
 
 class HeroInfo:
-    def __init__(self, hero):
-        self.hero = hero
-
-    def equip_stat(self):
+    @staticmethod
+    def equip_stat(hero):
         return (
-            f"Оружие: {self.hero.weapon_name} {f'{self.hero.weapon_lvl} ур.' if self.hero.weapon_lvl > 0 else ''} \n"
-            f"Описание: {self.hero.weapon_desc}\n"
+            f"Оружие: *{hero.weapon_name}* {f'({hero.weapon_lvl} ур.)' if hero.weapon_lvl > 0 else ''} \n"
+            f"Описание: {hero.weapon_desc}\n"
             f"\n"
-            f"Урон: {self.hero.weapon_damage}\n"
+            f"• Урон: {formatted(hero.weapon_damage)}\n"
         )
 
-    def active_bonuses(self):
+    @staticmethod
+    def active_bonuses(hero):
         bonuses = ''
+        ignore_list = [Race, Class]  # Skill, Technique, etc..
 
-        for bonus in self.hero.active_bonuses:
-            bonuses += f'{bonus.name}, '
+        for bonus in hero.active_bonuses:
+            if not any(isinstance(bonus, ignored_class) for ignored_class in ignore_list):
+                bonuses += f'`{bonus.name}, `'
+
+        if bonuses != '':
+            bonuses = f'`— Бонусы —`\n{bonuses}\n'
 
         return bonuses
 
-    def status(self):
-        self.hero.update_stats()
+    @staticmethod
+    def active_debuff(hero):
+        debuff_list = ''
 
-    def status_begin(self):
-        self.hero.update_stats()
+        for debuff in hero.debuff_list:
+            debuff_list += f'`{debuff.get("name")}, `'
+
+        if debuff_list != '':
+            debuff_list = f'`— Дебаффы —`\n{debuff_list}\n'
+
+        return debuff_list
+
+    @staticmethod
+    def status(hero, crit=False):
+        hero.update_stats()
+        hero.default_stats()
+        so_string = f'`• Свободные очки: {formatted(hero.free_stats)}` \n'
+        crit_string = ''
+
+        if crit:
+            crit_string += f"`• Крит. Шанс: {formatted(hero.crit_rate * 100)}%`\n"
+            crit_string += f"`• Крит. Урон: {formatted(hero.crit_damage * 100)}%`\n"
+
         return (
-            f"**Ваш статус:**\n"
-            f"• Имя: **{self.hero.name}** \n"
-            f"• ID: `{self.hero.id}`\n"
-            f"• Раса: `{self.hero.race_name}`\n"
-            f"     • Класс: `{self.hero.class_name}`\n"
-            f"• Уровень: `{self.hero.lvl}` `({self.hero.exp_now}/{self.hero.exp_to_lvl})`\n"
-            f"     • Ранг: `{self.hero.rank}`\n"
-            f"• Золото: `{formatted(self.hero.money)}`\n"
-            f"••••••••••••••••••••••••••••••••••••••\n"
-            f"**Ваше текущее состояние:**\n"
-            f"• ХП: `{formatted(self.hero.hp)} / {formatted(self.hero.hp_max)}`\n"
-            f"• Мана: `{formatted(self.hero.mana)}`\n"
-            f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n"
-            f"**Ваши характеристики:**\n"
-            f"• Сила: `{formatted(self.hero.strength)}`\n"
-            f"• Здоровье: `{formatted(self.hero.health)}`\n"
-            f"• Скорость: `{formatted(self.hero.speed)}`\n"
-            f"• Ловкость: `{formatted(self.hero.dexterity)}`\n"
-            f"• Интеллект: `{formatted(self.hero.intelligence)}`\n"
-            f"• Дух: `{formatted(self.hero.soul)}`\n"
-            f"• Подчинение: `{formatted(self.hero.submission)}`\n"
-            f"• Крит. Шанс: `{self.hero.crit_rate * 100}%`\n"
-            f"• Крит. Урон: `{self.hero.crit_damage * 100}%`\n"
-            f"••••••••••••••••••••••••••••••••••••••\n"
-            f"• Общая сила: `{formatted(self.hero.total_stats)}`\n"
-            f"• {f'Свободные очки: `{formatted(self.hero.free_stats)}`' if self.hero.free_stats > 0 else ''}\n"
-            f"°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n"
+            f"*Ваш статус:*\n"
+            f"`• Имя: {hero.name}`\n"
+            f"`• ID: {hero.id}`\n"
+            f"`• Раса: {hero.race.name}`\n"
+            f"     `• Класс: {hero._class.name}`\n"
+            f"`• Уровень: {hero.lvl}` `({hero.exp_now}/{hero.exp_to_lvl})`\n"
+            f"     `• Ранг: {hero.rank}`\n"
+            f"`• Золото: {formatted(hero.money)}`\n"
+            f"`———————————————————`\n"
+            f"*Ваше текущее состояние:*\n"
+            f"`• ХП: {formatted(hero.hp)} / {formatted(hero.hp_max)}`\n"
+            f"`• Мана: {formatted(hero.mana)} / {formatted(hero.mana_max)}`\n"
+            f"`• Ки: {formatted(hero.qi)} / {formatted(hero.qi_max)}`\n"
+            f"`———————————————————`\n"
+            f"*Ваши характеристики:*\n"
+            f"`• Сила: {formatted(hero.strength)}`\n"
+            f"`• Здоровье: {formatted(hero.health)}`\n"
+            f"`• Скорость: {formatted(hero.speed)}`\n"
+            f"`• Ловкость: {formatted(hero.dexterity)}`\n"
+            f"`• Меткость: {formatted(hero.accuracy)}`\n"
+            f"`• Интеллект: {formatted(hero.intelligence)}`\n"
+            f"`• Дух: {formatted(hero.soul)}`\n"
+            f"`• Подчинение: {formatted(hero.submission)}`\n"
+            f"`• Контроль маны: {formatted(hero.control_mana)} ({formatted(hero.control_mana_normalize * 100)}%)`\n"
+            f"`• Контроль ки: {formatted(hero.control_qi)} ({formatted(hero.control_qi_normalize * 100)}%)`\n"
+            f"{crit_string}"
+            f"`———————————————————`\n"
+            f"`• Общая сила: {formatted(hero.total_stats)}`\n"
+            f"{so_string if hero.free_stats > 0 else ''}"
+            f"`———————————————————`\n"
+            f"`• Оружие: {hero.weapon_name} {f'({hero.weapon_lvl} ур.)' if hero.weapon_lvl > 0 else ''}`\n"
+            f"`• Урон: {formatted(hero.weapon_damage)}\n`"
         )
+
+    @staticmethod
+    def status_flat(hero):
+        hero.default_stats()
+        hero.update_stats()
+        return (
+            f"*Ваши характеристики без бонусов:*\n"
+            f"`• Сила: {formatted(hero.flat_strength)}`\n"
+            f"`• Здоровье: {formatted(hero.flat_health)}`\n"
+            f"`• Скорость: {formatted(hero.flat_speed)}`\n"
+            f"`• Ловкость: {formatted(hero.flat_dexterity)}`\n"
+            f"`• Меткость: {formatted(hero.flat_accuracy)}`\n"
+            f"`• Интеллект: {formatted(hero.flat_intelligence)}`\n"
+            f"`• Дух: {formatted(hero.flat_soul)}`\n"
+            f"`• Подчинение: {formatted(hero.flat_submission)}`\n"
+        )
+
+    @staticmethod
+    def status_elements_damage(hero):
+        hero.default_stats()
+        hero.update_stats()
+        return (
+            f"*Урон стихий:*\n"
+            f"`• Огонь: {formatted(hero.fire_damage * 100)}%`\n"
+            f"`• Вода: {formatted(hero.water_damage * 100)}%`\n"
+            f"`• Земля: {formatted(hero.earth_damage * 100)}%`\n"
+            f"`• Воздух: {formatted(hero.air_damage * 100)}%`\n"
+            f"`• Тьма: {formatted(hero.dark_damage * 100)}%`\n"
+            f"`• Свет: {formatted(hero.light_damage * 100)}%`\n"
+        )
+
+    @staticmethod
+    def status_elements_resist(hero):
+        hero.default_stats()
+        hero.update_stats()
+        return (
+            f"*Защита стихий:*\n"
+            f"`• Огонь: {formatted(hero.fire_resist * 100)}%`\n"
+            f"`• Вода: {formatted(hero.water_resist * 100)}%`\n"
+            f"`• Земля: {formatted(hero.earth_resist * 100)}%`\n"
+            f"`• Воздух: {formatted(hero.air_resist * 100)}%`\n"
+            f"`• Тьма: {formatted(hero.dark_resist * 100)}%`\n"
+            f"`• Свет: {formatted(hero.light_resist * 100)}%`\n"
+        )
+
+    def character_info(self, hero, bonus):
+        if bonus == 'race':
+            header = (
+                f"Ваша раса *{hero.race.name}*\n\n"
+                f"• Описание: {hero.race.desc_short}\n"
+            )
+
+            return self.bonus_info(header, hero.race.bonuses, True, True, True)
+
+        if bonus == 'class':
+            header = (
+                f"Ваш класс *{hero._class.name}*\n\n"
+                f"• Описание: {hero._class.desc}\n"
+            )
+
+            return self.bonus_info(header, hero._class.bonuses, True)
+
+    def bonus_info(self, header, bonuses, is_mod=False, is_damage=False, is_resist=False):
+        elements = []
+        resists = []
+        others = []
+
+        for el in bonuses:
+            if '_damage' in el.attribute:
+                new_el = copy.copy(el)
+                new_el.value = f"{formatted(new_el.value * 100, 1)}%"
+                elements.append(new_el)
+                continue
+
+            elif '_resist' in el.attribute:
+                new_el = copy.copy(el)
+                new_el.value = f"{formatted(new_el.value * 100, 1)}%"
+                resists.append(new_el)
+                continue
+
+            if el.type == 'percent' or isinstance(el.value, float):
+                new_el = copy.copy(el)
+                new_el.value = f"{formatted(new_el.value * 100, 1)}%"
+                others.append(new_el)
+                continue
+
+            others.append(el)
+
+        text = header
+
+        if is_mod and len(others) != 0:
+            text += self.effects_info(others, '*Модификаторы*')
+
+        if is_damage and len(elements) != 0:
+            text += self.effects_info(elements, '*Урон стихий*')
+
+        if is_resist and len(resists) != 0:
+            text += self.effects_info(resists, '*Защита стихий*')
+            text += f"`———————————————————`\n"
+
+        return text
+
+    @staticmethod
+    def effects_info(effects: [Effect], header):
+        text = f"`———————————————————`\n{header}:\n"
+
+        # mod_text = ''
+        for effect in effects:
+            text += f"`• {effect.name}: {effect.value}`\n"
+
+        return text
+
+    def status_all(self, hero):
+        return "`———————————————————`\n" \
+            .join([self.status(hero, True), self.status_elements_damage(hero), self.status_elements_resist(hero)])
