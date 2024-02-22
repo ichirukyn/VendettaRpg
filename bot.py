@@ -7,7 +7,6 @@ from aiogram import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 
-from sql import create_pool
 from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
 from tgbot.filters.register import RegFilter
@@ -67,7 +66,8 @@ async def main():
     bot = Bot(token=config.tg_bot.token, parse_mode='Markdown')
     dp: Dispatcher = Dispatcher(bot, storage=storage)
 
-    db = await create_pool(config)
+    # db = await create_pool(config)
+    db = None
 
     session = aiohttp.ClientSession()
 
