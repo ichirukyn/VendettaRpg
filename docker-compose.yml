@@ -13,11 +13,10 @@ services:
     env_file:
       - ".env"
     networks:
-      - tg_bot
+      tg:
 
 volumes:
   postgresDB:
 
 networks:
-  tg_bot:
-    driver: bridge
+  tg:
