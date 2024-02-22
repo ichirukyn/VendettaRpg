@@ -67,23 +67,23 @@ async def main():
     bot = Bot(token=config.tg_bot.token, parse_mode='Markdown')
     dp: Dispatcher = Dispatcher(bot, storage=storage)
 
+    db = await create_pool(config)
+
+    session = aiohttp.ClientSession()
+
+    bot['config'] = config
+    bot['session'] = session
+    bot['db'] = db
+    bot['dp'] = dp
+
+    await bot.set_my_commands(bot_command())
+
+    register_all_middlewares(dp, config)
+    register_all_filters(dp)
+    register_all_handlers(dp)
+
     # start
     try:
-        db = await create_pool(config)
-
-        session = aiohttp.ClientSession()
-
-        bot['config'] = config
-        bot['session'] = session
-        bot['db'] = db
-        bot['dp'] = dp
-
-        await bot.set_my_commands(bot_command())
-
-        register_all_middlewares(dp, config)
-        register_all_filters(dp)
-        register_all_handlers(dp)
-
         await dp.start_polling()
     finally:
         await session.close()

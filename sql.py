@@ -2,16 +2,21 @@ import asyncio
 
 import asyncpg
 
-from tgbot.config import Config, load_config
+from tgbot.config import Config
+from tgbot.config import load_config
 
 
 async def create_pool(config: Config):
-    return await asyncpg.create_pool(
-        user=config.db.user,
-        password=config.db.password,
-        host=config.db.host,
-        database=config.db.database
-    )
+    try:
+        await asyncpg.create_pool(
+            user=config.db.user,
+            password=config.db.password,
+            host=config.db.host,
+            database=config.db.database
+        )
+    except Exception as e:
+        print(e)
+        return None
 
 
 if __name__ == '__main__':
