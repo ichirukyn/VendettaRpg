@@ -13,10 +13,10 @@ services:
     env_file:
       - ".env"
     networks:
-      tg:
-
+      - tg
 volumes:
   postgresDB:
 
 networks:
   tg:
+    external: true
