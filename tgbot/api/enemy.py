@@ -33,11 +33,11 @@ async def get_enemy_stats(session, enemy_id) -> [EnemyStatsType]:
 
 
 # Technique
-async def fetch_enemy_technique(session, enemy_id) -> List[EnemyTechniqueType] | None:
+async def fetch_enemy_technique(session, enemy_id) -> List[EnemyTechniqueType]:
     async with session.get(url(f'/enemy/{enemy_id}/technique')) as res:
         if res.status == 200:
             return await res.json()
-        return None
+        return []
 
 
 async def get_enemy_technique(session, enemy_id, technique_id) -> EnemyTechniqueType | None:
