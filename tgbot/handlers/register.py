@@ -142,32 +142,32 @@ async def entry_point(message: Message, state: FSMContext):
 
     user = await get_user(session, chat_id)
 
-    try:
-        if user is None:
-            races = await fetch_race(session)
-            kb = list_kb(races, is_back=False)
+    # try:
+    if user is None:
+        races = await fetch_race(session)
+        kb = list_kb(races, is_back=False)
 
-            await RegState.select_race.set()
-            return await message.answer('Выбери стартовую расу:', reply_markup=kb)
+        await RegState.select_race.set()
+        return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
-        else:
-            hero_data = await get_user_hero(session, user.get('id'))
+    else:
+        hero_data = await get_user_hero(session, user.get('id'))
 
-            if hero_data is None:
-                text = 'Ошибка получения героя, звоните Ichiru..'
-                return await message.answer(text, reply_markup=ReplyKeyboardRemove())
+        if hero_data is None:
+            text = 'Ошибка получения героя, звоните Ichiru..'
+            return await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
-            hero = await init_hero(db, session, hero_data=hero_data)
-            print(f"hero_id: {hero.id}")
+        hero = await init_hero(db, session, hero_data=hero_data)
+        print(f"hero_id: {hero.id}")
 
-            await state.update_data(hero=hero)
-            await state.update_data(hero_id=hero.id)
+        await state.update_data(hero=hero)
+        await state.update_data(hero_id=hero.id)
 
-            print('-- Exit on /start -- \n')
-            await LocationState.home.set()
-            return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
-    except Exception as e:
-        await message.answer(f'Ошибка..\n {e}', reply_markup=ReplyKeyboardRemove())
+        print('-- Exit on /start -- \n')
+        await LocationState.home.set()
+        return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
+    # except Exception as e:
+    #     await message.answer(f'Ошибка..\n {e}', reply_markup=ReplyKeyboardRemove())
 
 
 async def started(message: Message):

@@ -68,6 +68,7 @@ async def main():
     dp: Dispatcher = Dispatcher(bot, storage=storage)
 
     db = await create_pool(config)
+    print(db)
 
     session = aiohttp.ClientSession()
 
