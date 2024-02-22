@@ -1,9 +1,14 @@
 FROM python:3.10-slim
 
-WORKDIR /usr/src/app/"vendetta-bot"
+ENV VIRTUAL_ENV=/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-COPY requirements.txt /usr/src/app/"vendetta-bot"
-RUN pip install -r /usr/src/app/"vendetta-bot"/requirements.txt
-COPY . /usr/src/app/"vendetta-bot"
+WORKDIR /usr/src/app/vendetta-bot
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
 
 CMD ["python", "bot.py"]
