@@ -7,13 +7,12 @@ from tgbot.config import load_config
 
 
 async def create_pool(config: Config):
-    await asyncpg.create_pool(
+    return await asyncpg.create_pool(
         user=config.db.user,
         password=config.db.password,
         host=config.db.host,
         database=config.db.database
     )
-
 
 if __name__ == '__main__':
     config = load_config(".env")
