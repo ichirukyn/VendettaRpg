@@ -2,7 +2,7 @@ from typing import List
 
 import aiohttp
 
-from tgbot.api import url
+from tgbot.api._config import url
 from tgbot.models.api.api import Response
 from tgbot.models.api.hero_api import CreateHeroType
 from tgbot.models.api.hero_api import HeroLvlType

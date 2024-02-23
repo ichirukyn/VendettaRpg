@@ -143,8 +143,15 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
             if technique is not None:
                 enemy.techniques.append(technique)
 
-    enemy = await class_init(session, enemy, enemy_db.get('class'))
-    enemy = await race_init(session, enemy, enemy_db.get('race'))
+    _class = await class_init(session, enemy_db.get('class'))
+    if _class is not None:
+        enemy._class = _class
+        enemy._class.apply(enemy)
+
+    race = await race_init(session, enemy_db.get('race'))
+    if race is not None:
+        enemy.race = race
+        enemy.race.apply(enemy)
 
     enemy.update_stats_all()
     return enemy

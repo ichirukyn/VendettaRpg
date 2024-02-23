@@ -33,7 +33,6 @@ from tgbot.misc.state import TeamState
 from tgbot.misc.state import TowerState
 from tgbot.misc.utils import check_before_send
 from tgbot.models.entity.hero import HeroInfo
-from tgbot.models.entity.techniques import race_prefix
 from tgbot.models.user import DBCommands
 
 
@@ -219,16 +218,10 @@ async def location_character(message: Message, state: FSMContext):
     if message.text == keyboard['techniques']:
         session = message.bot.get('session')
 
-        techniques = await fetch_technique(session)
+        data = await state.get_data()
+        hero = data['hero']
 
-        # TODO: Заменить префиксы, на более красивую функцию внутри клавиатуры
-        for tech in techniques:
-            if isinstance(tech.get('race_id', None), int):
-                prefix = f"{race_prefix[tech.get('race_id') - 1]} "
-            else:
-                prefix = ''
-            tech['name'] = prefix + tech['name']
-
+        techniques = await fetch_technique(session, hero.race.id, hero._class.id)
         kb = list_inline(techniques)
 
         await CharacterState.techniques.set()

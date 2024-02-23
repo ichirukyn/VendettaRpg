@@ -1,6 +1,6 @@
 import aiohttp
 
-from tgbot.api import url
+from tgbot.api._config import url
 from tgbot.models.api.technique import CreateTechniqueType
 from tgbot.models.api.technique import TechniqueType
 
@@ -16,6 +16,6 @@ async def get_technique(session, technique_id: int) -> TechniqueType:
         return await res.json()
 
 
-async def fetch_technique(session) -> [TechniqueType]:
-    async with session.get(url(f'/technique')) as res:
+async def fetch_technique(session, race_id, class_id) -> [TechniqueType]:
+    async with session.get(url(f'/technique'), params={'class_id': class_id, 'race_id': race_id}) as res:
         return await res.json()

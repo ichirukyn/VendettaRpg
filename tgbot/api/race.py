@@ -1,4 +1,4 @@
-from tgbot.api import url
+from tgbot.api._config import url
 from tgbot.models.api.class_api import ClassType
 from tgbot.models.api.race_api import RaceBonusType
 from tgbot.models.api.race_api import RaceType

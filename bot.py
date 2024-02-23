@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import aiohttp
 from aiogram import Bot
@@ -11,7 +10,6 @@ from sql import create_pool
 from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
 from tgbot.filters.register import RegFilter
-from tgbot.handlers.admin import register_admin
 from tgbot.handlers.arena import arena
 from tgbot.handlers.battle.handlers import battle
 from tgbot.handlers.campus import campus
@@ -25,8 +23,7 @@ from tgbot.handlers.tower import tower
 from tgbot.middlewares.environment import EnvironmentMiddleware
 from tgbot.middlewares.update_state import UpdateStatsMiddleware
 from tgbot.misc.commands import bot_command
-
-logger = logging.getLogger(__name__)
+from tgbot.misc.logger import logger
 
 
 def register_all_middlewares(dp, config):
@@ -42,7 +39,6 @@ def register_all_filters(dp):
 def register_all_handlers(dp):
     start(dp)
     location(dp)
-    register_admin(dp)
 
     character(dp)
     shop(dp)
@@ -56,10 +52,6 @@ def register_all_handlers(dp):
 
 
 async def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=u'%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s',
-    )
     logger.info("Starting bot")
     config = load_config(".env")
 
@@ -68,7 +60,6 @@ async def main():
     dp: Dispatcher = Dispatcher(bot, storage=storage)
 
     db = await create_pool(config)
-    logger.info("db: ", db)
 
     session = aiohttp.ClientSession()
 

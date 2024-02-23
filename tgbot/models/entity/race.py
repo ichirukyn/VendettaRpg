@@ -27,7 +27,7 @@ class Race(EffectParent):
         self.effects = []
 
 
-async def race_init(session, entity, race_db):
+async def race_init(session, race_db):
     try:
         race_id = race_db.get('id')
         bonuses = await fetch_race_bonuses(session, race_id)
@@ -38,10 +38,6 @@ async def race_init(session, entity, race_db):
             new_bonuses.append(EffectFactory.create_effect(bonus, source=('race', race_id)))
 
         race = RaceFactory.create_race(race_db, new_bonuses)
-
-        entity.race = race
-        entity.race.apply(entity)
-
-        return entity
+        return race
     except KeyError:
-        return entity
+        return None

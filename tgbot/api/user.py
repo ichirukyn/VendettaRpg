@@ -1,6 +1,6 @@
 import aiohttp
 
-from tgbot.api import url
+from tgbot.api._config import url
 from tgbot.models.api.user_api import CreateUserType
 from tgbot.models.api.user_api import UserType
 

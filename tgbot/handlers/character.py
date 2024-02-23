@@ -25,7 +25,6 @@ from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import CharacterState
 from tgbot.misc.state import LocationState
-from tgbot.models.entity.techniques import race_prefix
 from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
@@ -161,16 +160,7 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
     technique_id = data['technique_fix']
 
     if cb.data == keyboard['back']:
-        skills = await fetch_technique(session)
-
-        # TODO: Заменить префиксы, на более красивую функцию внутри клавиатуры
-        for tech in skills:
-            if isinstance(tech.get('race_id', None), int):
-                prefix = f"{race_prefix[tech.get('race_id') - 1]} "
-            else:
-                prefix = ''
-            tech['name'] = prefix + tech['name']
-
+        skills = await fetch_technique(session, hero.race.id, hero._class.id)
         kb = list_inline(skills)
 
         await CharacterState.techniques.set()
@@ -186,16 +176,7 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
     if cb.data == 'Открепить':
         await delete_hero_technique(session, hero.id, technique_id)
 
-    skills = await fetch_technique(session)
-
-    # TODO: Заменить префиксы, на более красивую функцию внутри клавиатуры
-    for tech in skills:
-        if isinstance(tech.get('race_id', None), int):
-            prefix = f"{race_prefix[tech.get('race_id') - 1]} "
-        else:
-            prefix = ''
-        tech['name'] = prefix + tech['name']
-
+    skills = await fetch_technique(session, hero.race.id, hero._class.id)
     kb = list_inline(skills)
 
     await CharacterState.techniques.set()

@@ -37,8 +37,16 @@ async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None) -> He
 
     # skills = await db.get_hero_skills(hero_id)
     hero.active_bonuses = []
-    hero = await race_init(session, hero, hero_db.get('race'))
-    hero = await class_init(session, hero, hero_db.get('class'))
+
+    _class = await class_init(session, hero_db.get('class'))
+    if _class is not None:
+        hero._class = _class
+        hero._class.apply(hero)
+
+    race = await race_init(session, hero_db.get('race'))
+    if race is not None:
+        hero.race = race
+        hero.race.apply(hero)
 
     hero.techniques = []
     techniques_db = await fetch_hero_technique(session, hero.id)

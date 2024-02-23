@@ -33,7 +33,7 @@ class Class(EffectParent):
         self.effects = []
 
 
-async def class_init(session, entity, class_db):
+async def class_init(session, class_db):
     try:
         id = class_db.get('id')
         bonuses = await fetch_class_bonuses(session, id)
@@ -44,10 +44,6 @@ async def class_init(session, entity, class_db):
             new_bonuses.append(EffectFactory.create_effect(bonus, source=('class', id)))
 
         _class = ClassFactory.create_class(class_db, new_bonuses)
-
-        entity._class = _class
-        entity._class.apply(entity)
-
-        return entity
+        return _class
     except KeyError:
-        return entity
+        return None

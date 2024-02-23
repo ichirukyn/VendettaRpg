@@ -2,7 +2,7 @@ from typing import List
 
 import aiohttp
 
-from tgbot.api import url
+from tgbot.api._config import url
 from tgbot.models.api.enemy_api import CreateEnemyType
 from tgbot.models.api.enemy_api import EnemyItemType
 from tgbot.models.api.enemy_api import EnemyStatsType
