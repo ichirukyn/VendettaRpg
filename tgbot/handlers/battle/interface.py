@@ -19,6 +19,7 @@ from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import list_kb
 from tgbot.keyboards.reply import list_object_kb
 from tgbot.keyboards.reply import next_kb
+from tgbot.misc.hero import init_hero
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import BattleState
@@ -163,8 +164,8 @@ class BattleInterface:
         data = await state.get_data()
         hero = data.get('hero')
 
-        if message.text == 'Уворот':
-            hero.sub_action = 'Уворот'
+        if message.text == 'Уклонение':
+            hero.sub_action = 'Уклонение'
             self.engine.save_entity(hero)
 
             await self.set_state(hero.chat_id, BattleState.load)
@@ -207,6 +208,7 @@ class BattleInterface:
                 if e.name == hero.name:
                     e.hp = 0
                     e.sub_action = 'Сбежать'
+                    hero.sub_action = 'Сбежать'
 
             text = f'{hero.name} сбегает..'
 
@@ -371,6 +373,9 @@ class BattleInterface:
             text = 'Выбери противника:'
             target_team = self.engine.target_enemy_team(hero)
 
+            if len(target_team) == 1:
+                return await self.process_battle_action(hero, target_team)
+
         elif target == 'teammate':
             text = 'Выбери союзника:'
             target_team = self.engine.target_teammate_team(hero)
@@ -415,17 +420,19 @@ class BattleInterface:
     # TODO: Допилить систему опыта для боссов, функция всё равно сработает, когда противники победят, почему бы и нет?..
     async def handler_battle_end(self, order, team_win):
         session = self.message.bot.get('session')
+        db = DBCommands(self.message.bot.get('db'))
+
+        for e in self.engine.order:
+            if isinstance(e, Hero) and e.sub_action != 'Сбежать':
+                log = 'Бой окончен'
+                await self.set_state(e.chat_id, BattleState.load)
+                await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=ReplyKeyboardRemove())
 
         for e in self.engine.order:
             log = 'Вы проиграли..'
             kb = battle_revival_kb
             state = BattleState.revival
             is_inline = False
-
-            if isinstance(e, Hero):
-                e.statistic.battle_update(e.statistic.battle)
-                statistics = statistics_to_json(e.statistic)
-                await update_statistic(session, statistics, e.id)
 
             if e in team_win and isinstance(e, Hero):
                 log = self.engine_data.get('exit_message', '')
@@ -434,11 +441,7 @@ class BattleInterface:
                 is_inline = self.engine_data.get('is_inline', False)
 
                 log += '*Вы победили!*\n'
-
-                teammate_count = len(order) - len(team_win)
-                mod = teammate_count / 10
-
-                log += await self.battle_reward(e, mod, len(team_win), session)
+                log += await self.battle_reward(e, session)
 
                 if self.engine.battle_type == 'arena_one':
                     e.statistic.win_one_to_one += 1
@@ -453,6 +456,11 @@ class BattleInterface:
                     e.statistic.lose_team_to_team += 1
 
             if isinstance(e, Hero):
+                e.statistic.battle_update(e.statistic.battle)
+                statistics = statistics_to_json(e.statistic)
+                await update_statistic(session, statistics, e.id)
+
+            if isinstance(e, Hero):
                 if self.engine.is_dev:
                     log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
 
@@ -462,33 +470,38 @@ class BattleInterface:
                             chat_id=e.chat_id, text='⁢', reply_markup=ReplyKeyboardRemove()
                         )
 
+                    e = await init_hero(db, session, hero_id=e.id)
                     await self.set_state(e.chat_id, state)
                     await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
                     await self.update_data(e.chat_id, 'hero', e)
 
     # TODO: Навести порядок, вынести в отдельный модуль EXP
-    async def battle_reward(self, e, mod, teammate_count, session):
+    async def battle_reward(self, e, session):
         enemies = self.engine.target_enemy_team(e, False)
         loot_list: [EnemyItemType] = []
-        total_reward = 0
+        total_reward_exp = 0
+        total_reward_gold = 0
 
         for enemy in enemies:
-            total_reward += e.exp_reward(1 + mod, enemy.lvl)
-
             loot = await get_enemy_loot(session, enemy.id, e.id)
 
-            if loot is not None:
+            if loot is not None and len(loot) != 0:
                 loot_list.append(*loot)
 
-        reward_exp = round(total_reward / teammate_count)
-
-        e.exp += int(reward_exp)
-        e.exp_now += int(reward_exp)
-
-        log = f'Вы получили:\nОпыт {reward_exp}\n'
+        log = 'Вы получили\n'
 
         for loot in loot_list:
-            log += f"{loot.get('item').get('name', 'Предмет')} {loot.get('count')}\n"
+            total_reward_exp += loot.get('exp', 0)
+            total_reward_gold += loot.get('gold', 0)
+
+            if loot.get('item_id', 0) != 0:
+                log += f"{loot.get('item').get('name', 'Предмет')} {loot.get('count')}\n"
+
+        log += f'Опыт {total_reward_exp}\n'
+        log += f'Золото {total_reward_gold}\n'
+
+        e.exp += int(total_reward_exp)
+        e.exp_now += int(total_reward_exp)
 
         # TODO: Против "фармил", которые живут ареной и пока не сделаю норм опыт....
         if e.lvl > 20:

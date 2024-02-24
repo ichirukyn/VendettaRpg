@@ -4,7 +4,7 @@ import aiohttp
 from aiogram import Bot
 from aiogram import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.contrib.fsm_storage.redis import RedisStorage2
+from aiogram.contrib.fsm_storage.redis import RedisStorage
 
 from sql import create_pool
 from tgbot.config import load_config
@@ -55,7 +55,10 @@ async def main():
     logger.info("Starting bot")
     config = load_config(".env")
 
-    storage = RedisStorage2() if config.tg_bot.use_redis else MemoryStorage()
+    storage = MemoryStorage()
+    if config.redis.use_redis:
+        storage = RedisStorage(host=config.redis.host)
+
     bot = Bot(token=config.tg_bot.token, parse_mode='Markdown')
     dp: Dispatcher = Dispatcher(bot, storage=storage)
 

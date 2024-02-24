@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from tgbot.dict.technique import technique_type_attack
 from tgbot.misc.other import formatted
 from tgbot.models.entity.effect import EffectFactory
 from tgbot.models.entity.effect import EffectParent
@@ -55,14 +56,14 @@ class Technique(EffectParent):
 
         self.bonuses = []
         self.effects = []
-        self.check_prefix()
+        # self.check_prefix()
 
-    def check_prefix(self):
-        if isinstance(self.race_id, int):
-            prefix = f"{race_prefix[self.race_id - 1]} "
-        else:
-            prefix = ''
-        self.name = prefix + self.name
+    # def check_prefix(self):
+    #     if isinstance(self.race_id, int):
+    #         prefix = f"{race_prefix[self.race_id - 1]} "
+    #     else:
+    #         prefix = ''
+    #     self.name = prefix + self.name
 
     def cooldown_decrease(self):
         if self.cooldown_current > 0:
@@ -103,7 +104,8 @@ class Technique(EffectParent):
             f"`• Урон: {formatted(self.damage * 100)}%\n`"
             f"`• КД: {self.cooldown} {f'(Текущие: {self.cooldown_current})' if self.cooldown_current > 0 else ''}\n`"
             f"`• Дистанция: {'Дальняя' if self.distance == 'distant' else 'Ближняя'}\n`"
-            f"`• Тип: {'Поддержка' if self.type == 'distant' else 'Атака'}\n`"
+            f"`• Тип: {'Поддержка' if self.type == 'support' else 'Атака'}\n`"
+            f"`• Основная характеристика: {technique_type_attack[self.type_attack] if self.type_attack != '' else ''}\n`"
             f"{''.join([effect.info(entity) for effect in self.bonuses])}"
         )
 

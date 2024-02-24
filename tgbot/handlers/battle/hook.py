@@ -230,6 +230,9 @@ class BattleEngine:
             log = f"{attacker.name} применил технику {attacker.technique.name} к {defender.name}\n"
 
         if attacker.technique.type == 'support' and attacker.technique.damage == 0:
+            attacker.check_shield()
+            defender.check_shield()
+
             if attacker.hp > attacker.hp_max:
                 attacker.hp = attacker.hp_max
 
@@ -318,18 +321,24 @@ class BattleLogger:
 
         for entity in order:
             if entity.name != hero.name:
+                shield_log = f'`{formatted(entity.shield)}/{formatted(entity.shield_max)}`\n'
+
                 logs += (
                     f"*{entity.name}:* \n`🔻 {formatted(entity.hp)}/{formatted(entity.hp_max)}\n`"
+                    f"{shield_log if hero.shield_max > 0 else ''}"
                     f"{info.active_bonuses(entity) or ''}"
-                    f"{info.active_debuff(entity) or ''}"
+                    # f"{info.active_debuff(entity) or ''}"
                 )
             elif isinstance(entity, Hero):
+                shield_log = f'`🛡 {formatted(hero.shield)}/{formatted(hero.shield_max)}`\n'
+
                 logs += (
                     f"*— {hero.name}:* \n`🔻 {formatted(hero.hp)}/{formatted(hero.hp_max)}\n`"
+                    f"{shield_log if hero.shield_max > 0 else ''}"
                     f"`🔹{formatted(hero.mana)}/{formatted(hero.mana_max)}`\n"
                     f"`🔸{formatted(hero.qi)}/{formatted(hero.qi_max)}`\n"
                     f"{hero.info.active_bonuses(hero) or ''}"
-                    f"{hero.info.active_debuff(hero) or ''}"
+                    # f"{hero.info.active_debuff(hero) or ''}"
                 )
             logs += f"`———————————————————`\n"
 

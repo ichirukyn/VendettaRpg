@@ -212,6 +212,10 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         self.update_stats_percent()
 
+    def check_shield(self):
+        if self.shield > self.shield_max:
+            self.shield_max = self.shield
+
     def check_active_skill(self):
         for bonus in self.active_bonuses:
             if len(bonus.effects) == 0:
@@ -338,14 +342,16 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
             f'(Точность {formatted(attacker.accuracy)})\n'
         )
 
-        if self.sub_action == 'Уворот' and random() < evasion_chance:
+        if self.sub_action == 'Уклонение' and random() < evasion_chance:
             attacker.statistic.battle.evasion_count += 1
             return True
 
         return False
 
-    def effect_chance_check(self, base_chance, target) -> bool:
-        chance = base_chance * (1 + self.effect_chance) * (1 - target.effect_resist) * (1 - target.debuff_resist)
+    def effect_chance_check(self, base_chance, target_adder) -> bool:
+        evasion_chance = (target_adder.accuracy / ((target_adder.accuracy * 0.7) + self.speed)) + self.evasion_modify
+        effect_chance = target_adder.effect_chance + evasion_chance
+        chance = base_chance * (1 + effect_chance) * (1 - self.effect_resist) * (1 - self.debuff_resist)
         print('real_effect_probability', chance)
 
         if random() < chance:
@@ -360,15 +366,19 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         else:
             def_res = 0
             bonus_type = 1
-
-        dmg_attr = self.__getattribute__(self.technique.type_attack or self._class.main_attr)
+        if self.technique.type_attack == 'all':
+            dmg_attr = self.__getattribute__(self._class.main_attr)
+        else:
+            dmg_attr = self.__getattribute__(self.technique.type_attack or self._class.main_attr)
 
         base_dmg = self.technique.damage * (dmg_attr + self.weapon_damage)
 
+        # defs = 1.0 (100% защита), defs = 0.0 (0% защиты)
         # TODO 1 - 0 -- Сопротивления элем. урону | 1 - 0 -- Игнорирование защиты
-        defs = (100 + self.lvl) / ((100 + defender.lvl) * (1 - def_res) * (1 - self.ignore_resist) + (100 + self.lvl))
+        defs = (100 + self.lvl) / ((100 + defender.lvl) * (1 - def_res) * (1 - defender.resist)
+                                   * (1 + self.ignore_resist) + (100 + self.lvl))
 
-        total_damage = (base_dmg * bonus_type * self.bonus_damage * (1 - (defs + defender.resist))) + 1
+        total_damage = (base_dmg * bonus_type * self.bonus_damage * (1 - defs)) + 1
 
         if defender.sub_action == 'Защита':
             defense = round(randint(5, 15) / 100) + self.defence_modify

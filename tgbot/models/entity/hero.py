@@ -91,7 +91,7 @@ class HeroInfo:
                 bonuses += f'`{bonus.name}, `'
 
         if bonuses != '':
-            bonuses = f'`— Бонусы —`\n{bonuses}\n'
+            bonuses = f'`— Эффекты —`\n{bonuses}\n'
 
         return bonuses
 

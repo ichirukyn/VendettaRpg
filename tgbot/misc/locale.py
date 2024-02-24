@@ -62,7 +62,7 @@ keyboard = {
     'pass': 'Пас',
     'technique_list': 'Техники',
     'spell_list': 'Заклинания',
-    'evasion': 'Уворот',
+    'evasion': 'Уклонение',
     'defense': 'Защита',
     'contr_strike': 'Контрудар',
     'escape': 'Сбежать',

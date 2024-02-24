@@ -3,6 +3,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.types import Message
 
+from tgbot.api.arena import fetch_arena_enemies
 from tgbot.handlers.battle.interface import BattleFactory
 from tgbot.keyboards.inline import battle_start_inline
 from tgbot.keyboards.inline import list_inline
@@ -28,22 +29,27 @@ async def battle_init(message: Message, state: FSMContext):
     hero = data.get('hero')
 
     enemy_team = data.get('enemy_team', [])
+    player_team = []
 
-    if hero.team_id > 0 and hero.is_leader:
-        team = await db.get_team_heroes(hero.team_id)
-        player_team = await init_team(db, session, team, hero)
+    if hero.team_id is not None:
+        if hero.team_id > 0 and hero.is_leader:
+            team = await db.get_team_heroes(hero.team_id)
+            player_team = await init_team(db, session, team, hero)
     else:
         hero = data.get('hero')
         hero = await init_hero(db, session, hero_id=hero.id)
         player_team = [hero]
 
+    floors = await db.get_arena_floors()
+    kb = list_inline(floors)
+
     engine_data = {
         "enemy_team": enemy_team,
         "player_team": player_team,
-        "exit_state": LocationState.home,
-        "exit_message": '',
+        "exit_state": TowerState.select_floor,
+        "exit_message": locale['tower'],
         "battle_type": 'tower',
-        "exit_kb": home_kb,
+        "exit_kb": kb,
         "is_inline": False,
     }
 
@@ -68,13 +74,13 @@ async def battle_init(message: Message, state: FSMContext):
 
 
 async def battle_start(cb: CallbackQuery, state: FSMContext):
-    db = DBCommands(cb.bot.get('db'))
+    session = cb.bot.get('session')
     data = await state.get_data()
 
     floor_id = data.get('floor_id')
 
     if cb.data == keyboard["back"]:
-        enemies = await floor_enemies(db, floor_id)
+        enemies = await floor_enemies(session, floor_id)
         kb = list_inline(enemies)
 
         await TowerState.select_enemy.set()
@@ -89,12 +95,12 @@ async def select_floor(cb: CallbackQuery, state: FSMContext):
         await cb.message.delete()
         return await cb.message.answer(locale['town'], reply_markup=town_kb)
 
-    db = DBCommands(cb.bot.get('db'))
+    session = cb.bot.get('session')
 
     floor_id = int(cb.data)
     await state.update_data(floor_id=floor_id)
 
-    enemies = await floor_enemies(db, floor_id)
+    enemies = await floor_enemies(session, floor_id)
     kb = list_inline(enemies)
 
     await TowerState.select_enemy.set()
@@ -161,17 +167,15 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
     await cb.message.edit_text(text, reply_markup=battle_start_inline, parse_mode='Markdown')
 
 
-async def floor_enemies(db, floor_id):
+async def floor_enemies(session, floor_id):
     enemies_list = []
-    enemies = await db.get_arena_floor_enemies(floor_id)
+    enemies = await fetch_arena_enemies(session, floor_id)
 
     for enemy in enemies:
-        if enemy['team_id'] is not None:
-            team = await db.get_team(enemy['team_id'])
-            enemies_list.append({'id': enemy.get('enemy_id', 1), 'name': team['name']})
-        else:
-            enemy = await db.get_enemy(enemy.get('enemy_id', 1))
-            enemies_list.append(enemy)
+        enemies_list.append({
+            'id': enemy.get('enemy_id', enemy.get('team_id')),
+            'name': enemy.get('enemy').get('name', 'Моб:')
+        })
 
     return enemies_list
 

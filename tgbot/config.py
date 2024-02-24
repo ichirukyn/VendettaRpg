@@ -12,10 +12,15 @@ class DbConfig:
 
 
 @dataclass
+class RedisConfig:
+    host: str
+    use_redis: bool
+
+
+@dataclass
 class TgBot:
     token: str
     admin_ids: list[int]
-    use_redis: bool
     is_dev: bool
 
 
@@ -29,6 +34,7 @@ class Config:
     tg_bot: TgBot
     db: DbConfig
     misc: Miscellaneous
+    redis: RedisConfig
 
 
 def load_config(path: str = None):
@@ -39,8 +45,11 @@ def load_config(path: str = None):
         tg_bot=TgBot(
             token=env.str("BOT_TOKEN"),
             admin_ids=list(map(int, env.list("ADMINS"))),
-            use_redis=env.bool("USE_REDIS"),
             is_dev=env.bool("BOT_IS_DEV"),
+        ),
+        redis=RedisConfig(
+            use_redis=env.bool("REDIS_USE"),
+            host=env.str("REDIS_HOST")
         ),
         db=DbConfig(
             host=env.str('DB_HOST'),

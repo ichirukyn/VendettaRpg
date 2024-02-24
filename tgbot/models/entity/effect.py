@@ -1,6 +1,8 @@
 import operator
 from abc import ABC
 
+from tgbot.dict.technique import condition
+from tgbot.dict.technique import condition_attribute
 from tgbot.misc.other import formatted
 from tgbot.models.abstract.effect_abc import EffectABC
 from tgbot.models.abstract.effect_abc import EffectParentABC
@@ -111,7 +113,15 @@ class Effect(EffectABC, ABC):
         pass
 
     def info(self, entity):
-        el = f"{self.condition_first} {self.condition} {self.condition_second}"
+        el = ''
+        if self.condition_second is not None and self.condition is not None:
+            val = self.condition_second
+
+            if -1 <= val <= 1:
+                val = f'{formatted(val * 100)}%'
+
+            el = f"{condition_attribute[self.condition_first]} {condition[self.condition]} {val}"
+
         el_text = 'Без условий' if self.condition == '' or self.condition is None else el
         value = f'{self.value}'
 
@@ -286,7 +296,7 @@ class CoastEffect(Effect, ABC):
             control_mod = entity.control_mana_normalize
             control = entity.control_mana
 
-        control_mod -= control_mod / 4
+        control_mod -= control_mod / 5
 
         coast_base = self.value
         coast_rank = self.rank
@@ -295,16 +305,12 @@ class CoastEffect(Effect, ABC):
         return coast_total
 
     def info(self, entity):
-        el = f"{self.condition_first} {self.condition} {self.condition_second}"
-        el_text = 'Без условий' if self.condition == '' or self.condition is None else el
-
-        effect = f"`• {self.name}: {formatted(self.value)} ({formatted(self.coast(entity))})`\n"
+        effect = f"`• {self.name}: {formatted(self.coast(entity))} ({formatted(self.value)})`\n"
 
         return (
             f"`———————————————————`\n"
             f"{effect}"
             f"`• Длительность: {self.duration}`\n"
-            f"`• Условия: {el_text}`\n"
         )
 
 
