@@ -16,6 +16,6 @@ async def get_technique(session, technique_id: int) -> TechniqueType:
         return await res.json()
 
 
-async def fetch_technique(session, class_id, race_id) -> [TechniqueType]:
+async def fetch_technique(session, race_id, class_id) -> [TechniqueType]:
     async with session.get(url(f'/technique'), params={'class_id': class_id, 'race_id': race_id}) as res:
         return await res.json()
