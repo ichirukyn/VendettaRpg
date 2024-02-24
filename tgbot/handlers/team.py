@@ -137,7 +137,7 @@ async def team_accept_leader(message: Message, state: FSMContext):
 
 async def team_send_invite(message: Message, state: FSMContext):
     if message.text == keyboard["back"]:
-        await to_team_main(message, state)
+        return await to_team_main(message, state)
 
     db = DBCommands(message.bot.get('db'))
     data = await state.get_data()
