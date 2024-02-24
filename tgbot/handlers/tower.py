@@ -27,18 +27,15 @@ async def battle_init(message: Message, state: FSMContext):
     data = await state.get_data()
 
     hero = data.get('hero')
+    hero = await init_hero(db, session, hero_id=hero.id)
 
     enemy_team = data.get('enemy_team', [])
-    player_team = []
+    player_team = [hero]
 
     if hero.team_id is not None:
         if hero.team_id > 0 and hero.is_leader:
             team = await db.get_team_heroes(hero.team_id)
             player_team = await init_team(db, session, team, hero)
-    else:
-        hero = data.get('hero')
-        hero = await init_hero(db, session, hero_id=hero.id)
-        player_team = [hero]
 
     floors = await db.get_arena_floors()
     kb = list_inline(floors)
