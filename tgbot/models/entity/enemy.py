@@ -124,7 +124,7 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     skills = await db.get_enemy_skills(enemy_id)
 
     enemy_weapon = await db.get_enemy_weapon(enemy_id)
-    weapon = await db.get_weapon(enemy_weapon.get('weapon_id'))
+    weapon = await db.get_weapon(enemy_weapon.get('weapon_id', 1))
 
     enemy = EnemyFactory.create_enemy(stats_db)
     enemy.lvl = stats_db['lvl']
