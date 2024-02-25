@@ -48,7 +48,7 @@ async def register_user(message: Message, state: FSMContext):
     logger.debug('Register | class_id:', class_id)
 
     user = await get_user(session, chat_id)
-    if user.get('id', None) is not None:
+    if user is not None:
         await message.answer('Вы уже зарегистрированы')
         return to_home(message)
 
