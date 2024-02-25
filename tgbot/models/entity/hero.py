@@ -73,10 +73,10 @@ class Hero(Entity):
     def damage_demo(self, technique):
         entity = HeroFactory.create_init_hero(1, 0, 'demo')
         entity.lvl = self.lvl
-        self.technique = technique
+        # self.technique = technique
 
         damage = self.damage(entity, technique.type_damage)
-        self.technique = None  # Чтобы не было багов
+        # self.technique = None  # Чтобы не было багов
 
         return damage
 

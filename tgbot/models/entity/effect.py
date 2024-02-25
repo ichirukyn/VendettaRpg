@@ -103,6 +103,10 @@ class Effect(EffectABC, ABC):
             self.duration_current -= 1
 
     def check(self, entity) -> bool:
+        if self.condition_first == 'race_id':
+            return entity.race.id == self.condition_second
+        if self.condition_first == 'class_id':
+            return entity._class.id == self.condition_second
         if self.condition_first is not None:
             return condition_operator[self.condition](getattr(entity, self.condition_first), int(self.condition_second))
 
