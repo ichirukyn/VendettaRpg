@@ -35,7 +35,7 @@ async def register_user(message: Message, state: FSMContext):
     hero = data.get('hero')
 
     hero.name = message.text
-    logger.info('Register | name:', hero.name)
+    print('Register | name:', hero.name)
 
     data = await state.get_data()
 
@@ -48,18 +48,18 @@ async def register_user(message: Message, state: FSMContext):
     logger.debug('Register | class_id:', class_id)
 
     user = await get_user(session, chat_id)
-    if user.get('id') is not None:
+    if user.get('id', None) is not None:
         await message.answer('Вы уже зарегистрированы')
         return to_home(message)
 
     try:
         user_data = await create_user({'chat_id': chat_id, 'login': message.from_user.first_name, 'ref_id': 1})
         user_id = user_data.get('id')
-        logger.info('Register | user_id:', user_id)
+        print('Register | user_id:', user_id)
 
         hero_data = await create_hero({'user_id': user_id, 'name': hero.name, 'race_id': race_id, 'class_id': class_id})
         hero.id = hero_data.get('id', 0)
-        logger.info('Register | hero.id:', hero.id)
+        print('Register | hero.id:', hero.id)
 
         if hero.id == 0:
             logger.error('Register | hero.id == 0')
