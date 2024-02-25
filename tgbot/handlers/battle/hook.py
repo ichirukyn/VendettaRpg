@@ -335,8 +335,8 @@ class BattleLogger:
                 logs += (
                     f"*— {hero.name}:* \n`🔻 {formatted(hero.hp)}/{formatted(hero.hp_max)}\n`"
                     f"{shield_log if hero.shield_max > 0 else ''}"
-                    f"`🔹{formatted(hero.mana)}/{formatted(hero.mana_max)}`\n"
-                    f"`🔸{formatted(hero.qi)}/{formatted(hero.qi_max)}`\n"
+                    f"`🔹{formatted(hero.mana)}/{formatted(hero.mana_max)} ({formatted(hero.mana_reg)})`\n"
+                    f"`🔸{formatted(hero.qi)}/{formatted(hero.qi_max)} ({formatted(hero.qi_reg)})`\n"
                     f"{hero.info.active_bonuses(hero) or ''}"
                     # f"{hero.info.active_debuff(hero) or ''}"
                 )

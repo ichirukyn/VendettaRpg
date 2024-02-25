@@ -18,10 +18,12 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
     mana = 1
     mana_max = 1
+    mana_reg = 0
     mana_percent = 1  # 1 - 100%
 
     qi = 1
     qi_max = 1
+    qi_reg = 0
     qi_percent = 1  # 1 - 100%
 
     hp = 1
@@ -130,6 +132,13 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         self.update_control()
 
+    def update_regen(self):
+        self.qi_reg = ((self.strength / 2) + self.health) / 3
+        self.mana_reg = ((self.intelligence / 2) + self.soul) / 3
+
+        if self.dexterity > self.strength:
+            self.qi_reg = ((self.dexterity / 2) + self.health) / 3
+
     def update_stats(self):
         self.hp_max = round(self.health) * self.hp_modify
         self.mana_max = round(self.soul) * self.mana_modify
@@ -201,8 +210,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
             self.flat_intelligence + self.flat_submission + self.flat_accuracy
 
     def turn_regenerate(self):
-        self.qi += self.qi_max * 0.1
-        self.mana += self.mana_max * 0.1
+        self.update_regen()
+        self.qi += self.qi_reg
+        self.mana += self.mana_reg
 
         if self.qi > self.qi_max:
             self.qi = self.qi_max
@@ -400,5 +410,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         if round(total_damage) < 1:
             total_damage = 1
+        if self.technique.damage == 0:
+            return 0
 
         return round(total_damage)

@@ -44,7 +44,7 @@ async def battle_init(message: Message, state: FSMContext):
         "enemy_team": enemy_team,
         "player_team": player_team,
         "exit_state": TowerState.select_floor,
-        "exit_message": locale['tower'],
+        "exit_message": '',
         "battle_type": 'tower',
         "exit_kb": kb,
         "is_inline": False,

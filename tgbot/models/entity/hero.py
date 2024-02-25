@@ -70,6 +70,16 @@ class Hero(Entity):
     def level_up(self):
         self.free_stats += 10  # TODO: Обновить под ранги, а не статика
 
+    def damage_demo(self, technique):
+        entity = HeroFactory.create_init_hero(1, 0, 'demo')
+        entity.lvl = self.lvl
+        self.technique = technique
+
+        damage = self.damage(entity, technique.type_damage)
+        self.technique = None  # Чтобы не было багов
+
+        return damage
+
 
 class HeroInfo:
     @staticmethod
@@ -111,6 +121,7 @@ class HeroInfo:
     def status(hero, crit=False):
         hero.update_stats()
         hero.default_stats()
+        hero.update_regen()
         so_string = f'`• Свободные очки: {formatted(hero.free_stats)}` \n'
         crit_string = ''
 
@@ -130,8 +141,8 @@ class HeroInfo:
             f"`———————————————————`\n"
             f"*Ваше текущее состояние:*\n"
             f"`• ХП: {formatted(hero.hp)} / {formatted(hero.hp_max)}`\n"
-            f"`• Мана: {formatted(hero.mana)} / {formatted(hero.mana_max)}`\n"
-            f"`• Ки: {formatted(hero.qi)} / {formatted(hero.qi_max)}`\n"
+            f"`• Мана: {formatted(hero.mana)} / {formatted(hero.mana_max)} ({formatted(hero.mana_reg)})`\n"
+            f"`• Ки: {formatted(hero.qi)} / {formatted(hero.qi_max)} ({formatted(hero.qi_reg)})`\n"
             f"`———————————————————`\n"
             f"*Ваши характеристики:*\n"
             f"`• Сила: {formatted(hero.strength)}`\n"

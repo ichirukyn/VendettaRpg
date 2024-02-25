@@ -97,11 +97,13 @@ class Technique(EffectParent):
         return check
 
     def technique_info(self, entity):
+        self.bonuses.sort(key=lambda e: e.type == 'coast')
+
         return (
             f"*{self.name}*\n"
             f"{self.desc}\n"
             f"\n"
-            f"`• Урон: {formatted(self.damage * 100)}%\n`"
+            f"`• Урон: {formatted(self.damage * 100)}% ({entity.damage_demo(self)})\n`"
             f"`• КД: {self.cooldown} {f'(Текущие: {self.cooldown_current})' if self.cooldown_current > 0 else ''}\n`"
             f"`• Дистанция: {'Дальняя' if self.distance == 'distant' else 'Ближняя'}\n`"
             f"`• Тип: {'Поддержка' if self.type == 'support' else 'Атака'}\n`"

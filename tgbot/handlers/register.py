@@ -179,9 +179,6 @@ async def entry_point(message: Message, state: FSMContext):
 
     user = await get_user(session, chat_id)
 
-    # if user.get('is_baned', False):
-    #     return await message.answer('Вас забанили Т.Т')
-
     try:
         if user is None:
             races = await fetch_race(session)
@@ -194,6 +191,9 @@ async def entry_point(message: Message, state: FSMContext):
             return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
         else:
+            if user.get('is_baned', False):
+                return await message.answer('Вас забанили Т.Т')
+
             hero_data = await get_user_hero(session, user.get('id'))
 
             if hero_data is None:

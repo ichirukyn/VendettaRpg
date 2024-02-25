@@ -164,7 +164,7 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
         kb = list_inline(skills)
 
         await CharacterState.techniques.set()
-        await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
+        return await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
 
     if technique_id == 1 and cb.data == 'Открепить':
         return await cb.message.edit_text('Открепить эту технику нельзя..', reply_markup=back_inline)
