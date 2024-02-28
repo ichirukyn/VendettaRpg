@@ -75,7 +75,7 @@ class Hero(Entity):
         entity.lvl = self.lvl
         # self.technique = technique
 
-        damage = self.damage(entity, technique.type_damage)
+        damage = self.damage(entity, technique.type_damage, technique)
         # self.technique = None  # Чтобы не было багов
 
         return damage

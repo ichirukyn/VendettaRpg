@@ -369,19 +369,24 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         return False
 
-    def damage(self, defender, damage_type) -> int:
+    def damage(self, defender, damage_type, technique=None) -> int:
+        tech = self.technique
+
+        if technique is not None:
+            tech = technique
+
         if damage_type != 'none':
             bonus_type = 1 + self.__getattribute__(damage_type)
             def_res = defender.__getattribute__(damage_type)
         else:
             def_res = 0
             bonus_type = 1
-        if self.technique.type_attack == 'all':
+        if tech.type_attack == 'all':
             dmg_attr = self.__getattribute__(self._class.main_attr)
         else:
-            dmg_attr = self.__getattribute__(self.technique.type_attack or self._class.main_attr)
+            dmg_attr = self.__getattribute__(tech.type_attack or self._class.main_attr)
 
-        base_dmg = self.technique.damage * (dmg_attr + self.weapon_damage)
+        base_dmg = tech.damage * (dmg_attr + self.weapon_damage)
 
         # defs = 1.0 (100% защита), defs = 0.0 (0% защиты)
         # TODO 1 - 0 -- Сопротивления элем. урону | 1 - 0 -- Игнорирование защиты
@@ -410,7 +415,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         if round(total_damage) < 1:
             total_damage = 1
-        if self.technique.damage == 0:
+        if tech.damage == 0:
             return 0
 
         return round(total_damage)
