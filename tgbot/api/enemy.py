@@ -80,3 +80,21 @@ async def get_enemy_loot(session, enemy_id, hero_id) -> List[EnemyItemType] | No
             return await res.json()
 
         return None
+
+
+# Enemy team
+# TODO: Типы
+async def fetch_enemy_team(session, team_id) -> List[EnemyTechniqueType] | None:
+    async with session.get(url(f'/team/{team_id}/enemy')) as res:
+        if res.status == 200:
+            return await res.json()
+        return None
+
+
+# TODO: Типы
+async def get_enemy_team(session, team_id, enemy_id) -> List[EnemyItemType] | None:
+    async with session.get(url(f'/team/{team_id}/enemy/{enemy_id}')) as res:
+        if res.status == 200:
+            return await res.json()
+
+        return None

@@ -369,8 +369,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         return False
 
-    def damage(self, defender, damage_type, technique=None) -> int:
+    def damage(self, defender, damage_type, technique=None):
         tech = self.technique
+        log = None
 
         if technique is not None:
             tech = technique
@@ -396,26 +397,36 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         total_damage = (base_dmg * bonus_type * self.bonus_damage * (1 - defs)) + 1
 
         if defender.sub_action == 'Защита':
-            defense = round(randint(5, 15) / 100) + self.defence_modify
+            defense = (round(randint(5, 15)) / 100) + self.defence_modify
 
             # TODO 0 -- бонус экипировки
-            total_damage_ = (base_dmg * bonus_type * self.bonus_damage * (1 - (defs + defender.resist + defense))) + 1
-            total_damage = total_damage_
+            total_damage_ = (base_dmg * bonus_type * self.bonus_damage * (1 - (defs + defense))) + 1
 
-            self.statistic.battle.block_damage += round(total_damage - total_damage_)
+            def_damage = round(total_damage - total_damage_)
+
+            if def_damage > 0:
+                self.statistic.battle.block_damage += def_damage
+                log = f'\n🛡 {defender.name} заблокировал {def_damage} урона'
+
+            total_damage = total_damage_
 
         if random() < self.crit_rate:
             total_damage = total_damage + (total_damage * self.crit_damage)
+
             self.statistic.battle.crit_count += 1
+            log = f' ⚡️'
 
         if defender.sub_action == 'Контрудар':
             cs = round(total_damage * randint(10, 35) / 100) + self.counter_modify
+
             self.hp -= cs
             self.statistic.battle.counter_strike_count += 1
+            log = f'\n🪃 {defender.name} контратаковал на {formatted(cs)} урона.'
 
         if round(total_damage) < 1:
             total_damage = 1
-        if tech.damage == 0:
-            return 0
 
-        return round(total_damage)
+        if tech.damage == 0:
+            return 0, None
+
+        return round(total_damage), log

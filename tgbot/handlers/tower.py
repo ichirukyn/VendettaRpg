@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery
 from aiogram.types import Message
 
 from tgbot.api.arena import fetch_arena_enemies
+from tgbot.api.enemy import fetch_enemy_team
 from tgbot.handlers.battle.interface import BattleFactory
 from tgbot.keyboards.inline import battle_start_inline
 from tgbot.keyboards.inline import list_inline
@@ -118,40 +119,33 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
         await TowerState.select_floor.set()
         return await cb.message.edit_text(locale['tower'], reply_markup=kb)
 
-    enemies = await db.get_arena_floor_enemies(floor_id)
-
-    enemy_id = None
-    team_id = None
-
-    for e in enemies:
-        if e.get('enemy_id', 0) == int(cb.data):
-            enemy_id = e['enemy_id']
-        elif e.get('team_id', 0) == int(cb.data):
-            team_id = e['team_id']
-
     enemy_team = []
 
-    if enemy_id is not None:
-        enemy = await init_enemy(db, enemy_id, session)
-        enemy_team.append(enemy)
+    if 'enemy' in cb.data:
+        id = cb.data.split('_')[1]
 
-        # dop_enemy = deepcopy(enemy)
-        # dop_enemy.name += '2'
-        # enemy_team.append(dop_enemy)
-
-    elif team_id is not None:
-        team_id = await db.get_enemy_team_id(team_id)
-        for entity in team_id:
-            enemy = await init_enemy(db, entity['enemy_id'], session)
-            enemy.name += f" \"{entity['prefix']}\""
+        if isinstance(id, str):
+            enemy = await init_enemy(db, int(id), session)
             enemy_team.append(enemy)
+
+            # dop_enemy = deepcopy(enemy)
+            # dop_enemy.name += '2'
+            # enemy_team.append(dop_enemy)
     else:
-        print('Противник не найден...')
+        id = cb.data.split('_')[1]
+
+        if isinstance(id, str):
+            team_enemies = await fetch_enemy_team(session, id)
+
+            for e in team_enemies:
+                enemy = await init_enemy(db, e['enemy_id'], session)
+                # enemy.name += f" \"{e['prefix']}\""
+                enemy_team.append(enemy)
 
     if len(enemy_team) > 1:
         text = f"Выбраны противники:\n"
         for entity in enemy_team:
-            stats = f"{entity.name} — {formatted(entity.total_stats)} ОС\n"
+            stats = f"{entity.name} — {formatted(entity.lvl)} Уровень\n"
             text += stats
     else:
         entity = enemy_team[0]
@@ -169,9 +163,16 @@ async def floor_enemies(session, floor_id):
     enemies = await fetch_arena_enemies(session, floor_id)
 
     for enemy in enemies:
+        if enemy.get('enemy_id', None) is not None:
+            id = f"enemy_{enemy.get('enemy_id')}"
+            name = enemy.get('enemy').get('name', 'Моб:')
+        else:
+            id = f"team_{enemy.get('team_id')}"
+            name = enemy.get('team').get('name', 'Команда:')
+
         enemies_list.append({
-            'id': enemy.get('enemy_id', enemy.get('team_id')),
-            'name': enemy.get('enemy').get('name', 'Моб:')
+            'id': id,
+            'name': name
         })
 
     return enemies_list

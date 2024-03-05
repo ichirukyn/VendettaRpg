@@ -124,6 +124,9 @@ class BattleEngine:
             action_return['log'] = log
             action_return['attacker'] = skill.hero
 
+        elif attacker.action == keyboard['pass']:
+            action_return['log'] = f'{attacker.name} пропустил ход.'
+
         logger = BattleLogger(self.is_dev)
         action_return['log'] = logger.turn_log(attacker, action_return['target'], action_return['log'])
 
@@ -258,7 +261,7 @@ class BattleEngine:
             return log
 
         if defender.hp > 0:
-            total_damage = attacker.damage(defender, attacker.technique.type_damage)
+            total_damage, damage_log = attacker.damage(defender, attacker.technique.type_damage)
 
             if defender.shield > 0:
                 delta = defender.shield - total_damage
@@ -278,20 +281,22 @@ class BattleEngine:
 
             attacker.statistic.battle.hits_count += 1
 
-            if attacker.technique.name != '':
-                log = f"⚔️ {attacker.name} использовал \"{attacker.technique.name}\" по {defender.name} " \
-                      f"и нанес {formatted(total_damage)} урона.\n"
+            if total_damage == 0:
+                log = f"⚔️ {attacker.name} использовал \"{attacker.technique.name}\" по {defender.name}"
 
             else:
-                log = f"⚔️ {attacker.name} атаковал {defender.name} и нанес {formatted(total_damage)} урона.\n"
+                log = f"⚔️ {attacker.name} использовал \"{attacker.technique.name}\" на {defender.name} " \
+                      f"и нанес {formatted(total_damage)} урона."
 
             if hp > attacker.hp:
                 delta = hp - attacker.hp
-                log += f'🪃 {defender.name} контратаковал на {formatted(delta)} урона.'
 
                 attacker.statistic.battle.damage_taken += delta
                 defender.statistic.battle.counter_strike_damage += delta
                 defender.statistic.battle.counter_strike_count += 1
+
+            if damage_log is not None:
+                log += damage_log
 
         attacker.update_stats_percent()
         defender.update_stats_percent()
