@@ -19,6 +19,7 @@ from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import list_kb
 from tgbot.keyboards.reply import list_object_kb
 from tgbot.keyboards.reply import next_kb
+from tgbot.misc.hero import check_hero_lvl
 from tgbot.misc.hero import init_hero
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
@@ -73,15 +74,11 @@ class BattleInterface:
 
         await self.dp.storage.update_data(chat=chat_id, **data)
 
-    async def check_hp(self, order=None):
+    async def check_hp(self):
         team_win = self.engine.check_hp()
 
         if team_win is not None:
-            if order is None:
-                data = await self.state.get_data()
-                order = data.get('order')
-
-            self.handler_battle_end_start(order, team_win)
+            self.handler_battle_end_start(team_win)
             return True
 
         return False
@@ -95,7 +92,9 @@ class BattleInterface:
         order, entity, who, i, log = self.engine.battle()
         move = entity.debuff_control_check('move')
 
-        if who == 'win':
+        state = await self.state.get_state()
+
+        if who == 'win' or state == BattleState.end.state:
             return await self.check_hp()
 
         if not move:
@@ -199,6 +198,14 @@ class BattleInterface:
 
         # TODO: Добавить подтверждение
         if message.text == 'Сбежать':
+            await self.set_state(hero.chat_id, BattleState.user_escape_confirm)
+            await message.answer('Вы уверены что хотите сбежать?', reply_markup=confirm_kb)
+
+    async def process_user_escape_confirm(self, message: Message, state: FSMContext):
+        data = await state.get_data()
+        hero = data.get('hero')
+
+        if message.text == keyboard['yes']:
             hero.hp = 0
             hero.statistic.escape_count += 1
 
@@ -217,7 +224,25 @@ class BattleInterface:
             await self.send_all(hero, text, text, None, home_kb)
 
             await self.battle()
-            await self.check_hp()
+            return await self.check_hp()
+
+        elif message.text == keyboard['back']:
+            await self.set_state(hero.chat_id, BattleState.user_sub_turn)
+            return await message.answer(f'Выбери доп. действие:', reply_markup=battle_sub_kb)
+
+    async def process_user_pass_confirm(self, message: Message, state: FSMContext):
+        data = await state.get_data()
+        hero = data.get('hero')
+
+        if message.text == keyboard['yes']:
+            text = f'{hero.name} пропустил ход.'
+
+            await self.set_state(hero.chat_id, BattleState.user_sub_turn)
+            return await self.send_all(hero, text, text, None, battle_sub_kb)
+
+        elif message.text == keyboard['back']:
+            await self.set_state(hero.chat_id, BattleState.user_turn)
+            return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
     async def process_user_turn(self, message: Message, state: FSMContext):
         data = await state.get_data()
@@ -241,11 +266,9 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.select_skill)
             await message.answer('Выбери заклинание:', reply_markup=kb)
 
-        elif message.text == 'Пас':
-            text = f'{hero.name} пропустил ход.'
-
-            await self.set_state(hero.chat_id, BattleState.user_sub_turn)
-            return await self.send_all(hero, text, text, None, battle_sub_kb)
+        elif message.text == keyboard['pass']:
+            await self.set_state(hero.chat_id, BattleState.user_pass_confirm)
+            await message.answer('Вы уверены что хотите пропустить ход?', reply_markup=confirm_kb)
 
         await self.update_data(hero.chat_id, 'hero', hero)
 
@@ -414,66 +437,74 @@ class BattleInterface:
                 hero.target = e
                 await self.process_battle_action(hero, hero.target)
 
-    def handler_battle_end_start(self, order, team_win):
-        asyncio.create_task(self.handler_battle_end(order, team_win))
+    def handler_battle_end_start(self, team_win):
+        asyncio.create_task(self.handler_battle_end(team_win))
 
     # TODO: Допилить систему опыта для боссов, функция всё равно сработает, когда противники победят, почему бы и нет?..
-    async def handler_battle_end(self, order, team_win):
+    async def handler_battle_end(self, team_win):
         session = self.message.bot.get('session')
         db = DBCommands(self.message.bot.get('db'))
 
-        for e in self.engine.order:
-            if isinstance(e, Hero) and e.sub_action != 'Сбежать':
-                log = 'Бой окончен'
-                await self.set_state(e.chat_id, BattleState.load)
-                await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=ReplyKeyboardRemove())
+        try:
+            for e in self.engine.order:
+                if isinstance(e, Hero) and e.sub_action != 'Сбежать':
+                    log = 'Бой окончен'
+                    await self.set_state(e.chat_id, BattleState.end)
+                    await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=ReplyKeyboardRemove())
 
-        for e in self.engine.order:
-            log = 'Вы проиграли..'
-            kb = battle_revival_kb
-            state = BattleState.revival
-            is_inline = False
+            for e in self.engine.order:
+                log = 'Вы проиграли..'
+                kb = battle_revival_kb
+                state = BattleState.revival
+                is_inline = False
 
-            if e in team_win and isinstance(e, Hero):
-                log = self.engine_data.get('exit_message', '')
-                kb = self.engine_data.get('exit_kb', home_kb)
-                state = self.engine_data.get('exit_state', LocationState.home)
-                is_inline = self.engine_data.get('is_inline', False)
+                if e in team_win and isinstance(e, Hero):
+                    log = self.engine_data.get('exit_message', '')
+                    kb = self.engine_data.get('exit_kb', home_kb)
+                    state = self.engine_data.get('exit_state', LocationState.home)
+                    is_inline = self.engine_data.get('is_inline', False)
 
-                log += '*Вы победили!*\n'
-                log += await self.battle_reward(e, session)
+                    log += '*Вы победили!*\n'
+                    log += await self.battle_reward(e, session)
 
-                if self.engine.battle_type == 'arena_one':
-                    e.statistic.win_one_to_one += 1
+                    if self.engine.battle_type == 'arena_one':
+                        e.statistic.win_one_to_one += 1
 
-                if self.engine.battle_type == 'arena_team':
-                    e.statistic.win_team_to_team += 1
-            elif isinstance(e, Hero):
-                if self.engine.battle_type == 'arena_one':
-                    e.statistic.lose_one_to_one += 1
+                    if self.engine.battle_type == 'arena_team':
+                        e.statistic.win_team_to_team += 1
+                elif isinstance(e, Hero):
+                    if self.engine.battle_type == 'arena_one':
+                        e.statistic.lose_one_to_one += 1
 
-                if self.engine.battle_type == 'arena_team':
-                    e.statistic.lose_team_to_team += 1
+                    if self.engine.battle_type == 'arena_team':
+                        e.statistic.lose_team_to_team += 1
 
-            if isinstance(e, Hero):
-                e.statistic.battle_update(e.statistic.battle)
-                statistics = statistics_to_json(e.statistic)
-                await update_statistic(session, statistics, e.id)
+                if isinstance(e, Hero):
+                    e.statistic.battle_update(e.statistic.battle)
+                    statistics = statistics_to_json(e.statistic)
+                    await update_statistic(session, statistics, e.id)
 
-            if isinstance(e, Hero):
-                if self.engine.is_dev:
-                    log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
+                if isinstance(e, Hero):
+                    if self.engine.is_dev:
+                        log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
 
-                if e.sub_action != 'Сбежать':
-                    if is_inline:
-                        await self.message.bot.send_message(
-                            chat_id=e.chat_id, text='⁢', reply_markup=ReplyKeyboardRemove()
-                        )
+                    if e.sub_action != 'Сбежать':
+                        if is_inline:
+                            await self.message.bot.send_message(
+                                chat_id=e.chat_id, text='⁢', reply_markup=ReplyKeyboardRemove()
+                            )
 
-                    e = await init_hero(db, session, hero_id=e.id)
-                    await self.set_state(e.chat_id, state)
-                    await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
-                    await self.update_data(e.chat_id, 'hero', e)
+                        e = await init_hero(db, session, hero_id=e.id)
+                        await self.set_state(e.chat_id, state)
+                        await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
+                        await self.update_data(e.chat_id, 'hero', e)
+        except Exception as e:
+            print(e)
+
+            for e in self.engine.order:
+                if isinstance(e, Hero) and e.sub_action != 'Сбежать':
+                    await self.set_state(e.chat_id, BattleState.end)
+                    await self.message.bot.send_message(chat_id=e.chat_id, text=locale['error_battle'])
 
     # TODO: Навести порядок, вынести в отдельный модуль EXP
     async def battle_reward(self, e, session):
@@ -486,9 +517,10 @@ class BattleInterface:
             loot = await get_enemy_loot(session, enemy.id, e.id)
 
             if loot is not None and len(loot) != 0:
-                loot_list.append(*loot)
+                for l in loot:
+                    loot_list.append(l)
 
-        log = 'Вы получили\n'
+        log = 'Вы получили:\n'
 
         for loot in loot_list:
             total_reward_exp += loot.get('exp', 0)
@@ -510,16 +542,9 @@ class BattleInterface:
                 f'Пополните баланс, чтобы продолжить)) \n'
             )
 
-        if e.check_lvl_up():
-            new_lvl = await self.db.get_hero_lvl_by_exp(e.exp)
+        lvl_log, e = await check_hero_lvl(self.db, session, e)
+        log += lvl_log
 
-            while e.lvl < new_lvl['max']:
-                e.lvl += 1
-                e.free_stats += 10  # TODO: Тянуть с ранга
-                log += f"\n\nВы достигли {e.lvl} уровня!\nВы получили {10} СО"
-                await self.db.update_hero_stat('free_stats', e.free_stats, e.id)
-
-        await self.db.update_hero_level(e.exp, e.lvl, e.id)
         return log
 
     @staticmethod

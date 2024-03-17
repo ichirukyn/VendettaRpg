@@ -96,6 +96,11 @@ class Technique(EffectParent):
 
         return check
 
+    def coast(self, entity):
+        for effect in self.bonuses:
+            if effect.type == 'coast':
+                return effect.apply(entity)
+
     def technique_info(self, entity):
         self.bonuses.sort(key=lambda e: e.type == 'coast')
 

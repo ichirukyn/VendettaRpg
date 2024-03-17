@@ -22,9 +22,11 @@ class BattleState(StatesGroup):
     select_skill = State()
     select_skill_confirm = State()
     user_escape_confirm = State()
+    user_pass_confirm = State()
     battle_start = State()
     revival = State()
     load = State()
+    end = State()
 
 
 class CharacterState(StatesGroup):

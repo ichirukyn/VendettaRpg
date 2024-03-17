@@ -10,6 +10,7 @@ from sql import create_pool
 from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
 from tgbot.filters.register import RegFilter
+from tgbot.handlers.admin import register_admin
 from tgbot.handlers.arena import arena
 from tgbot.handlers.battle.handlers import battle
 from tgbot.handlers.campus import campus
@@ -37,6 +38,7 @@ def register_all_filters(dp):
 
 
 def register_all_handlers(dp):
+    register_admin(dp)
     start(dp)
     location(dp)
 

@@ -85,8 +85,8 @@ async def distribution(message: Message, state: FSMContext):
         return await message.answer("Введите корректное число")
 
     if 0 < count <= hero.free_stats:
-        stat_value = hero.__getattribute__(flat_stat)
-        stat_value += count
+        stat_value = hero.__getattribute__(flat_stat) + count
+        hero.__setattr__(flat_stat, stat_value)
 
         hero.total_stats += count
         hero.free_stats -= count

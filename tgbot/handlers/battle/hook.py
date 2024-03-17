@@ -223,6 +223,7 @@ class BattleEngine:
             if attacker.technique.type == 'support':
                 log += attacker.technique.activate(attacker, defender)
 
+            attacker.technique.coast(attacker)
             return log
 
         if attacker.name == defender.name:

@@ -42,6 +42,16 @@ async def start_battle(message: Message, state: FSMContext):
     await ui.start_battle()
 
 
+async def user_escape(message: Message, state: FSMContext):
+    ui = await battle_handler_init(message, state)
+    await ui.process_user_escape_confirm(message, state)
+
+
+async def user_pass_confirm(message: Message, state: FSMContext):
+    ui = await battle_handler_init(message, state)
+    await ui.process_user_pass_confirm(message, state)
+
+
 async def user_turn(message: Message, state: FSMContext):
     ui = await battle_handler_init(message, state)
     await ui.process_user_turn(message, state)
@@ -86,6 +96,8 @@ def battle(dp):
     dp.register_message_handler(start_battle, state=BattleState.battle)
     dp.register_message_handler(revival, state=BattleState.revival)
     dp.register_message_handler(user_turn, state=BattleState.user_turn)
+    dp.register_message_handler(user_escape, state=BattleState.user_escape_confirm)
+    dp.register_message_handler(user_pass_confirm, state=BattleState.user_pass_confirm)
     dp.register_message_handler(user_sub_turn, state=BattleState.user_sub_turn)
     dp.register_message_handler(select_technique, state=BattleState.select_technique)
     dp.register_message_handler(select_technique_confirm, state=BattleState.select_technique_confirm)

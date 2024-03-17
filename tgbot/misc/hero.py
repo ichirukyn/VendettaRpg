@@ -25,12 +25,9 @@ async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None) -> He
         hero_db['chat_id'] = hero_data.get('user').get('chat_id')
         stats_db = await get_hero_stats(session, hero_id)
 
-    hero_lvl_data = await get_hero_lvl(session, hero_id)
-    hero_lvl = await hero_lvl_data.json()
-
     hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db)
     hero.flat_init()
-    hero.init_level(hero_lvl)
+    _, hero = await check_hero_lvl(db, session, hero)
 
     team_db = await db.get_hero_team(hero_id)
     statistic_db = await get_statistic(session, hero_id)
@@ -74,6 +71,24 @@ async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None) -> He
     hero.update_stats_all()
 
     return hero
+
+
+async def check_hero_lvl(db, session, hero) -> (str, Hero):
+    log: str = ''
+
+    hero_lvl_data = await get_hero_lvl(session, hero.id)
+    hero_lvl = await hero_lvl_data.json()
+    hero.init_level(hero_lvl)
+
+    if hero.check_lvl_up():
+        hero.lvl += 1
+        hero.free_stats += 10  # TODO: Тянуть с ранга
+        log += f"\n\nВы достигли {hero.lvl} уровня!\nВы получили {10} СО"
+        await db.update_hero_stat('free_stats', hero.free_stats, hero.id)
+        await db.update_hero_level(hero.exp, hero.lvl, hero.id)
+        log, hero = await check_hero_lvl(db, session, hero)
+
+    return log, hero
 
 
 async def update_hero_stats(session, hero):
