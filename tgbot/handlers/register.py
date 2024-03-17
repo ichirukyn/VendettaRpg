@@ -1,4 +1,5 @@
 import asyncio
+from typing import re
 
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
@@ -35,6 +36,15 @@ async def register_user(message: Message, state: FSMContext):
 
     data = await state.get_data()
     hero = data.get('hero')
+
+    # Регулярное выражение для ника
+    pattern = re.Pattern(r'^[a-zA-Zа-яА-Я0-9]+$')
+
+    if 3 >= len(message.text) >= 25:
+        return await message.answer('Ник игрока должен состоять от 5 до 25 символов')
+
+    if not pattern.match(message.text):
+        return await message.answer('Ник ирока содержит недопустимые символы.')
 
     hero.name = message.text
     print('Register | name:', hero.name)

@@ -43,7 +43,10 @@ class Enemy(Entity):
 
     def select_enemy(self, enemy_team):
         if len(enemy_team) > 0:
-            self.target = min(enemy_team, key=lambda x: x.hp)
+            # self.target = min(enemy_team, key=lambda x: x.hp)
+            #     if random.randint(0, 1) > 0.5:
+
+            self.target = choice(enemy_team)
         else:
             self.target = enemy_team[0]
 
