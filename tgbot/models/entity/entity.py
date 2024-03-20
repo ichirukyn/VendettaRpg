@@ -283,7 +283,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         self.active_bonuses = active_bonuses
 
     def skill_cooldown(self):
-        if len(self.spells) > 0:
+        if len(self.techniques) > 0:
             for technique in self.techniques:
                 technique.cooldown_decrease()
 
