@@ -65,7 +65,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
     shield = 0
     shield_max = 0
     shield_percent = 0  # 1 - 100%
-    shield_modify = 3
+    shield_modify = 2.5
 
     technique: Technique | None = None
     spell: Spell | None = None
@@ -260,25 +260,36 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         if self.shield > self.shield_max:
             self.shield_max = self.shield
 
-    def check_active_skill(self):
+    def check_active_effects(self):
+        active_bonuses = [*self.active_bonuses]
+
+        if not hasattr(self.active_bonuses, '__iter__') or len(self.active_bonuses) <= 1:
+            return print('Не хочет итерироваться..', self.active_bonuses)
+
         for bonus in self.active_bonuses:
             if len(bonus.effects) == 0:
                 self.active_bonuses.remove(bonus)
 
-            if isinstance(bonus, Technique):
+            if isinstance(bonus, Technique) or isinstance(bonus, Spell):
                 if bonus.cooldown_current <= 0 and bonus.cooldown != 0:
                     bonus.deactivate(self)
 
-                    if bonus in self.active_bonuses:
-                        self.active_bonuses.remove(bonus)
+                    if bonus in active_bonuses:
+                        active_bonuses.remove(bonus)
 
-                if bonus not in self.techniques:
-                    bonus.cooldown_decrease()
-                    bonus.check_effect(self)
+                bonus.cooldown_decrease()
+                bonus.check_effect(self)
 
-    def technique_cooldown(self):
-        for technique in self.techniques:
-            technique.cooldown_decrease()
+        self.active_bonuses = active_bonuses
+
+    def skill_cooldown(self):
+        if len(self.spells) > 0:
+            for technique in self.techniques:
+                technique.cooldown_decrease()
+
+        if len(self.spells) > 0:
+            for spell in self.spells:
+                spell.cooldown_decrease()
 
     def is_active_skill(self, name):
         for skill in self.active_bonuses:

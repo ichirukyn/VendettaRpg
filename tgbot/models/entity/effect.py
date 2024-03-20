@@ -18,6 +18,7 @@ condition_operator = {
 
 magic_filter = ['intelligence', 'submission', 'soul']
 
+
 class EffectFactory:
     @staticmethod
     def create_effect(data, source):
@@ -103,6 +104,8 @@ class Effect(EffectABC, ABC):
         self.condition_attribute = condition_attribute
         self.condition = condition
         self.condition_value = condition_value
+
+        self.add_value = 0
 
     def cooldown_decrease(self):
         if self.duration_current > 0:
@@ -339,6 +342,9 @@ class ShieldEffect(Effect, ABC):
                 target.shield = shield
 
         hero.update_stats_percent()
+        self.add_value = shield
+
+        return True
 
     def get_value(self, hero):
         main_attr = hero.__getattribute__(self.attribute)
@@ -358,7 +364,6 @@ class ShieldEffect(Effect, ABC):
         return (
             f"`———————————————————`\n"
             f"{effect}"
-            f"`• Длительность: {self.duration}`\n"
         )
 
 

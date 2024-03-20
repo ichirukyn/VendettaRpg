@@ -171,7 +171,7 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
         kb = list_inline(skills)
 
         await CharacterState.techniques.set()
-        return await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
+        return await cb.message.edit_text(locale['techniques_select'], reply_markup=kb)
 
     if technique_id == 1 and cb.data == 'Открепить':
         return await cb.message.edit_text('Открепить эту технику нельзя..', reply_markup=back_inline)
@@ -187,7 +187,7 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
     kb = list_inline(skills)
 
     await CharacterState.techniques.set()
-    await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
+    await cb.message.edit_text(locale['techniques_select'], reply_markup=kb)
 
 
 async def character_spell(cb: CallbackQuery, state: FSMContext):

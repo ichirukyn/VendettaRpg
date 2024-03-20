@@ -56,8 +56,8 @@ class BattleEngine:
         while i < len(self.order):
             entity = self.order[i]
 
-            entity.check_active_skill()
-            entity.technique_cooldown()
+            entity.check_active_effects()
+            entity.skill_cooldown()
             entity.turn_regenerate()
 
             log = entity.debuff_round_check()
@@ -302,6 +302,9 @@ class BattleEngine:
 
         attacker.update_stats_percent()
         defender.update_stats_percent()
+
+        attacker.spell = None
+        attacker.technique = None
         defender.sub_action = ''
 
         return log
