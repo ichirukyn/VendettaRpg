@@ -28,7 +28,9 @@ async def battle_init(message: Message, state: FSMContext):
     data = await state.get_data()
 
     hero = data.get('hero')
-    hero = await init_hero(db, session, hero_id=hero.id)
+    chat_id = data.get('hero_chat_id', None)
+
+    hero = await init_hero(db, session, hero_id=hero.id, chat_id=chat_id)
 
     enemy_team = data.get('enemy_team', [])
     player_team = [hero]

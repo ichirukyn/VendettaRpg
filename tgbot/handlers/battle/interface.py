@@ -261,9 +261,9 @@ class BattleInterface:
             hero.action = keyboard['spell_list']
             await self.state.update_data(hero=hero)
 
-            kb = list_object_kb(hero.skills)
+            kb = list_object_kb(hero.spells)
 
-            await self.set_state(hero.chat_id, BattleState.select_skill)
+            await self.set_state(hero.chat_id, BattleState.select_spell)
             await message.answer('Выбери заклинание:', reply_markup=kb)
 
         elif message.text == keyboard['pass']:
@@ -272,7 +272,7 @@ class BattleInterface:
 
         await self.update_data(hero.chat_id, 'hero', hero)
 
-    async def process_select_skill(self, message: Message, state: FSMContext):
+    async def process_select_spell(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
 
@@ -280,41 +280,37 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.user_turn)
             return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
-        for skill in hero.skills:
-            if skill.name == message.text:
-                hero.select_skill = skill
-                await self.update_data(hero.chat_id, 'hero', hero)
+        for spell in hero.spells:
+            if message.text.strip() == spell.name.strip():
+                root_check = spell.distance != 'distant' or spell.type == 'support'
 
-                text = f"{skill.name}\n{skill.desc}\n\nВы уверены?"
+                if not hero.debuff_control_check('turn') and not root_check:
+                    text = f'Вы под эффектом контроля и не можете применить {spell.name}'
+                    await self.set_state(hero.chat_id, BattleState.user_turn)
+                    return await message.answer(text, reply_markup=battle_main_kb)
 
-                await self.set_state(hero.chat_id, BattleState.select_skill_confirm)
-                return await message.answer(text, reply_markup=confirm_kb)
+                if spell.check(hero):
+                    hero.spell = spell
+                    hero.technique = None
+                    await self.update_data(hero.chat_id, 'hero', hero)
+                    await self.set_state(hero.chat_id, BattleState.select_spell_confirm)
+                    return await message.answer(spell.spell_info(hero), reply_markup=confirm_kb)
+                else:
+                    text = spell.log or 'Ошибка активации..'
+                    await self.set_state(hero.chat_id, BattleState.user_turn)
+                    return await message.answer(text, reply_markup=battle_main_kb)
 
-    async def process_select_skill_confirm(self, message: Message, state: FSMContext):
+    async def process_select_spell_confirm(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
 
-        is_return = False
-        text = ''
-        kb = []
-
         if message.text == keyboard["back"]:
-            text = 'Выбери заклинание:'
-            is_return = True
-            kb = list_object_kb(hero.skills)
+            kb = list_kb(hero.spells)
 
-        elif hero.is_active_skill(message.text):
-            text = 'Заклинание уже активировано'
-            is_return = True
-            kb = list_object_kb(hero.skills)
+            await self.set_state(hero.chat_id, BattleState.select_spell)
+            return await message.answer('Выбери технику:', reply_markup=kb)
 
-        if is_return:
-            await self.set_state(hero.chat_id, BattleState.select_skill)
-            return await message.answer(text, reply_markup=kb)
-
-        # TODO: Добавить выбор союзников
-        await self.set_state(hero.chat_id, BattleState.user_sub_turn)
-        await self.process_battle_action(hero, hero.target)
+        return await self.handler_select_target(message, state)
 
     async def process_select_technique(self, message: Message, state: FSMContext):
         data = await state.get_data()
@@ -335,6 +331,7 @@ class BattleInterface:
 
                 if technique.check(hero):
                     hero.technique = technique
+                    hero.spell = None
                     await self.update_data(hero.chat_id, 'hero', hero)
                     await self.set_state(hero.chat_id, BattleState.select_technique_confirm)
                     return await message.answer(technique.technique_info(hero), reply_markup=confirm_kb)
@@ -356,7 +353,7 @@ class BattleInterface:
         return await self.handler_select_target(message, state)
 
     async def process_battle_action(self, hero, target):
-        action_result = self.engine.battle_action(hero, target, hero.select_skill)
+        action_result = self.engine.battle_action(hero, target)
 
         if action_result is not None:
             if action_result['target'] is not None:
@@ -387,9 +384,15 @@ class BattleInterface:
 
         target_team = None
         text = ''
-        target = hero.technique_target()
 
-        if target == 'my' and hero.technique.damage == 0:
+        action = hero.technique
+
+        if hero.spell is not None:
+            action = hero.spell
+
+        target = hero.get_target()
+
+        if target == 'my' and action.damage == 0:
             return await self.process_battle_action(hero, hero)
 
         elif target == 'enemy':
@@ -411,7 +414,7 @@ class BattleInterface:
             target_team = self.engine.target_teammate_team(hero)
             return await self.process_battle_action(hero, target_team)
 
-        elif target == 'enemy' or hero.technique.damage != 0:
+        elif target == 'enemy' or action.damage != 0:
             text = 'Выбери противника:'
             target_team = self.engine.target_enemy_team(hero)
 
@@ -444,6 +447,9 @@ class BattleInterface:
     async def handler_battle_end(self, team_win):
         session = self.message.bot.get('session')
         db = DBCommands(self.message.bot.get('db'))
+        data = await self.state.get_data()
+        chat_id = data.get('hero_chat_id', None)
+        hero = data.get('hero')
 
         try:
             for e in self.engine.order:
@@ -494,7 +500,12 @@ class BattleInterface:
                                 chat_id=e.chat_id, text='⁢', reply_markup=ReplyKeyboardRemove()
                             )
 
-                        e = await init_hero(db, session, hero_id=e.id)
+                        # TODO: Костыль, для работы входа из под чужого аккаунта
+                        if e.id == hero.id:
+                            e = await init_hero(db, session, hero_id=e.id, chat_id=chat_id)
+                        else:
+                            e = await init_hero(db, session, hero_id=e.id)
+
                         await self.set_state(e.chat_id, state)
                         await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
                         await self.update_data(e.chat_id, 'hero', e)

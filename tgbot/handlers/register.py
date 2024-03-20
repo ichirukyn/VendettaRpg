@@ -1,5 +1,5 @@
 import asyncio
-from typing import re
+import re
 
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
@@ -7,6 +7,8 @@ from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
 from tgbot.api.hero import create_hero
+from tgbot.api.hero import fetch_hero
+from tgbot.api.hero import get_hero
 from tgbot.api.race import fetch_race
 from tgbot.api.race import fetch_race_classes
 from tgbot.api.user import create_user
@@ -38,7 +40,7 @@ async def register_user(message: Message, state: FSMContext):
     hero = data.get('hero')
 
     # Регулярное выражение для ника
-    pattern = re.Pattern(r'^[a-zA-Zа-яА-Я0-9]+$')
+    pattern = re.compile(r'^[a-zA-Zа-яА-Я0-9]+$')
 
     if 3 >= len(message.text) >= 25:
         return await message.answer('Ник игрока должен состоять от 5 до 25 символов')
@@ -208,11 +210,21 @@ async def entry_point(message: Message, state: FSMContext):
 
             hero_data = await get_user_hero(session, user.get('id'))
 
+            # Вход под кем-то
+            if message.chat.id in config.tg_bot.admin_ids and len(message.text.split(' ')) == 2:
+                hero_id = message.text.split(' ')[1]
+                hero = await get_hero(session, int(hero_id))
+
+                if hero_id and hero.get('id'):
+                    hero_data = hero
+                    hero_data['chat_id'] = message.chat.id
+                    await state.update_data(hero_chat_id=message.chat.id)
+
             if hero_data is None:
                 text = 'Ошибка получения героя, звоните Ichiru..'
                 return await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
-            hero = await init_hero(db, session, hero_data=hero_data)
+            hero = await init_hero(db, session, hero_data=hero_data, chat_id=hero_data.get('chat_id', None))
             print(f"hero_id: {hero.id}")
 
             await state.update_data(hero=hero)
@@ -241,6 +253,15 @@ async def reset_all(message: Message):
     db = DBCommands(message.bot.get('db'))
     dp = message.bot.get('dp')
     users = await db.get_users()
+
+    session = message.bot.get('session')
+    heroes = await fetch_hero(session)
+
+    # for hero in heroes:
+    #     money = hero.get('money', 5000)
+    #     new_money = round(money / 10)
+    #
+    #     print(new_money)
 
     for user in users:
         hero_id = await db.get_hero_id(user['id'])

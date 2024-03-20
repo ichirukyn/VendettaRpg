@@ -2,6 +2,7 @@ from typing import Optional
 from typing import TypedDict
 
 from tgbot.models.api.level_api import LevelType
+from tgbot.models.api.spell import SpellType
 from tgbot.models.api.technique import TechniqueType
 from tgbot.models.api.user_api import UserType
 
@@ -60,6 +61,14 @@ class HeroTechniqueType(TypedDict):
     technique_id: int
     lvl: int
     technique: TechniqueType
+
+
+class HeroSpellType(TypedDict):
+    id: int
+    hero_id: int
+    spell_id: int
+    lvl: int
+    spell: SpellType
 
 
 class CreateHeroTechniqueType(TypedDict):

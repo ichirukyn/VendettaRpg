@@ -7,8 +7,40 @@ from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
 from tgbot.models.entity.entity_base.entity_stats import EntityStats
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
-from tgbot.models.entity.skill import Skill
+from tgbot.models.entity.spells import Spell
 from tgbot.models.entity.techniques import Technique
+
+
+class Effect:
+    def __init__(self):
+        self.effects = []
+
+    def add_effect(self, effect):
+        self.effects.append(effect)
+
+    def remove_effect(self, effect):
+        pass
+
+
+class EffectTime(Effect):
+    def add_effect(self, effect):
+        pass
+
+    def remove_effect(self, effect):
+        pass
+
+
+class EffectTurn(Effect):
+    def add_effect(self, effect):
+        pass
+
+    def remove_effect(self, effect):
+        pass
+
+
+effect_turn = EffectTurn()
+effect_turn.add_effect('effect')
+print(effect_turn.effects)  # ['effect']
 
 
 class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats):
@@ -33,8 +65,10 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
     shield = 0
     shield_max = 0
     shield_percent = 0  # 1 - 100%
+    shield_modify = 3
 
     technique: Technique | None = None
+    spell: Spell | None = None
 
     select_skill = None
     race = None
@@ -107,7 +141,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         self.active_bonuses = []
         self.effects = []
-        self.skills = []
+        self.spells = []
         self.techniques = []
 
     # Stats
@@ -231,9 +265,6 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
             if len(bonus.effects) == 0:
                 self.active_bonuses.remove(bonus)
 
-            if isinstance(bonus, Skill):
-                bonus.turn_check(self)
-
             if isinstance(bonus, Technique):
                 if bonus.cooldown_current <= 0 and bonus.cooldown != 0:
                     bonus.deactivate(self)
@@ -291,20 +322,24 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
             tech.cooldown_decrease()
 
-    def technique_target(self) -> str:
+    def get_target(self) -> str:
         direction = 'my'
+        action = self.technique
 
-        if self.technique is None:
+        if self.spell is not None:
+            action = self.spell
+
+        if action is None:
             return direction
 
-        for bonus in self.technique.bonuses:
+        for bonus in action.bonuses:
             if bonus.direction == 'my':
                 continue
 
             elif bonus.direction != 'my':
                 direction = bonus.direction
 
-        if len(self.technique.bonuses) == 0:
+        if len(action.bonuses) == 0:
             direction = 'enemy'
 
         return direction
@@ -332,11 +367,16 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         return f"{self.name} получил урон {debuff.get('name')} ({total_damage})"
 
     def check_evasion(self, attacker):
+        action = attacker.technique
+
+        if attacker.spell is not None:
+            action = attacker.spell
+
         evasion_chance = (self.speed / (self.speed + attacker.speed)) + self.evasion_modify
         # evasion_chance = (100 + self.lvl) / ((100 + defender.lvl) * (100 + defender.speed)
         # + (100 + defender.dexterity) + (100 + self.lvl))
 
-        if attacker._class.type == 'Лучник' or attacker.technique.distance == 'distant':
+        if attacker._class.type == 'Лучник' or action.distance == 'distant':
             evasion_chance = (self.speed / (self.speed + attacker.speed + (attacker.accuracy * 1.5)))
             evasion_chance += self.evasion_modify
 
@@ -372,6 +412,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
     def damage(self, defender, damage_type, technique=None):
         tech = self.technique
         log = None
+
+        if self.spell is not None:
+            tech = self.spell
 
         if technique is not None:
             tech = technique

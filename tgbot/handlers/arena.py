@@ -30,8 +30,9 @@ async def arena_select_type(message: Message, state: FSMContext):
     data = await state.get_data()
     hero = data['hero']
     pvp_type = data.get('pvp_type', None)
+    chat_id = data.get('hero_chat_id', None)
 
-    hero = await init_hero(db, session, hero_id=hero.id)
+    hero = await init_hero(db, session, hero_id=hero.id, chat_id=chat_id)
 
     try:
         text_solo = f'{hero.name} бросил вам вызов.'

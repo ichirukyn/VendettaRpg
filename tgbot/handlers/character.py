@@ -4,9 +4,14 @@ from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
+from tgbot.api.hero import create_hero_spell
 from tgbot.api.hero import create_hero_technique
+from tgbot.api.hero import delete_hero_spell
 from tgbot.api.hero import delete_hero_technique
+from tgbot.api.hero import get_hero_spell
 from tgbot.api.hero import get_hero_technique
+from tgbot.api.spells import fetch_spell
+from tgbot.api.spells import get_spell
 from tgbot.api.technique import fetch_technique
 from tgbot.api.technique import get_technique
 from tgbot.keyboards.inline import back_inline
@@ -25,6 +30,7 @@ from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import CharacterState
 from tgbot.misc.state import LocationState
+from tgbot.models.entity.spells import spell_init
 from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
@@ -73,6 +79,7 @@ async def distribution(message: Message, state: FSMContext):
     hero = data['hero']
     hero_id = data['hero_id']
     stat = data['train_stat']
+    chat_id = data.get('hero_chat_id', None)
     flat_stat = f"flat_{stat}"
 
     try:
@@ -97,7 +104,7 @@ async def distribution(message: Message, state: FSMContext):
         await db.update_hero_stat('free_stats', hero.free_stats, hero_id)
         await db.update_hero_stat('total_stats', hero.total_stats, hero_id)
 
-        hero = await init_hero(db, session, hero.id)
+        hero = await init_hero(db, session, hero.id, chat_id=chat_id)
 
         await state.update_data(hero=hero)
 
@@ -181,6 +188,77 @@ async def character_technique_fix(cb: CallbackQuery, state: FSMContext):
 
     await CharacterState.techniques.set()
     await cb.message.edit_text(locale['skills_select'], reply_markup=kb)
+
+
+async def character_spell(cb: CallbackQuery, state: FSMContext):
+    session = cb.message.bot.get('session')
+
+    data = await state.get_data()
+    hero = data['hero']
+
+    if cb.data == keyboard["back"]:
+        await cb.message.delete()
+        await LocationState.character.set()
+
+        return await cb.message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
+
+    spell_id = int(cb.data)
+
+    hero_spell = await get_hero_spell(session, hero.id, spell_id)
+    res = await get_spell(session, spell_id)
+
+    kb = skill_add_inline
+    fix = 'Не закреплён'
+
+    if hero_spell is not None:
+        kb = skill_del_inline
+        fix = 'Закреплён'
+
+    await state.update_data(spell_fix=spell_id)
+
+    if res is not None:
+        spell = spell_init(res)
+
+        text = (
+            f"{spell.spell_info(hero)}\n"
+            f"{fix}"
+        )
+    else:
+        text = locale['error_repeat']
+
+    await CharacterState.spell_fix.set()
+    await cb.message.edit_text(text, reply_markup=kb)
+
+
+async def character_spell_fix(cb: CallbackQuery, state: FSMContext):
+    session = cb.message.bot.get('session')
+
+    data = await state.get_data()
+    hero = data['hero']
+    spell_id = data['spell_fix']
+
+    if cb.data == keyboard['back']:
+        spell = await fetch_spell(session)
+        kb = list_inline(spell)
+
+        await CharacterState.spells.set()
+        return await cb.message.edit_text(locale['spells_select'], reply_markup=kb)
+
+    if spell_id == 1 and cb.data == 'Открепить':
+        return await cb.message.edit_text('Открепить эту технику нельзя..', reply_markup=back_inline)
+
+    if cb.data == 'Прикрепить':
+        data = {'hero_id': hero.id, 'spell_id': spell_id, 'lvl': 1}
+        await create_hero_spell(data, hero.id)
+
+    if cb.data == 'Открепить':
+        await delete_hero_spell(session, hero.id, spell_id)
+
+    spell = await fetch_spell(session)
+    kb = list_inline(spell)
+
+    await CharacterState.spells.set()
+    await cb.message.edit_text(locale['spells_select'], reply_markup=kb)
 
 
 async def character_equip(message: Message, state: FSMContext):
@@ -316,5 +394,7 @@ def character(dp: Dispatcher):
     dp.register_callback_query_handler(character_inventory_action, state=CharacterState.inventory_action)
     dp.register_callback_query_handler(character_techniques, state=CharacterState.techniques)
     dp.register_callback_query_handler(character_technique_fix, state=CharacterState.technique_fix)
+    dp.register_callback_query_handler(character_spell, state=CharacterState.spells)
+    dp.register_callback_query_handler(character_spell_fix, state=CharacterState.spell_fix)
 
     dp.register_message_handler(character_info_menu, state=CharacterState.info_menu)

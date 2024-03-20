@@ -37,6 +37,8 @@ class UpdateStatsMiddleware(BaseMiddleware):
 
         try:
             hero = data['hero']
+            chat_id_ = data.get('hero_chat_id', None)
+
             state = await dp.storage.get_state(chat=chat_id)
 
             if state in list_ignore or state.split(':')[0] in list_ignore:
@@ -44,7 +46,7 @@ class UpdateStatsMiddleware(BaseMiddleware):
 
             # Если игрок в списке "обновляемых" локаций, его состояние обновляется полностью
             if state in list_update or state.split(':')[0] in list_update:
-                hero = await init_hero(db, session, hero_id=hero.id)
+                hero = await init_hero(db, session, hero_id=hero.id, chat_id=chat_id_)
 
                 # Если состоит в группе, обновить группу в state
                 if hero.team_id > 0:

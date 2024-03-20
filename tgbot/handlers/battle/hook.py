@@ -90,7 +90,7 @@ class BattleEngine:
         self.order_index = 0
         return self.battle()
 
-    def battle_action(self, attacker: Entity, defender, skill):
+    def battle_action(self, attacker: Entity, defender):
         if not isinstance(defender, list):
             defender = [defender]
 
@@ -101,10 +101,11 @@ class BattleEngine:
             'log': '⁢'
         }
 
-        if attacker.action == keyboard['technique_list']:
+        if attacker.action == keyboard['technique_list'] or attacker.action == keyboard['spell_list']:
             action_return['log'] = ''
+
             for target in action_return['target']:
-                action_return['log'] += self.entity_attack(attacker, target)
+                action_return['log'] += f"{self.entity_attack(attacker, target)}\n"
 
             for target in action_return['target']:
                 if target.hp <= 0:
@@ -118,11 +119,6 @@ class BattleEngine:
                         attacker.statistic.battle.kill_hero += 1
                     else:
                         attacker.statistic.battle.kill_enemy += 1
-
-        elif attacker.action == keyboard['spell_list']:
-            log = skill.activate()
-            action_return['log'] = log
-            action_return['attacker'] = skill.hero
 
         elif attacker.action == keyboard['pass']:
             action_return['log'] = f'{attacker.name} пропустил ход.'
@@ -214,26 +210,31 @@ class BattleEngine:
         hp = attacker.hp
         hp_def = defender.hp
 
+        action = attacker.technique
+
+        if attacker.spell is not None:
+            action = attacker.spell
+
         if defender.check_evasion(attacker) and attacker.name != defender.name:
-            log = f"⚔️ {attacker.name} промахнулся"
+            log = f"⚔️ {attacker.name} промахнулся по {defender.name}"
 
             attacker.statistic.battle.miss_count += 1
             defender.statistic.battle.evasion_success_count += 1
 
-            if attacker.technique.type == 'support':
-                log += attacker.technique.activate(attacker, defender)
+            if action.type == 'support':
+                log += action.activate(attacker, defender)
 
-            attacker.technique.coast(attacker)
+            action.coast(attacker)
             return log
 
         if attacker.name == defender.name:
-            attacker.technique.activate(attacker, attacker)
-            log = f"{attacker.name} применил технику {attacker.technique.name}\n"
+            action.activate(attacker, attacker)
+            log = f"{attacker.name} применил технику {action.name}\n"
         else:
-            attacker.technique.activate(attacker, defender)
-            log = f"{attacker.name} применил технику {attacker.technique.name} к {defender.name}\n"
+            action.activate(attacker, defender)
+            log = f"{attacker.name} применил технику {action.name} к {defender.name}\n"
 
-        if attacker.technique.type == 'support' and attacker.technique.damage == 0:
+        if action.type == 'support' and action.damage == 0:
             attacker.check_shield()
             defender.check_shield()
 
@@ -262,7 +263,7 @@ class BattleEngine:
             return log
 
         if defender.hp > 0:
-            total_damage, damage_log = attacker.damage(defender, attacker.technique.type_damage)
+            total_damage, damage_log = attacker.damage(defender, action.type_damage)
 
             if defender.shield > 0:
                 delta = defender.shield - total_damage
@@ -283,10 +284,10 @@ class BattleEngine:
             attacker.statistic.battle.hits_count += 1
 
             if total_damage == 0:
-                log = f"⚔️ {attacker.name} использовал \"{attacker.technique.name}\" по {defender.name}"
+                log = f"⚔️ {attacker.name} использовал \"{action.name}\" по {defender.name}"
 
             else:
-                log = f"⚔️ {attacker.name} использовал \"{attacker.technique.name}\" на {defender.name} " \
+                log = f"⚔️ {attacker.name} использовал \"{action.name}\" на {defender.name} " \
                       f"и нанес {formatted(total_damage)} урона."
 
             if hp > attacker.hp:

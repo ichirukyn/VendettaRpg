@@ -6,7 +6,6 @@ from tgbot.misc.locale import keyboard
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import race_init
-from tgbot.models.entity.skill import skills_init
 from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
@@ -51,7 +50,7 @@ class Enemy(Entity):
             self.target = enemy_team[0]
 
     def select_target(self, teammates, enemies):
-        target = self.technique_target()
+        target = self.get_target()
 
         if target == 'my' and self.technique.damage == 0:
             self.target = self
@@ -93,8 +92,8 @@ class Enemy(Entity):
 
     def define_action(self):
         # TODO: Расширить проверку и отдельно вывести переменную для сложных нпс (== 4, а не 0, например)
-        if len(self.active_bonuses) == 2 and len(self.skills) != 0:
-            self.select_skill = choice(self.skills)
+        if len(self.active_bonuses) == 2 and len(self.spells) != 0:
+            self.select_skill = choice(self.spells)
             self.action = keyboard['spell_list']
         else:
             self.action = keyboard['technique_list']
@@ -124,7 +123,6 @@ class Enemy(Entity):
 async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     enemy_db = await get_enemy(session, enemy_id)
     stats_db = await db.get_enemy_stats(enemy_id)
-    skills = await db.get_enemy_skills(enemy_id)
 
     enemy_weapon = await db.get_enemy_weapon(enemy_id)
     weapon = await db.get_weapon(enemy_weapon.get('weapon_id', 1))
@@ -132,7 +130,6 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     enemy = EnemyFactory.create_enemy(stats_db)
     enemy.lvl = stats_db['lvl']
 
-    enemy = await skills_init(enemy, skills, db)
     enemy.init_weapon(weapon, enemy_weapon['lvl'])
 
     enemy.techniques = []
@@ -145,6 +142,18 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
 
             if technique is not None:
                 enemy.techniques.append(technique)
+
+    # TODO: Доделать спеллы для противников
+    # enemy.spells = []
+    # technique_db = await fetch_enemy_spell(session, enemy_id)
+    #
+    # if technique_db is not None:
+    #     for tech in technique_db:
+    #         technique = tech.get('technique')
+    #         technique = technique_init(technique)
+    #
+    #         if technique is not None:
+    #             enemy.techniques.append(technique)
 
     _class = await class_init(session, enemy_db.get('class'))
     if _class is not None:

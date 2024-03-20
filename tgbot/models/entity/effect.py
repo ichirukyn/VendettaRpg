@@ -16,6 +16,7 @@ condition_operator = {
     '!=': operator.ne
 }
 
+magic_filter = ['intelligence', 'submission', 'soul']
 
 class EffectFactory:
     @staticmethod
@@ -29,58 +30,63 @@ class EffectFactory:
         is_single = data.get('is_single', True)
         every_turn = data.get('every_turn', False)
 
-        condition_first = data.get('if_first', None)
+        condition_attribute = data.get('if_first', None)
         condition = data.get('if', None)
-        condition_second = data.get('if_second', None)
+        condition_value = data.get('if_second', None)
+
+        # Костыль для спелов
+        if data.get('condition', None) is not None:
+            condition_attribute = data.get('condition_attribute', None)
+            condition = data.get('condition', None)
+            condition_value = data.get('condition_value', None)
 
         if 'percent' in effect_type:
             return PercentBonusEffect(
-                attribute, value, source, effect_type, name, condition_first, condition, condition_second, duration,
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
                 direction, is_single, every_turn
             )
 
         if 'number' in effect_type:
             return BonusEffect(
-                attribute, value, source, effect_type, name, condition_first, condition, condition_second, duration,
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
                 direction, is_single, every_turn
             )
 
         if 'control' in effect_type:
             return ControlEffect(
-                attribute, value, source, effect_type, name, condition_first, condition, condition_second, duration,
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
                 direction, is_single, every_turn
             )
 
         if 'period' in effect_type:
             return PeriodEffect(
-                attribute, value, source, effect_type, name, condition_first, condition, condition_second, duration,
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
                 direction, is_single, every_turn
             )
 
         if 'activate' in effect_type:
             return ActivateEffect(
-                attribute, value, source, effect_type, name, condition_first, condition, condition_second, duration,
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
                 direction, is_single, every_turn
             )
 
         if 'coast' in effect_type:
             return CoastEffect(
-                attribute, value, source, effect_type, name, condition_first, condition, condition_second, duration,
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
                 direction, is_single, every_turn
             )
 
-        # # TODO: АоЕ урон сделать:
-        # if 'aoe' in effect_type:
-        #     return PeriodEffect(
-        #         attribute, value, source, effect_type, name, condition_first, condition, condition_second, duration,
-        #         direction, is_single, every_turn
-        #     )
+        if 'shield' in effect_type:
+            return ShieldEffect(
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
+                direction, is_single, every_turn
+            )
 
         raise ValueError(f'{effect_type} -- Не подходящий тип Бонуса')
 
 
 class Effect(EffectABC, ABC):
-    def __init__(self, attribute, value, source, effect_type, name, condition_first, condition, condition_second,
+    def __init__(self, attribute, value, source, effect_type, name, condition_attribute, condition, condition_value,
                  duration, direction, is_single, every_turn):
         self.attribute = attribute
         self.value = value
@@ -94,21 +100,22 @@ class Effect(EffectABC, ABC):
         self.is_single = is_single
         self.every_turn = every_turn
 
-        self.condition_first = condition_first
+        self.condition_attribute = condition_attribute
         self.condition = condition
-        self.condition_second = condition_second
+        self.condition_value = condition_value
 
     def cooldown_decrease(self):
         if self.duration_current > 0:
             self.duration_current -= 1
 
     def check(self, entity) -> bool:
-        if self.condition_first == 'race_id':
-            return entity.race.id == self.condition_second
-        if self.condition_first == 'class_id':
-            return entity._class.id == self.condition_second
-        if self.condition_first is not None:
-            return condition_operator[self.condition](getattr(entity, self.condition_first), int(self.condition_second))
+        if self.condition_attribute == 'race_id':
+            return entity.race.id == self.condition_value
+        if self.condition_attribute == 'class_id':
+            return entity._class.id == self.condition_value
+        if self.condition_attribute is not None:
+            return condition_operator[self.condition](getattr(entity, self.condition_attribute),
+                                                      int(self.condition_value))
 
     def apply(self, hero, target=None) -> bool:
         pass
@@ -118,13 +125,13 @@ class Effect(EffectABC, ABC):
 
     def info(self, entity):
         el = ''
-        if self.condition_second is not None and self.condition is not None:
-            val = self.condition_second
+        if self.condition_value is not None and self.condition is not None:
+            val = self.condition_value
 
             if -1 <= val <= 1:
                 val = f'{formatted(val * 100)}%'
 
-            el = f"{condition_attribute[self.condition_first]} {condition[self.condition]} {val}"
+            el = f"{condition_attribute[self.condition_attribute]} {condition[self.condition]} {val}"
 
         el_text = 'Без условий' if self.condition == '' or self.condition is None else el
         value = f'{self.value}'
@@ -262,9 +269,9 @@ class ActivateEffect(Effect, ABC):
 
 
 class CoastEffect(Effect, ABC):
-    def __init__(self, attribute, value, source, effect_type, name, condition_first, condition, condition_second,
+    def __init__(self, attribute, value, source, effect_type, name, condition_attribute, condition, condition_value,
                  duration, direction, is_single, every_turn):
-        super().__init__(attribute, value, source, effect_type, name, condition_first, condition, condition_second,
+        super().__init__(attribute, value, source, effect_type, name, condition_attribute, condition, condition_value,
                          duration, direction, is_single, every_turn)
         self.rank = 0
 
@@ -310,6 +317,43 @@ class CoastEffect(Effect, ABC):
 
     def info(self, entity):
         effect = f"`• {self.name}: {formatted(self.coast(entity))} ({formatted(self.value)})`\n"
+
+        return (
+            f"`———————————————————`\n"
+            f"{effect}"
+            f"`• Длительность: {self.duration}`\n"
+        )
+
+
+class ShieldEffect(Effect, ABC):
+    def apply(self, hero, target=None):
+        shield = self.get_value(hero)
+
+        if self.duration == 'my':
+            if shield >= hero.shield:
+                hero.shield_max = shield
+                hero.shield = shield
+        else:
+            if shield >= target.shield:
+                target.shield_max = shield
+                target.shield = shield
+
+        hero.update_stats_percent()
+
+    def get_value(self, hero):
+        main_attr = hero.__getattribute__(self.attribute)
+        control = hero.control_qi
+
+        if self.attribute in magic_filter:
+            control = hero.control_mana
+
+        # 50 -- На 350 ур. Игрок получит 700% усиления
+        shield = self.value * (main_attr + control) * (1 + hero.lvl / 50) * (1 + hero.shield_modify)
+
+        return shield
+
+    def info(self, entity):
+        effect = f"`• {self.name}: {formatted(self.get_value(entity))} ({formatted(self.value * 100)}%)`\n"
 
         return (
             f"`———————————————————`\n"

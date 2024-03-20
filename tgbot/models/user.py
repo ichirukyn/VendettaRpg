@@ -46,7 +46,7 @@ class DBCommands:
         self.GET_ENEMY_STATS = "SELECT * FROM enemies INNER JOIN enemy_stats es ON enemies.id = es.enemy_id" \
                                " WHERE enemy_id = $1"
         self.GET_ENEMY_WEAPONS = "SELECT * FROM enemy_weapons WHERE enemy_id = $1"
-        self.GET_ENEMY_SKILLS = "SELECT * FROM enemy_skills es INNER JOIN skills s ON es.skill_id = s.id" \
+        self.GET_ENEMY_SPELLS = "SELECT * FROM enemy_spells es INNER JOIN spells s ON es.spell_id = s.id" \
                                 " WHERE enemy_id = $1"
 
         self.ADD_TEAM = "INSERT INTO teams (leader_id, name, is_private) VALUES ($1, $2, $3) RETURNING id"
@@ -71,13 +71,13 @@ class DBCommands:
                                    "ON e.technique_id = techniques.id WHERE enemy_id = $1"
 
         # TODO: Убрать type="None". Нужно будет подставлять nen_type
-        self.ADD_HERO_SKILL = "INSERT INTO hero_skill (hero_id, skill_id, lvl) VALUES ($1, $2, $3)"
-        self.GET_SKILL = "SELECT * FROM skills WHERE id = $1 AND nen_type='None'"
-        self.GET_SKILLS = "SELECT * FROM skills WHERE nen_type='None'"
-        self.GET_SKILL_BONUSES = "SELECT * FROM skill_bonuses WHERE skill_id = $1"
-        self.GET_HERO_SKILLS = "SELECT * FROM hero_skill INNER JOIN  skills ON hero_skill.skill_id = skills.id" \
+        self.ADD_HERO_SPELL = "INSERT INTO hero_spell (hero_id, spell_id, lvl) VALUES ($1, $2, $3)"
+        self.GET_SPELL = "SELECT * FROM spells WHERE id = $1 AND nen_type='None'"
+        self.GET_SPELLS = "SELECT * FROM spells WHERE nen_type='None'"
+        self.GET_SPELL_BONUSES = "SELECT * FROM spell_bonuses WHERE spell_id = $1"
+        self.GET_HERO_SPELLS = "SELECT * FROM hero_spell INNER JOIN  spells ON hero_spell.spell_id = spells.id" \
                                " WHERE hero_id = $1"
-        self.DEL_HERO_SKILL = "DELETE FROM hero_skill WHERE hero_id = $1 AND skill_id = $2"
+        self.DEL_HERO_SPELL = "DELETE FROM hero_spell WHERE hero_id = $1 AND spell_id = $2"
 
         # TODO: Убрать type="None". Нужно будет подставлять nen_type
         self.GET_HUNT_LOCATIONS = "SELECT * FROM hunt_locations"
@@ -447,36 +447,36 @@ class DBCommands:
         return await self.pool.fetch(command, team_id)
 
     # Skill
-    async def add_hero_skill(self, hero_id, skill_id, lvl=0):
-        command = self.ADD_HERO_SKILL
+    async def add_hero_spell(self, hero_id, spell_id, lvl=0):
+        command = self.ADD_HERO_SPELL
 
         try:
-            return await self.pool.fetchval(command, hero_id, skill_id, lvl)
+            return await self.pool.fetchval(command, hero_id, spell_id, lvl)
         except UniqueViolationError as e:
             print(e)
 
-    async def del_hero_skill(self, hero_id, skill_id):
-        command = self.DEL_HERO_SKILL
+    async def del_hero_spell(self, hero_id, spell_id):
+        command = self.DEL_HERO_SPELL
 
-        return await self.pool.fetch(command, hero_id, skill_id)
+        return await self.pool.fetch(command, hero_id, spell_id)
 
-    async def get_skill(self, skill_id):
-        command = self.GET_SKILL
+    async def get_spell(self, spell_id):
+        command = self.GET_SPELL
 
-        return await self.pool.fetchrow(command, skill_id)
+        return await self.pool.fetchrow(command, spell_id)
 
-    async def get_skills(self):
-        command = self.GET_SKILLS
+    async def get_spells(self):
+        command = self.GET_SPELLS
 
         return await self.pool.fetch(command)
 
-    async def get_skill_bonuses(self, skill_id):
-        command = self.GET_SKILL_BONUSES
+    async def get_spell_bonuses(self, spell_id):
+        command = self.GET_SPELL_BONUSES
 
-        return await self.pool.fetch(command, skill_id)
+        return await self.pool.fetch(command, spell_id)
 
-    async def get_hero_skills(self, hero_id):
-        command = self.GET_HERO_SKILLS
+    async def get_hero_spells(self, hero_id):
+        command = self.GET_HERO_SPELLS
 
         return await self.pool.fetch(command, hero_id)
 
@@ -511,8 +511,8 @@ class DBCommands:
 
         return await self.pool.fetch(command, enemy_id)
 
-    async def get_enemy_skills(self, enemy_id):
-        command = self.GET_ENEMY_SKILLS
+    async def get_enemy_spells(self, enemy_id):
+        command = self.GET_ENEMY_SPELLS
 
         return await self.pool.fetch(command, enemy_id)
 

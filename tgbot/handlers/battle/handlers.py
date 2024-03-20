@@ -72,14 +72,14 @@ async def select_technique_confirm(message: Message, state: FSMContext):
     await ui.process_select_technique_confirm(message, state)
 
 
-async def select_skill(message: Message, state: FSMContext):
+async def select_spell(message: Message, state: FSMContext):
     ui = await battle_handler_init(message, state)
-    await ui.process_select_skill(message, state)
+    await ui.process_select_spell(message, state)
 
 
-async def select_skill_confirm(message: Message, state: FSMContext):
+async def select_spell_confirm(message: Message, state: FSMContext):
     ui = await battle_handler_init(message, state)
-    await ui.process_select_skill_confirm(message, state)
+    await ui.process_select_spell_confirm(message, state)
 
 
 async def select_target(message: Message, state: FSMContext):
@@ -102,5 +102,5 @@ def battle(dp):
     dp.register_message_handler(select_technique, state=BattleState.select_technique)
     dp.register_message_handler(select_technique_confirm, state=BattleState.select_technique_confirm)
     dp.register_message_handler(select_target, state=BattleState.select_target)
-    dp.register_message_handler(select_skill, state=BattleState.select_skill)
-    dp.register_message_handler(select_skill_confirm, state=BattleState.select_skill_confirm)
+    dp.register_message_handler(select_spell, state=BattleState.select_spell)
+    dp.register_message_handler(select_spell_confirm, state=BattleState.select_spell_confirm)

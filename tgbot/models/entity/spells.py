@@ -5,13 +5,11 @@ from tgbot.misc.other import formatted
 from tgbot.models.entity.effect import EffectFactory
 from tgbot.models.entity.effect import EffectParent
 
-race_prefix = ['🙂', '🧝‍♂️', '👨‍🦱', '😇', '😈', '☠️']
 
-
-class TechniqueFactory:
+class SpellFactory:
     @staticmethod
-    def create_technique(data):
-        id = data.get('technique_id')
+    def create_spell(data):
+        id = data.get('spell_id')
         name = data.get('name', '')
         desc = data.get('desc', '')
         desc_short = data.get('desc_short', '')
@@ -26,11 +24,11 @@ class TechniqueFactory:
         hidden = data.get('hidden', False)
         author = data.get('author', 0)
 
-        return Technique(id, name, desc, desc_short, damage, type_damage, type_attack, distance, is_stack, type,
-                         cooldown, hidden, author, race_id)
+        return Spell(id, name, desc, desc_short, damage, type_damage, type_attack, distance, is_stack, type,
+                     cooldown, hidden, author, race_id)
 
 
-class Technique(EffectParent):
+class Spell(EffectParent):
     def __init__(self, id, name, desc, desc_short, damage, type_damage, type_attack, distance, is_stack, type,
                  cooldown, hidden, author, race_id):
         self.id = id
@@ -56,14 +54,6 @@ class Technique(EffectParent):
 
         self.bonuses = []
         self.effects = []
-        # self.check_prefix()
-
-    # def check_prefix(self):
-    #     if isinstance(self.race_id, int):
-    #         prefix = f"{race_prefix[self.race_id - 1]} "
-    #     else:
-    #         prefix = ''
-    #     self.name = prefix + self.name
 
     def cooldown_decrease(self):
         if self.cooldown_current > 0:
@@ -101,7 +91,7 @@ class Technique(EffectParent):
             if effect.type == 'coast':
                 return effect.apply(entity)
 
-    def technique_info(self, entity):
+    def spell_info(self, entity):
         self.bonuses.sort(key=lambda e: e.type == 'coast')
 
         return (
@@ -149,32 +139,32 @@ class Technique(EffectParent):
 
         if target is not None:
             tech.entity = target
-            # target.technique = tech
+            # target.spell = tech
 
             if len(tech.effects) != 0:
                 target.active_bonuses.append(tech)
 
     def is_activated(self, entity):
         for bonus in entity.active_bonuses:
-            if isinstance(bonus, Technique) and bonus.name == self.name and self.cooldown_current == 0:
+            if isinstance(bonus, Spell) and bonus.name == self.name and self.cooldown_current == 0:
                 return True
 
         return False
 
 
-def technique_init(technique_db):
+def spell_init(spell_db):
     try:
         new_bonuses = []
 
-        for bonus in technique_db.get('effects', []):
+        for bonus in spell_db.get('effects', []):
             new_bonuses.append(
-                EffectFactory.create_effect(bonus, source=('Technique', technique_db.get('technique_id', 0)))
+                EffectFactory.create_effect(bonus, source=('Spell', spell_db.get('spell_id', 0)))
             )
 
-        technique = TechniqueFactory.create_technique(technique_db)
-        technique.bonuses = new_bonuses
+        spell = SpellFactory.create_spell(spell_db)
+        spell.bonuses = new_bonuses
 
-        return technique
+        return spell
     except KeyError as e:
         print(e)
         return None

@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
 
+from tgbot.api.spells import fetch_spell
 from tgbot.api.technique import fetch_technique
 from tgbot.handlers.team import to_team_main
 from tgbot.keyboards.inline import list_inline
@@ -227,6 +228,16 @@ async def location_character(message: Message, state: FSMContext):
         await CharacterState.techniques.set()
         await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
         return await message.answer(locale['techniques_select'], reply_markup=kb)
+
+    if message.text == keyboard['spells']:
+        session = message.bot.get('session')
+
+        spells = await fetch_spell(session)
+        kb = list_inline(spells)
+
+        await CharacterState.spells.set()
+        await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
+        return await message.answer(locale['spells_select'], reply_markup=kb)
 
     data = await state.get_data()
     hero = data.get('hero')
