@@ -233,9 +233,9 @@ def team_main_inline(is_team=False, is_leader=False):
 team_setting_inline = InlineKeyboardMarkup(row_width=1)
 
 team_setting_inline.add(
-    InlineKeyboardButton(text='Изменить название', callback_data='Изменить название'),
-    InlineKeyboardButton(text='Изменить лидера', callback_data='Изменить лидера'),
-    InlineKeyboardButton(text='Изменить приватность', callback_data='Изменить приватность'),
+    # InlineKeyboardButton(text='Изменить название', callback_data='Изменить название'),
+    # InlineKeyboardButton(text='Изменить лидера', callback_data='Изменить лидера'),
+    # InlineKeyboardButton(text='Изменить приватность', callback_data='Изменить приватность'),
     InlineKeyboardButton(text='Распустить', callback_data='Распустить'),
     InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )

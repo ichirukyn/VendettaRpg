@@ -8,11 +8,13 @@ from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.inline import team_main_inline
 from tgbot.keyboards.inline import teammate_menu_inline
 from tgbot.keyboards.inline import yes_no_inline
+from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import team_private_kb
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import LocationState
 from tgbot.misc.state import TeamState
+from tgbot.models.entity.hero import Hero
 from tgbot.models.user import DBCommands
 
 
@@ -114,14 +116,14 @@ async def team_accept_leader(message: Message, state: FSMContext):
     hero = data.get('hero')
 
     if message.text == 'Отклонить':
-        state.__delattr__('send_invite_to_team')
+        await state.update_data(send_invite_to_team=None)
         await message.bot.send_message(chat_id=sender['chat_id'], text=f'{hero.name} отклонил вашу заявку')
         return await to_team_main(message, state)
 
     sender_team = await db.get_hero_team(sender_id)
 
     if sender_team is not None:
-        state.__delattr__('send_invite_to_team')
+        await state.update_data(send_invite_to_team=None)
         await message.answer('Игрок уже вступил в группу')
         return await to_team_main(message, state)
 
@@ -129,7 +131,6 @@ async def team_accept_leader(message: Message, state: FSMContext):
     await db.add_hero_team(sender_id, team['team_id'])
 
     await message.bot.send_message(chat_id=sender['chat_id'], text='Вас приняли в команду!')
-    await to_team_main(message, state)
 
     await message.answer('Вы приняли игрока в команду.')
     await to_team_main(message, state)
@@ -171,7 +172,8 @@ async def team_accept_invite(message: Message, state: FSMContext):
     data = await state.get_data()
 
     if message.text == 'Отклонить':
-        state.__delattr__('invite_team_id')
+        await state.update_data(invite_team_id=None)
+
         await to_team_main(message, state)
 
     try:
@@ -181,6 +183,7 @@ async def team_accept_invite(message: Message, state: FSMContext):
 
         await db.add_hero_team(hero.id, invite_team_id)
         await state.update_data(hero=hero)
+        await state.update_data(invite_team_id=None)
 
         await message.answer('Вы вступили в команду!')
         await to_team_main(message, state)
@@ -243,17 +246,55 @@ async def team_kik(cb: CallbackQuery, state: FSMContext):
 async def to_team_main(message: Message, state: FSMContext):
     data = await state.get_data()
     hero = data.get('hero')
+    db = DBCommands(message.bot.get('db'))
 
     is_team = False
-
+    text = locale['team']
     if hero.team_id != 0:
         is_team = True
+
+        team = await db.get_team(hero.team_id)
+        text = f"Вы состоите в команде {team.get('name', 'Название')} (id: `{team.get('id', 0)}` ).\n"
 
     kb = team_main_inline(is_team, hero.is_leader)
 
     await LocationState.team.set()
     await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
-    await message.answer(locale['team'], reply_markup=kb)
+    await message.answer(text, reply_markup=kb)
+
+
+async def team_settings(cb: CallbackQuery, state: FSMContext):
+    if cb.data == 'Распустить':
+        # Чтобы не забуллить бота...
+        await LocationState.home.set()
+
+        data = await state.get_data()
+        hero = data.get('hero')
+        db = DBCommands(cb.message.bot.get('db'))
+        dp = cb.message.bot.get('dp')
+
+        heroes = await db.get_team_heroes(hero.team_id)
+
+        for h in heroes:
+            user = await db.get_heroes(h.get('hero_id', 0))
+            chat_id = user.get('chat_id', None)
+            if chat_id is not None:
+                data_ = await dp.storage.get_data(chat=chat_id)
+                h_ = data_.get('hero')
+
+                if isinstance(h_, Hero):
+                    h_.team_id = 0
+
+                await dp.storage.update_data(chat=chat_id, hero=h_)
+
+                text = f'{hero.name} распустил группу'
+                await cb.message.bot.send_message(chat_id, text=text)
+
+        await db.del_team(hero.team_id)
+        return await cb.message.answer(locale['home'], reply_markup=home_kb)
+
+    if cb.data == keyboard['back']:
+        return await to_team_main(cb.message, state)
 
 
 def team(dp: Dispatcher):
@@ -267,4 +308,5 @@ def team(dp: Dispatcher):
     dp.register_callback_query_handler(team_list, state=TeamState.team_list)
     dp.register_callback_query_handler(teammate_list, state=TeamState.teammate_list)
     dp.register_callback_query_handler(teammate_menu, state=TeamState.teammate_menu)
+    dp.register_callback_query_handler(team_settings, state=TeamState.settings)
     dp.register_callback_query_handler(team_kik, state=TeamState.kik)

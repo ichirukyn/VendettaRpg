@@ -52,7 +52,7 @@ async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None, chat_
         hero.race.apply(hero)
 
     hero.statistic = Statistic()
-    hero.statistic.init_from_db(statistic_db)
+    hero.statistic.init_bd(statistic_db)
 
     # Technique
     hero.techniques = []

@@ -51,10 +51,12 @@ class DBCommands:
 
         self.ADD_TEAM = "INSERT INTO teams (leader_id, name, is_private) VALUES ($1, $2, $3) RETURNING id"
         self.GET_TEAM = "SELECT * FROM teams WHERE id = $1"
+        self.DEL_TEAM = "DELETE FROM teams WHERE id = $1"
         self.GET_TEAMS = "SELECT * FROM teams t JOIN hero_teams ht ON t.id = ht.team_id WHERE is_private = False"
         self.GET_TEAM_HEROES = "SELECT leader_id, is_private, hero_id, team_id, is_leader, prefix, h.name " \
                                "FROM teams t JOIN hero_teams ht ON ht.team_id = t.id " \
                                "JOIN heroes h ON ht.hero_id = h.id AND t.id = $1"
+
         self.ADD_HERO_TEAM = "INSERT INTO hero_teams (hero_id, team_id, is_leader) VALUES ($1, $2, $3)"
         self.GET_HERO_TEAM = "SELECT * FROM hero_teams WHERE hero_id = $1"
         self.DEL_HERO_TEAM = "DELETE FROM hero_teams WHERE hero_id = $1"
@@ -308,10 +310,10 @@ class DBCommands:
 
         return await self.pool.fetch(command)
 
-    async def get_user(self, hero_id):
+    async def get_user(self, user_id):
         command = self.GET_USER
 
-        return await self.pool.fetchrow(command, hero_id)
+        return await self.pool.fetchrow(command, user_id)
 
     # Hero
     async def get_heroes(self, hero_id):
@@ -418,6 +420,11 @@ class DBCommands:
 
     async def get_team(self, team_id):
         command = self.GET_TEAM
+
+        return await self.pool.fetchrow(command, team_id)
+
+    async def del_team(self, team_id):
+        command = self.DEL_TEAM
 
         return await self.pool.fetchrow(command, team_id)
 

@@ -8,6 +8,8 @@ from aiogram.types import ReplyKeyboardRemove
 from tgbot.api.enemy import get_enemy_loot
 from tgbot.api.statistic import statistics_to_json
 from tgbot.api.statistic import update_statistic
+from tgbot.enums.skill import SkillDirection
+from tgbot.enums.skill import SkillType
 from tgbot.handlers.battle.hook import BattleEngine
 from tgbot.handlers.battle.hook import BattleLogger
 from tgbot.keyboards.reply import arena_kb
@@ -392,29 +394,29 @@ class BattleInterface:
 
         target = hero.get_target()
 
-        if target == 'my' and action.damage == 0:
+        if target == SkillDirection.my and action.type == SkillType.support:
             return await self.process_battle_action(hero, hero)
 
-        elif target == 'enemy':
+        elif target == SkillDirection.enemy:
             text = 'Выбери противника:'
             target_team = self.engine.target_enemy_team(hero)
 
             if len(target_team) == 1:
                 return await self.process_battle_action(hero, target_team)
 
-        elif target == 'teammate':
+        elif target == SkillDirection.teammate:
             text = 'Выбери союзника:'
             target_team = self.engine.target_teammate_team(hero)
 
-        elif target == 'enemies':
+        elif target == SkillDirection.enemies:
             target_team = self.engine.target_enemy_team(hero)
             return await self.process_battle_action(hero, target_team)
 
-        elif target == 'teammates':
+        elif target == SkillDirection.teammates:
             target_team = self.engine.target_teammate_team(hero)
             return await self.process_battle_action(hero, target_team)
 
-        elif target == 'enemy' or action.damage != 0:
+        elif target == SkillDirection.enemy or action.damage != 0:
             text = 'Выбери противника:'
             target_team = self.engine.target_enemy_team(hero)
 

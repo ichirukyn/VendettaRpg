@@ -1,3 +1,4 @@
+from tgbot.enums.skill import SkillType
 from tgbot.misc.locale import keyboard
 from tgbot.misc.other import formatted
 from tgbot.models.entity._class import Class
@@ -221,7 +222,7 @@ class BattleEngine:
             attacker.statistic.battle.miss_count += 1
             defender.statistic.battle.evasion_success_count += 1
 
-            if action.type == 'support':
+            if action.type == SkillType.support:
                 log += action.activate(attacker, defender)
 
             action.coast(attacker)
@@ -234,7 +235,7 @@ class BattleEngine:
             action.activate(attacker, defender)
             log = f"{attacker.name} применил технику {action.name} к {defender.name}\n"
 
-        if action.type == 'support' and action.damage == 0:
+        if action.type == SkillType.support:
             attacker.check_shield()
             defender.check_shield()
 
@@ -284,7 +285,7 @@ class BattleEngine:
             attacker.statistic.battle.hits_count += 1
 
             if total_damage == 0:
-                log = f"⚔️ {attacker.name} использовал \"{action.name}\" по {defender.name}"
+                log = f"⚔️ {attacker.name} использовал \"{action.name}\" на {defender.name}"
 
             else:
                 log = f"⚔️ {attacker.name} использовал \"{action.name}\" на {defender.name} " \

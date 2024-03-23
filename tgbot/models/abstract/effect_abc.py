@@ -9,15 +9,15 @@ class EffectABC(ABC):
     value = int
 
     @abstractmethod
-    def apply(self, hero, target=None) -> bool:
+    def apply(self, hero, target=None, skill=None) -> bool:
         pass
 
     @abstractmethod
-    def cancel(self, hero, target=None):
+    def cancel(self, hero, target=None, skill=None):
         pass
 
     @abstractmethod
-    def check(self, entity):
+    def check(self, entity, skill=None):
         pass
 
 

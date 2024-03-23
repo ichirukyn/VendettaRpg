@@ -3,6 +3,7 @@ from abc import ABC
 
 from tgbot.dict.technique import condition
 from tgbot.dict.technique import condition_attribute
+from tgbot.enums.skill import SkillDirection
 from tgbot.misc.other import formatted
 from tgbot.models.abstract.effect_abc import EffectABC
 from tgbot.models.abstract.effect_abc import EffectParentABC
@@ -83,6 +84,12 @@ class EffectFactory:
                 direction, is_single, every_turn
             )
 
+        if 'heal' in effect_type:
+            return HealEffect(
+                attribute, value, source, effect_type, name, condition_attribute, condition, condition_value, duration,
+                direction, is_single, every_turn
+            )
+
         raise ValueError(f'{effect_type} -- Не подходящий тип Бонуса')
 
 
@@ -111,7 +118,7 @@ class Effect(EffectABC, ABC):
         if self.duration_current > 0:
             self.duration_current -= 1
 
-    def check(self, entity) -> bool:
+    def check(self, entity, skill=None) -> bool:
         if self.condition_attribute == 'race_id':
             return entity.race.id == self.condition_value
         if self.condition_attribute == 'class_id':
@@ -120,13 +127,13 @@ class Effect(EffectABC, ABC):
             return condition_operator[self.condition](getattr(entity, self.condition_attribute),
                                                       int(self.condition_value))
 
-    def apply(self, hero, target=None) -> bool:
+    def apply(self, hero, target=None, skill=None) -> bool:
         pass
 
-    def cancel(self, hero, target=None):
+    def cancel(self, hero, target=None, skill=None):
         pass
 
-    def info(self, entity):
+    def info(self, entity, skill=None):
         el = ''
         if self.condition_value is not None and self.condition is not None:
             val = self.condition_value
@@ -158,7 +165,7 @@ class Effect(EffectABC, ABC):
 
 
 class BonusEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero, target=None, skill=None):
         entity = hero
         if target is not None and self.direction != 'my':
             entity = target
@@ -172,7 +179,7 @@ class BonusEffect(Effect, ABC):
         setattr(entity, 'prev', val)
         return True
 
-    def cancel(self, hero, target=None):
+    def cancel(self, hero, target=None, skill=None):
         if self.condition and not self.check(hero):
             return print('Условия не выполнены')
 
@@ -182,7 +189,7 @@ class BonusEffect(Effect, ABC):
 
 
 class PercentBonusEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero, target=None, skill=None):
         entity = hero
         if target is not None and self.direction != 'my':
             entity = target
@@ -196,7 +203,7 @@ class PercentBonusEffect(Effect, ABC):
         setattr(entity, 'prev_percent', val)
         return True
 
-    def cancel(self, hero, target=None):
+    def cancel(self, hero, target=None, skill=None):
         # TODO: Проверить баффы
         if self.condition and not self.check(hero):
             return print('Условия не выполнены')
@@ -207,7 +214,7 @@ class PercentBonusEffect(Effect, ABC):
 
 
 class ControlEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero, target=None, skill=None):
         if self.condition and not self.check(hero):
             print('Условия не выполнены')
             return False
@@ -232,7 +239,7 @@ class ControlEffect(Effect, ABC):
 
 
 class PeriodEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero, target=None, skill=None):
         if self.condition and not self.check(hero):
             print('Условия не выполнены')
             return False
@@ -255,7 +262,7 @@ class PeriodEffect(Effect, ABC):
 
 
 class ActivateEffect(Effect, ABC):
-    def apply(self, hero, target=None):
+    def apply(self, hero, target=None, skill=None):
         entity = hero
 
         if target is not None and self.direction != 'my':
@@ -267,26 +274,20 @@ class ActivateEffect(Effect, ABC):
 
         return True
 
-    def cancel(self, hero, target=None):
+    def cancel(self, hero, target=None, skill=None):
         pass
 
 
 class CoastEffect(Effect, ABC):
-    def __init__(self, attribute, value, source, effect_type, name, condition_attribute, condition, condition_value,
-                 duration, direction, is_single, every_turn):
-        super().__init__(attribute, value, source, effect_type, name, condition_attribute, condition, condition_value,
-                         duration, direction, is_single, every_turn)
-        self.rank = 0
-
-    def apply(self, entity, target=None):
-        coast_total = self.coast(entity)
+    def apply(self, entity, target=None, skill=None):
+        coast_total = self.coast(entity, skill)
 
         if self.attribute in 'mana':
             entity.mana -= coast_total
         else:
             entity.qi -= coast_total
 
-    def check(self, entity) -> bool:
+    def check(self, entity, skill=None) -> bool:
         if self.condition and not self.check(entity):
             print('Условия не выполнены')
             return False
@@ -302,7 +303,7 @@ class CoastEffect(Effect, ABC):
 
         return False
 
-    def coast(self, entity):
+    def coast(self, entity, skill=None):
         control_mod = entity.control_qi_normalize
         control = entity.control_qi
 
@@ -310,29 +311,35 @@ class CoastEffect(Effect, ABC):
             control_mod = entity.control_mana_normalize
             control = entity.control_mana
 
-        control_mod -= control_mod / 5
+        coast_rank = 1
+        damage = 1
+        if skill is not None and hasattr(skill, 'rank'):
+            coast_rank = skill.rank or 1
+            damage = skill.damage or 1
 
+        if damage <= 0:
+            damage = 1
+
+        control_mod -= control_mod / 7
         coast_base = self.value
-        coast_rank = self.rank
 
-        coast_total = (control + coast_base) * (1 + coast_rank) * (1 - control_mod)
+        coast_total = (control + coast_base) * (1 - control_mod) * (1 + entity.lvl / 50) * coast_rank * damage
         return coast_total
 
-    def info(self, entity):
-        effect = f"`• {self.name}: {formatted(self.coast(entity))} ({formatted(self.value)})`\n"
+    def info(self, entity, skill=None):
+        effect = f"`• {self.name}: {formatted(self.coast(entity, skill))} ({formatted(self.value)})`\n"
 
         return (
             f"`———————————————————`\n"
             f"{effect}"
-            f"`• Длительность: {self.duration}`\n"
         )
 
 
 class ShieldEffect(Effect, ABC):
-    def apply(self, hero, target=None):
-        shield = self.get_value(hero)
+    def apply(self, hero, target=None, skill=None):
+        shield = self.get_value(hero, skill)
 
-        if self.duration == 'my':
+        if self.direction == SkillDirection.my:
             if shield >= hero.shield:
                 hero.shield_max = shield
                 hero.shield = shield
@@ -346,20 +353,71 @@ class ShieldEffect(Effect, ABC):
 
         return True
 
-    def get_value(self, hero):
+    def get_value(self, hero, skill=None):
         main_attr = hero.__getattribute__(self.attribute)
         control = hero.control_qi
+
+        element_mod = hero.__getattribute__(skill.type_damage) or 0
 
         if self.attribute in magic_filter:
             control = hero.control_mana
 
-        # 50 -- На 350 ур. Игрок получит 700% усиления
-        shield = self.value * (main_attr + control) * (1 + hero.lvl / 50) * (1 + hero.shield_modify)
+        # 200 -- На 350 ур. Игрок получит 75% усиления
+        shield = self.value + (skill.damage * (main_attr + control) * (1 + hero.lvl / 200) * (1 + hero.shield_modify))
+        # Модификатор стихии
+        shield *= (1 + element_mod)
 
         return shield
 
-    def info(self, entity):
-        effect = f"`• {self.name}: {formatted(self.get_value(entity))} ({formatted(self.value * 100)}%)`\n"
+    def info(self, entity, skill=None):
+        effect = f"`• {self.name}: {formatted(self.get_value(entity, skill))} ({formatted(self.value)})`\n"
+
+        return (
+            f"`———————————————————`\n"
+            f"{effect}"
+        )
+
+
+class HealEffect(Effect, ABC):
+    def apply(self, hero, target=None, skill=None):
+        heal = self.get_value(hero, skill)
+        entity = hero
+
+        if target is not None:
+            entity = target
+
+        if self.duration == 'my':
+            entity.hp += heal
+            if heal >= entity.hp_max:
+                entity.hp = entity.hp_max
+        else:
+            entity.hp += heal
+            if heal >= entity.hp_max:
+                entity.hp = entity.hp_max
+
+        entity.update_stats_percent()
+        self.add_value = heal
+
+        return True
+
+    def get_value(self, hero, skill=None):
+        main_attr = hero.__getattribute__(self.attribute)
+        control = hero.control_qi
+
+        element_mod = hero.__getattribute__(skill.type_damage) or 0
+
+        if self.attribute in magic_filter:
+            control = hero.control_mana
+
+        # 200 -- На 350 ур. Игрок получит 75% усиления
+        heal = self.value + (skill.damage * (main_attr + control) * (1 + hero.lvl / 200) * (1 + hero.hp_health_modify))
+        # Модификатор стихии
+        heal *= (1 + element_mod)
+
+        return heal
+
+    def info(self, entity, skill=None):
+        effect = f"`• {self.name}: {formatted(self.get_value(entity, skill))} ({formatted(self.value)})`\n"
 
         return (
             f"`———————————————————`\n"
@@ -401,7 +459,7 @@ class EffectParent(EffectParentABC, ABC):
     def apply(self, entity):
         for bonus in self.bonuses:
             self.effects.append(bonus)
-            bonus.apply(entity)
+            bonus.apply(entity, skill=self)
 
         entity.active_bonuses.append(self)
 

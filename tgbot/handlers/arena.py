@@ -44,7 +44,7 @@ async def arena_select_type(message: Message, state: FSMContext):
         id = int(message.text)
         chat_id = hero.chat_id
 
-        if id == hero.id:
+        if id == hero.id and pvp_type == 'solo':
             return await message.answer('Вызывать себя на бой, можно только в голове XD')
 
         if pvp_type == 'solo':

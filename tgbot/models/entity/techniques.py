@@ -53,6 +53,7 @@ class Technique(EffectParent):
 
         # Пока без уровней, возможно они будут участвовать позже
         self.lvl = 0
+        self.rank = 1
 
         self.bonuses = []
         self.effects = []
@@ -87,10 +88,10 @@ class Technique(EffectParent):
         check = True
 
         for effect in self.bonuses:
-            if effect.type == 'activate' and not effect.check(entity):
+            if effect.type == 'activate' and not effect.check(entity, skill=self):
                 self.log = 'Условия активации не выполнены'
                 check = False
-            if effect.type == 'coast' and not effect.check(entity):
+            if effect.type == 'coast' and not effect.check(entity, skill=self):
                 self.log = f'Не хватает {"Маны" if "mana" in effect.attribute else "Ки"}, чтобы активировать'
                 check = False
 
@@ -99,7 +100,7 @@ class Technique(EffectParent):
     def coast(self, entity):
         for effect in self.bonuses:
             if effect.type == 'coast':
-                return effect.apply(entity)
+                return effect.apply(entity, skill=self)
 
     def technique_info(self, entity):
         self.bonuses.sort(key=lambda e: e.type == 'coast')
@@ -113,7 +114,7 @@ class Technique(EffectParent):
             f"`• Дистанция: {'Дальняя' if self.distance == 'distant' else 'Ближняя'}\n`"
             f"`• Тип: {'Поддержка' if self.type == 'support' else 'Атака'}\n`"
             f"`• Основная характеристика: {technique_type_attack[self.type_attack] if self.type_attack != '' else ''}\n`"
-            f"{''.join([effect.info(entity) for effect in self.bonuses])}"
+            f"{''.join([effect.info(entity, skill=self) for effect in self.bonuses])}"
         )
 
     def activate(self, entity, target=None) -> str:
@@ -133,13 +134,13 @@ class Technique(EffectParent):
 
         for bonus in self.bonuses:
             if bonus.direction != 'my' and target is not None:
-                is_success = bonus.apply(entity, target)
+                is_success = bonus.apply(entity, target, skill=self)
 
                 if not bonus.is_single and is_success:
                     tech.effects.append(bonus)
 
             elif bonus.direction == 'my':
-                is_success = bonus.apply(entity)
+                is_success = bonus.apply(entity, skill=self)
 
                 if not bonus.is_single and is_success:
                     self.effects.append(bonus)

@@ -9,6 +9,7 @@ from tgbot.api.technique import fetch_technique
 from tgbot.handlers.team import to_team_main
 from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.inline import shop_buy_inline
+from tgbot.keyboards.inline import team_setting_inline
 from tgbot.keyboards.inline import top_inline
 from tgbot.keyboards.reply import arena_type_kb
 from tgbot.keyboards.reply import back_kb
@@ -157,10 +158,18 @@ async def location_team(cb: CallbackQuery, state: FSMContext):
         await cb.message.edit_text('Список участников:', reply_markup=kb)
 
     if cb.data == 'Выйти из группы':
-        pass
+        hero = data.get('hero')
+        hero.team_id = 0
+
+        await db.del_hero_team(hero.id)
+        await state.update_data(hero=hero)
+
+        await cb.message.answer('Вы вышли из группы!')
+        return await to_home(message=cb.message)
 
     if cb.data == 'Настройки':
-        pass
+        await TeamState.settings.set()
+        return await cb.message.edit_text('Вы можете изменить настройки группы:', reply_markup=team_setting_inline)
 
 
 async def location_tower(message: Message, state: FSMContext):

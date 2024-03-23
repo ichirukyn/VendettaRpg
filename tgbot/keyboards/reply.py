@@ -166,7 +166,7 @@ def character_kb(free_stats=0):
     kb = [
         [KeyboardButton(text=keyboard['info'])],
         [KeyboardButton(text=keyboard['equipment']), KeyboardButton(text=keyboard['inventory'])],
-        [KeyboardButton(text=keyboard['techniques'])],
+        [KeyboardButton(text=keyboard['techniques']), KeyboardButton(text=keyboard['spells'])],
         [KeyboardButton(text=keyboard['back'])]
     ]
 

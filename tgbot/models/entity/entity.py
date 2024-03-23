@@ -11,38 +11,6 @@ from tgbot.models.entity.spells import Spell
 from tgbot.models.entity.techniques import Technique
 
 
-class Effect:
-    def __init__(self):
-        self.effects = []
-
-    def add_effect(self, effect):
-        self.effects.append(effect)
-
-    def remove_effect(self, effect):
-        pass
-
-
-class EffectTime(Effect):
-    def add_effect(self, effect):
-        pass
-
-    def remove_effect(self, effect):
-        pass
-
-
-class EffectTurn(Effect):
-    def add_effect(self, effect):
-        pass
-
-    def remove_effect(self, effect):
-        pass
-
-
-effect_turn = EffectTurn()
-effect_turn.add_effect('effect')
-print(effect_turn.effects)  # ['effect']
-
-
 class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats):
     lvl = 1
     team_id = 0
@@ -61,11 +29,12 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
     hp = 1
     hp_max = 1
     hp_percent = 1  # 1 - 100%
+    hp_health_modify = 1
 
     shield = 0
     shield_max = 0
     shield_percent = 0  # 1 - 100%
-    shield_modify = 2.5
+    shield_modify = 1
 
     technique: Technique | None = None
     spell: Spell | None = None

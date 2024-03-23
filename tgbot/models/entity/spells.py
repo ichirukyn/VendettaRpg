@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 from tgbot.dict.technique import technique_type_attack
+from tgbot.enums.skill import SkillDirection
 from tgbot.misc.other import formatted
 from tgbot.models.entity.effect import EffectFactory
 from tgbot.models.entity.effect import EffectParent
@@ -23,14 +24,15 @@ class SpellFactory:
         cooldown = data.get('cooldown', 2)
         hidden = data.get('hidden', False)
         author = data.get('author', 0)
+        rank = data.get('rank', 0)
 
         return Spell(id, name, desc, desc_short, damage, type_damage, type_attack, distance, is_stack, type,
-                     cooldown, hidden, author, race_id)
+                     cooldown, hidden, author, race_id, rank)
 
 
 class Spell(EffectParent):
     def __init__(self, id, name, desc, desc_short, damage, type_damage, type_attack, distance, is_stack, type,
-                 cooldown, hidden, author, race_id):
+                 cooldown, hidden, author, race_id, rank):
         self.id = id
         self.name = name
         self.desc = desc
@@ -48,6 +50,7 @@ class Spell(EffectParent):
         self.author = author
         self.race_id = race_id
         self.log = ''
+        self.rank = rank
 
         # Пока без уровней, возможно они будут участвовать позже
         self.lvl = 0
@@ -77,10 +80,10 @@ class Spell(EffectParent):
         check = True
 
         for effect in self.bonuses:
-            if effect.type == 'activate' and not effect.check(entity):
+            if effect.type == 'activate' and not effect.check(entity, skill=self):
                 self.log = 'Условия активации не выполнены'
                 check = False
-            if effect.type == 'coast' and not effect.check(entity):
+            if effect.type == 'coast' and not effect.check(entity, skill=self):
                 self.log = f'Не хватает {"Маны" if "mana" in effect.attribute else "Ки"}, чтобы активировать'
                 check = False
 
@@ -89,7 +92,7 @@ class Spell(EffectParent):
     def coast(self, entity):
         for effect in self.bonuses:
             if effect.type == 'coast':
-                return effect.apply(entity)
+                return effect.apply(entity, skill=self)
 
     def spell_info(self, entity):
         self.bonuses.sort(key=lambda e: e.type == 'coast')
@@ -103,7 +106,7 @@ class Spell(EffectParent):
             f"`• Дистанция: {'Дальняя' if self.distance == 'distant' else 'Ближняя'}\n`"
             f"`• Тип: {'Поддержка' if self.type == 'support' else 'Атака'}\n`"
             f"`• Основная характеристика: {technique_type_attack[self.type_attack] if self.type_attack != '' else ''}\n`"
-            f"{''.join([effect.info(entity) for effect in self.bonuses])}"
+            f"{''.join([effect.info(entity, skill=self) for effect in self.bonuses])}"
         )
 
     def activate(self, entity, target=None) -> str:
@@ -122,16 +125,16 @@ class Spell(EffectParent):
         tech = deepcopy(self)
 
         for bonus in self.bonuses:
-            if bonus.direction != 'my' and target is not None:
-                is_success = bonus.apply(entity, target)
+            if bonus.direction != SkillDirection.my and target is not None:
+                is_success = bonus.apply(entity, target, skill=self)
 
                 if not bonus.is_single and is_success:
                     tech.effects.append(bonus)
 
-            elif bonus.direction == 'my':
-                is_success = bonus.apply(entity)
+            elif bonus.direction == SkillDirection.my:
+                is_success = bonus.apply(entity, skill=self)
 
-                if not bonus.is_single and is_success:
+                if bonus is not None and not bonus.is_single and is_success:
                     self.effects.append(bonus)
 
         if len(self.effects) != 0:

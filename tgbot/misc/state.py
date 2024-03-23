@@ -130,6 +130,8 @@ class TeamState(StatesGroup):
     out = State()
     out_confirm = State()
 
+    settings = State()
+
 
 class AdminState(StatesGroup):
     main = State()

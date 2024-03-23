@@ -2,6 +2,8 @@ from random import choice
 
 from tgbot.api.enemy import fetch_enemy_technique
 from tgbot.api.enemy import get_enemy
+from tgbot.enums.skill import SkillDirection
+from tgbot.enums.skill import SkillType
 from tgbot.misc.locale import keyboard
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.entity import Entity
@@ -52,22 +54,22 @@ class Enemy(Entity):
     def select_target(self, teammates, enemies):
         target = self.get_target()
 
-        if target == 'my' and self.technique.damage == 0:
+        if target == SkillDirection.my and self.technique.damage == SkillType.support:
             self.target = self
 
-        elif target == 'enemy':
+        elif target == SkillDirection.enemy:
             self.select_enemy(enemies)
 
-        elif target == 'enemies':
+        elif target == SkillDirection.enemies:
             self.target = enemies
 
-        elif target == 'teammate':
+        elif target == SkillDirection.teammate:
             self.select_enemy(teammates)
 
-        elif target == 'teammates':
+        elif target == SkillDirection.teammates:
             self.target = teammates
 
-        elif target == 'enemy' or self.technique.damage != 0:
+        elif target == SkillDirection.enemy or self.technique.damage != 0:
             self.select_enemy(enemies)
 
     def choice_technique(self):

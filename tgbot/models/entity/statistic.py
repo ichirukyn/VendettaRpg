@@ -1,4 +1,5 @@
 # Статистика конкретного боя
+from tgbot.models.helpers.DBHelper import DatabaseHelper
 
 
 class StatisticBattle:
@@ -62,7 +63,7 @@ class StatisticBattle:
 
 
 # Общая статистика игрока
-class Statistic:
+class Statistic(DatabaseHelper):
     battle = StatisticBattle()
 
     def __init__(self):
@@ -94,36 +95,6 @@ class Statistic:
         self.kill_enemy = 0
         self.kill_hero = 0
         self.death = 0
-
-    def init_from_db(self, stats):
-        self.damage = stats.get('damage')
-        self.damage_max = stats.get('damage_max')
-        self.healing = stats.get('healing')
-        self.healing_max = stats.get('healing_max')
-        self.damage_taken = stats.get('damage_taken')
-        self.damage_taken_max = stats.get('damage_taken_max')
-        self.block_damage = stats.get('block_damage')
-        self.counter_strike_damage = stats.get('counter_strike_damage')
-        self.hits_count = stats.get('hits_count')
-        self.miss_count = stats.get('miss_count')
-        self.crit_count = stats.get('crit_count')
-        self.money_all = stats.get('money_all')
-        self.money_wasted = stats.get('money_wasted')
-        self.evasion_count = stats.get('evasion_count')
-        self.evasion_success_count = stats.get('evasion_success_count')
-        self.block_count = stats.get('block_count')
-        self.counter_strike_count = stats.get('counter_strike_count')
-        self.pass_count = stats.get('pass_count')
-        self.escape_count = stats.get('escape_count')
-        self.win_one_to_one = stats.get('win_one_to_one')
-        self.win_team_to_team = stats.get('win_team_to_team')
-        self.lose_one_to_one = stats.get('lose_one_to_one')
-        self.lose_team_to_team = stats.get('lose_team_to_team')
-        self.count_one_to_one = stats.get('count_one_to_one')
-        self.count_team_to_team = stats.get('count_team_to_team')
-        self.kill_enemy = stats.get('kill_enemy')
-        self.kill_hero = stats.get('kill_hero')
-        self.death = stats.get('death')
 
     def battle_update(self, battle: StatisticBattle):
         self.damage += battle.damage
