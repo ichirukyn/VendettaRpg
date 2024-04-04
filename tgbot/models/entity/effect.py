@@ -90,7 +90,8 @@ class EffectFactory:
                 direction, is_single, every_turn
             )
 
-        raise ValueError(f'{effect_type} -- Не подходящий тип Бонуса')
+        # raise ValueError(f'{effect_type} -- Не подходящий тип Бонуса')
+        print('Не подходящий тип Бонуса')
 
 
 class Effect(EffectABC, ABC):
@@ -174,6 +175,9 @@ class BonusEffect(Effect, ABC):
             print('Условия не выполнены')
             return False
 
+        if not hasattr(entity, self.attribute):
+            return
+
         val = getattr(entity, self.attribute) + self.value
         setattr(entity, self.attribute, val)
         setattr(entity, 'prev', val)
@@ -182,6 +186,9 @@ class BonusEffect(Effect, ABC):
     def cancel(self, hero, target=None, skill=None):
         if self.condition and not self.check(hero):
             return print('Условия не выполнены')
+
+        if not hasattr(hero, self.attribute):
+            return
 
         val = getattr(hero, self.attribute) - self.value
         setattr(hero, self.attribute, val)
@@ -198,6 +205,9 @@ class PercentBonusEffect(Effect, ABC):
             print('Условия не выполнены')
             return False
 
+        if not hasattr(entity, self.attribute):
+            return
+
         val = getattr(entity, self.attribute) * (1 + self.value)
         setattr(entity, self.attribute, val)
         setattr(entity, 'prev_percent', val)
@@ -207,6 +217,9 @@ class PercentBonusEffect(Effect, ABC):
         # TODO: Проверить баффы
         if self.condition and not self.check(hero):
             return print('Условия не выполнены')
+
+        if not hasattr(hero, self.attribute):
+            return
 
         val = getattr(hero, self.attribute) / (1 + self.value)
         setattr(hero, self.attribute, val)

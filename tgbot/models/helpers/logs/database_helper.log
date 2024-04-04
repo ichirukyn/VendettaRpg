@@ -9306,3 +9306,855 @@ count_team_to_team = 1
 ------
 
 
+Starting bot
+Start polling.
+[04.04.24 - 11:09] LOG Init-db:
+------
+Класс: Statistic()
+Прошлые свойства:
+id = 0
+hero_id = 0
+damage = 0
+damage_max = 0
+healing = 0
+healing_max = 0
+damage_taken = 0
+damage_taken_max = 0
+block_damage = 0
+counter_strike_damage = 0
+hits_count = 0
+miss_count = 0
+crit_count = 0
+money_all = 0
+money_wasted = 0
+evasion_count = 0
+evasion_success_count = 0
+block_count = 0
+counter_strike_count = 0
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 0
+kill_hero = 0
+death = 0
+count_one_to_one = 0
+count_team_to_team = 0
+
+Новые свойства:
+id = 0
+hero_id = 0
+damage = 36238
+damage_max = 1263
+healing = 36
+healing_max = 17
+damage_taken = 264063
+damage_taken_max = 222802
+block_damage = 14
+counter_strike_damage = 120
+hits_count = 314
+miss_count = 27
+crit_count = 36
+money_all = 0
+money_wasted = 0
+evasion_count = 27
+evasion_success_count = 5
+block_count = 0
+counter_strike_count = 47
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 84
+kill_hero = 2
+death = 15
+count_one_to_one = 2
+count_team_to_team = 1
+------
+
+
+Polling is stopped.
+Stop polling...
+Starting bot
+Bot stopped!
+Starting bot
+Start polling.
+[04.04.24 - 11:10] LOG Init-db:
+------
+Класс: Statistic()
+Прошлые свойства:
+id = 0
+hero_id = 0
+damage = 0
+damage_max = 0
+healing = 0
+healing_max = 0
+damage_taken = 0
+damage_taken_max = 0
+block_damage = 0
+counter_strike_damage = 0
+hits_count = 0
+miss_count = 0
+crit_count = 0
+money_all = 0
+money_wasted = 0
+evasion_count = 0
+evasion_success_count = 0
+block_count = 0
+counter_strike_count = 0
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 0
+kill_hero = 0
+death = 0
+count_one_to_one = 0
+count_team_to_team = 0
+
+Новые свойства:
+id = 0
+hero_id = 0
+damage = 36238
+damage_max = 1263
+healing = 36
+healing_max = 17
+damage_taken = 264063
+damage_taken_max = 222802
+block_damage = 14
+counter_strike_damage = 120
+hits_count = 314
+miss_count = 27
+crit_count = 36
+money_all = 0
+money_wasted = 0
+evasion_count = 27
+evasion_success_count = 5
+block_count = 0
+counter_strike_count = 47
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 84
+kill_hero = 2
+death = 15
+count_one_to_one = 2
+count_team_to_team = 1
+------
+
+
+Task exception was never retrieved
+future: <Task finished name='Task-60' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-70' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-91' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-101' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-111' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-142' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-152' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-162' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+[04.04.24 - 11:12] LOG Init-db:
+------
+Класс: Statistic()
+Прошлые свойства:
+id = 0
+hero_id = 0
+damage = 0
+damage_max = 0
+healing = 0
+healing_max = 0
+damage_taken = 0
+damage_taken_max = 0
+block_damage = 0
+counter_strike_damage = 0
+hits_count = 0
+miss_count = 0
+crit_count = 0
+money_all = 0
+money_wasted = 0
+evasion_count = 0
+evasion_success_count = 0
+block_count = 0
+counter_strike_count = 0
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 0
+kill_hero = 0
+death = 0
+count_one_to_one = 0
+count_team_to_team = 0
+
+Новые свойства:
+id = 0
+hero_id = 0
+damage = 36238
+damage_max = 1263
+healing = 36
+healing_max = 17
+damage_taken = 264063
+damage_taken_max = 222802
+block_damage = 14
+counter_strike_damage = 120
+hits_count = 314
+miss_count = 27
+crit_count = 36
+money_all = 0
+money_wasted = 0
+evasion_count = 27
+evasion_success_count = 5
+block_count = 0
+counter_strike_count = 47
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 84
+kill_hero = 2
+death = 15
+count_one_to_one = 2
+count_team_to_team = 1
+------
+
+
+Task exception was never retrieved
+future: <Task finished name='Task-299' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-310' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-321' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ServerDisconnectedError('Server disconnected')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 165, in init_enemy
+    race = await race_init(session, enemy_db.get('race'))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\race.py", line 33, in race_init
+    bonuses = await fetch_race_bonuses(session, race_id)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\api\race.py", line 21, in fetch_race_bonuses
+    async with session.get(url(f'/race/{race_id}/effect')) as res:
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\client.py", line 1167, in __aenter__
+    self._resp = await self._coro
+                 ^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\client.py", line 586, in _request
+    await resp.start(conn)
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\client_reqrep.py", line 905, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\streams.py", line 616, in read
+    await self._waiter
+aiohttp.client_exceptions.ServerDisconnectedError: Server disconnected
+Task exception was never retrieved
+future: <Task finished name='Task-335' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ServerDisconnectedError('Server disconnected')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 165, in init_enemy
+    race = await race_init(session, enemy_db.get('race'))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\race.py", line 33, in race_init
+    bonuses = await fetch_race_bonuses(session, race_id)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\api\race.py", line 21, in fetch_race_bonuses
+    async with session.get(url(f'/race/{race_id}/effect')) as res:
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\client.py", line 1167, in __aenter__
+    self._resp = await self._coro
+                 ^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\client.py", line 586, in _request
+    await resp.start(conn)
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\client_reqrep.py", line 905, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiohttp\streams.py", line 616, in read
+    await self._waiter
+aiohttp.client_exceptions.ServerDisconnectedError: Server disconnected
+Task exception was never retrieved
+future: <Task finished name='Task-346' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Task exception was never retrieved
+future: <Task finished name='Task-358' coro=<Dispatcher._process_polling_updates() done, defined at W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py:410> exception=ZeroDivisionError('float division by zero')>
+Traceback (most recent call last):
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 418, in _process_polling_updates
+    for responses in itertools.chain.from_iterable(await self.process_updates(updates, fast)):
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 236, in process_updates
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 284, in process_update
+    return await self.callback_query_handlers.notify(update.callback_query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\venv\Lib\site-packages\aiogram\dispatcher\handler.py", line 117, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\handlers\tower.py", line 130, in select_enemy
+    enemy = await init_enemy(db, int(id), session)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\enemy.py", line 170, in init_enemy
+    enemy.update_stats_all()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 186, in update_stats_all
+    self.update_control()
+  File "W:\hobbie\VendettaRpg\tgbot\models\entity\entity.py", line 159, in update_control
+    self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZeroDivisionError: float division by zero
+Starting bot
+Start polling.
+[04.04.24 - 11:18] LOG Init-db:
+------
+Класс: Statistic()
+Прошлые свойства:
+id = 0
+hero_id = 0
+damage = 0
+damage_max = 0
+healing = 0
+healing_max = 0
+damage_taken = 0
+damage_taken_max = 0
+block_damage = 0
+counter_strike_damage = 0
+hits_count = 0
+miss_count = 0
+crit_count = 0
+money_all = 0
+money_wasted = 0
+evasion_count = 0
+evasion_success_count = 0
+block_count = 0
+counter_strike_count = 0
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 0
+kill_hero = 0
+death = 0
+count_one_to_one = 0
+count_team_to_team = 0
+
+Новые свойства:
+id = 0
+hero_id = 0
+damage = 36580
+damage_max = 1263
+healing = 36
+healing_max = 17
+damage_taken = 264759
+damage_taken_max = 222802
+block_damage = 14
+counter_strike_damage = 120
+hits_count = 316
+miss_count = 27
+crit_count = 36
+money_all = 0
+money_wasted = 0
+evasion_count = 27
+evasion_success_count = 5
+block_count = 0
+counter_strike_count = 47
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 84
+kill_hero = 2
+death = 15
+count_one_to_one = 2
+count_team_to_team = 1
+------
+
+
+[04.04.24 - 11:18] LOG Init-db:
+------
+Класс: Statistic()
+Прошлые свойства:
+id = 0
+hero_id = 0
+damage = 0
+damage_max = 0
+healing = 0
+healing_max = 0
+damage_taken = 0
+damage_taken_max = 0
+block_damage = 0
+counter_strike_damage = 0
+hits_count = 0
+miss_count = 0
+crit_count = 0
+money_all = 0
+money_wasted = 0
+evasion_count = 0
+evasion_success_count = 0
+block_count = 0
+counter_strike_count = 0
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 0
+kill_hero = 0
+death = 0
+count_one_to_one = 0
+count_team_to_team = 0
+
+Новые свойства:
+id = 0
+hero_id = 0
+damage = 36580
+damage_max = 1263
+healing = 36
+healing_max = 17
+damage_taken = 264759
+damage_taken_max = 222802
+block_damage = 14
+counter_strike_damage = 120
+hits_count = 316
+miss_count = 27
+crit_count = 36
+money_all = 0
+money_wasted = 0
+evasion_count = 27
+evasion_success_count = 5
+block_count = 0
+counter_strike_count = 47
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 84
+kill_hero = 2
+death = 15
+count_one_to_one = 2
+count_team_to_team = 1
+------
+
+
+[04.04.24 - 11:18] LOG Init-db:
+------
+Класс: Statistic()
+Прошлые свойства:
+id = 0
+hero_id = 0
+damage = 0
+damage_max = 0
+healing = 0
+healing_max = 0
+damage_taken = 0
+damage_taken_max = 0
+block_damage = 0
+counter_strike_damage = 0
+hits_count = 0
+miss_count = 0
+crit_count = 0
+money_all = 0
+money_wasted = 0
+evasion_count = 0
+evasion_success_count = 0
+block_count = 0
+counter_strike_count = 0
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 0
+kill_hero = 0
+death = 0
+count_one_to_one = 0
+count_team_to_team = 0
+
+Новые свойства:
+id = 0
+hero_id = 0
+damage = 36760
+damage_max = 1263
+healing = 36
+healing_max = 17
+damage_taken = 264765
+damage_taken_max = 222802
+block_damage = 14
+counter_strike_damage = 120
+hits_count = 317
+miss_count = 27
+crit_count = 36
+money_all = 0
+money_wasted = 0
+evasion_count = 27
+evasion_success_count = 5
+block_count = 0
+counter_strike_count = 47
+pass_count = 0
+escape_count = 0
+win_one_to_one = 0
+win_team_to_team = 0
+lose_one_to_one = 0
+lose_team_to_team = 0
+kill_enemy = 85
+kill_hero = 2
+death = 15
+count_one_to_one = 2
+count_team_to_team = 1
+------
+
+
