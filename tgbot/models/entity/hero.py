@@ -2,7 +2,7 @@ import copy
 
 from tgbot.misc.other import formatted
 from tgbot.models.entity._class import Class
-from tgbot.models.entity.effect import Effect
+from tgbot.models.entity.effects.effect import Effect
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import Race
 
@@ -15,18 +15,18 @@ class HeroFactory:
             'name': data['name'],
             'rank': data['rank'],
             'money': data['money'],
-            'strength': stats['strength'],
-            'health': stats['health'],
-            'speed': stats['speed'],
-            'dexterity': stats['dexterity'],
-            'accuracy': stats['accuracy'],
-            'soul': stats['soul'],
-            'intelligence': stats['intelligence'],
-            'submission': stats['submission'],
-            'crit_rate': stats['crit_rate'],
-            'crit_damage': stats['crit_damage'],
-            'resist': stats['resist'],
-            'free_stats': stats['free_stats'],
+            'strength': stats.get('strength', 1),
+            'health': stats.get('health', 1),
+            'speed': stats.get('speed', 1),
+            'dexterity': stats.get('dexterity', 1),
+            'accuracy': stats.get('accuracy', 1),
+            'soul': stats.get('soul', 1),
+            'intelligence': stats.get('intelligence', 1),
+            'submission': stats.get('submission', 1),
+            'crit_rate': stats.get('crit_rate', 1),
+            'crit_damage': stats.get('crit_damage', 1),
+            'resist': stats.get('resist', 1),
+            'free_stats': stats.get('free_stats', 0),
             'chat_id': data['chat_id'],
         }
         return Hero(**hero)
@@ -73,10 +73,9 @@ class Hero(Entity):
     def damage_demo(self, technique):
         entity = HeroFactory.create_init_hero(1, 0, 'demo')
         entity.lvl = self.lvl
-        # self.technique = technique
 
+        entity.crit_rate = 0
         damage, _ = self.damage(entity, technique.type_damage, technique)
-        # self.technique = None  # Чтобы не было багов
 
         return damage
 
@@ -157,7 +156,7 @@ class HeroInfo:
             f"`• Контроль ки: {formatted(hero.control_qi)} ({formatted(hero.control_qi_normalize * 100)}%)`\n"
             f"{crit_string}"
             f"`———————————————————`\n"
-            f"`• Общая сила: {formatted(hero.total_stats)}`\n"
+            f"`• Общая сила: {formatted(hero.total_stats_flat)} ({formatted(hero.total_stats)})`\n"
             f"{so_string if hero.free_stats > 0 else ''}"
             f"`———————————————————`\n"
             f"`• Оружие: {hero.weapon_name} {f'({hero.weapon_lvl} ур.)' if hero.weapon_lvl > 0 else ''}`\n"

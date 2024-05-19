@@ -1,4 +1,4 @@
-from tgbot.models.entity.effect import EffectFactory
+from tgbot.models.entity.effects._factory import EffectFactory
 
 
 class ZoneFactory:

@@ -1,3 +1,5 @@
+from aiohttp import ClientSession
+
 from tgbot.api._config import url
 from tgbot.models.api.class_api import ClassType
 from tgbot.models.api.race_api import RaceBonusType
@@ -12,8 +14,8 @@ async def get_race(session, race_id: int) -> RaceType | None:
         return None
 
 
-async def fetch_race(session) -> [RaceType]:
-    async with session.get(url(f'/race')) as res:
+async def fetch_race(session: ClientSession) -> [RaceType]:
+    async with session.get(url(f'/race'), params={'hidden': 'false'}) as res:
         return await res.json()
 
 

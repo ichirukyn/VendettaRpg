@@ -1,8 +1,10 @@
 from random import choice
+from random import randint
 
 from tgbot.api.enemy import fetch_enemy_technique
 from tgbot.api.enemy import get_enemy
 from tgbot.enums.skill import SkillDirection
+from tgbot.enums.skill import SkillSubAction
 from tgbot.enums.skill import SkillType
 from tgbot.misc.locale import keyboard
 from tgbot.models.entity._class import class_init
@@ -16,45 +18,64 @@ class EnemyFactory:
     @staticmethod
     def create_enemy(data):
         enemy = {
-            'entity_id': data['id'],
-            'name': data['name'],
-            'rank': data['rank'],
-            'strength': data['strength'],
-            'health': data['health'],
-            'speed': data['speed'],
-            'dexterity': data['dexterity'],
-            'accuracy': data['accuracy'],
-            'soul': data['soul'],
-            'intelligence': data['intelligence'],
-            'submission': data['submission'],
-            'crit_rate': data['crit_rate'],
-            'crit_damage': data['crit_damage'],
-            'resist': data['resist'],
+            'entity_id': data.get('id', 0),
+            'name': data.get('name', 'Enemy'),
+            'rank': data.get('rank', 1),
+            'strength': data.get('strength', 1) or 1,
+            'health': data.get('health', 1) or 1,
+            'speed': data.get('speed', 1) or 1,
+            'dexterity': data.get('dexterity', 1) or 1,
+            'accuracy': data.get('accuracy', 1) or 1,
+            'soul': data.get('soul', 1) or 1,
+            'intelligence': data.get('intelligence', 1) or 1,
+            'submission': data.get('submission', 1) or 1,
+            'crit_rate': data.get('crit_rate', 0.05),
+            'crit_damage': data.get('crit_damage', 0.5),
+            'resist': data.get('resist', 0),
         }
 
         return Enemy(**enemy)
 
 
 class Enemy(Entity):
-    def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, accuracy, soul, intelligence,
-                 submission, crit_rate, crit_damage, resist):
-        super().__init__(entity_id, name, rank, strength, health, speed, dexterity, accuracy, soul, intelligence,
-                         submission, crit_rate, crit_damage, resist)
-        self.techniques = []
+    def auto_distribute(self, delta):
+        if self.lvl >= 3:
+            delta += randint(-2, 3)
+
+        # TODO: Заменить на ранг
+        points_to_add = delta * 10
+        self.lvl += delta
+
+        self.update_stats_all()
+
+        self.strength += (self.strength / self.total_stats) * points_to_add
+        self.health += (self.health / self.total_stats) * points_to_add
+        self.speed += (self.speed / self.total_stats) * points_to_add
+        self.dexterity += (self.dexterity / self.total_stats) * points_to_add
+        self.accuracy += (self.accuracy / self.total_stats) * points_to_add
+        self.soul += (self.soul / self.total_stats) * points_to_add
+        self.intelligence += (self.intelligence / self.total_stats) * points_to_add
+        self.submission += (self.submission / self.total_stats) * points_to_add
+
+        print('weapon_damage', self.weapon_damage)
+        # TODO: Заменить на что-то более четкое..
+        self.weapon_damage += delta * 5
+        print('weapon_damage', self.weapon_damage)
+
+        self.update_stats_all()
+
+        return self
 
     def select_enemy(self, enemy_team):
         if len(enemy_team) > 0:
-            # self.target = min(enemy_team, key=lambda x: x.hp)
-            #     if random.randint(0, 1) > 0.5:
-
-            self.target = choice(enemy_team)
+            self.target = max(enemy_team, key=lambda x: x.aggression)
         else:
             self.target = enemy_team[0]
 
     def select_target(self, teammates, enemies):
         target = self.get_target()
 
-        if target == SkillDirection.my and self.technique.damage == SkillType.support:
+        if target == SkillDirection.my and self.technique.type == SkillType.support:
             self.target = self
 
         elif target == SkillDirection.enemy:
@@ -69,7 +90,7 @@ class Enemy(Entity):
         elif target == SkillDirection.teammates:
             self.target = teammates
 
-        elif target == SkillDirection.enemy or self.technique.damage != 0:
+        elif target == SkillDirection.enemy or self.technique.type == SkillType.attack:
             self.select_enemy(enemies)
 
     def choice_technique(self):
@@ -101,26 +122,26 @@ class Enemy(Entity):
             self.action = keyboard['technique_list']
 
     def define_sub_action(self, team):
-        if len(team) > 1:
-            hp_percent = self.hp * self.hp_max / 100
+        if len(team) >= 1:
             entity = team[0]
 
             if entity.crit_rate > 0.4:
-                return 'Контрудар'
+                return SkillSubAction.counter_strike
             elif self.speed > entity.speed:
-                return 'Уклонение'
-            elif round(hp_percent) < 2:
-                return 'Сбежать'
+                return SkillSubAction.evasion
+            elif round(self.hp_percent) <= 2:
+                return SkillSubAction.escape
             else:
-                return 'Защита'
-        else:
+                return SkillSubAction.defense
+        elif len(team) > 1:
             faster = max(team, key=lambda x: x.speed)
 
             if self.speed > faster.speed:
-                return 'Уклонение'
+                return SkillSubAction.evasion
             else:
-                return 'Защита'
-
+                return SkillSubAction.defense
+        else:
+            return SkillSubAction.defense
 
 async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     enemy_db = await get_enemy(session, enemy_id)
@@ -130,6 +151,11 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     weapon = await db.get_weapon(enemy_weapon.get('weapon_id', 1))
 
     enemy = EnemyFactory.create_enemy(stats_db)
+    enemy.flat_init()
+    # Костыль, чтобы противники могли больше спамить заклинаниями..
+    enemy.qi_modify = 100
+    enemy.mana_modify = 100
+
     enemy.lvl = stats_db['lvl']
 
     enemy.init_weapon(weapon, enemy_weapon['lvl'])
@@ -144,18 +170,6 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
 
             if technique is not None:
                 enemy.techniques.append(technique)
-
-    # TODO: Доделать спеллы для противников
-    # enemy.spells = []
-    # technique_db = await fetch_enemy_spell(session, enemy_id)
-    #
-    # if technique_db is not None:
-    #     for tech in technique_db:
-    #         technique = tech.get('technique')
-    #         technique = technique_init(technique)
-    #
-    #         if technique is not None:
-    #             enemy.techniques.append(technique)
 
     _class = await class_init(session, enemy_db.get('class'))
     if _class is not None:

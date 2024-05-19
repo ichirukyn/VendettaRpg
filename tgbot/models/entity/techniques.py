@@ -2,8 +2,8 @@ from copy import deepcopy
 
 from tgbot.dict.technique import technique_type_attack
 from tgbot.misc.other import formatted
-from tgbot.models.entity.effect import EffectFactory
-from tgbot.models.entity.effect import EffectParent
+from tgbot.models.entity.effects.effect_parent import EffectParent
+from tgbot.models.entity.effects._factory import EffectFactory
 
 race_prefix = ['🙂', '🧝‍♂️', '👨‍🦱', '😇', '😈', '☠️']
 
@@ -11,13 +11,13 @@ race_prefix = ['🙂', '🧝‍♂️', '👨‍🦱', '😇', '😈', '☠️']
 class TechniqueFactory:
     @staticmethod
     def create_technique(data):
-        id = data.get('technique_id')
+        id = data.get('technique_id', 0)
         name = data.get('name', '')
         desc = data.get('desc', '')
         desc_short = data.get('desc_short', '')
         damage = data.get('damage', 0)
         type_damage = data.get('type_damage', 'none')
-        type_attack = data.get('type_attack', 'strength')
+        type_attack = data.get('type_attack', 'all')
         distance = data.get('distance', 'melee')
         is_stack = data.get('is_stack', False)
         type = data.get('type', 'attack')
@@ -25,14 +25,15 @@ class TechniqueFactory:
         cooldown = data.get('cooldown', 2)
         hidden = data.get('hidden', False)
         author = data.get('author', 0)
+        rank = data.get('rank', 1)
 
         return Technique(id, name, desc, desc_short, damage, type_damage, type_attack, distance, is_stack, type,
-                         cooldown, hidden, author, race_id)
+                         cooldown, hidden, author, race_id, rank)
 
 
 class Technique(EffectParent):
     def __init__(self, id, name, desc, desc_short, damage, type_damage, type_attack, distance, is_stack, type,
-                 cooldown, hidden, author, race_id):
+                 cooldown, hidden, author, race_id, rank):
         self.id = id
         self.name = name
         self.desc = desc
@@ -53,7 +54,7 @@ class Technique(EffectParent):
 
         # Пока без уровней, возможно они будут участвовать позже
         self.lvl = 0
-        self.rank = 1
+        self.rank = rank
 
         self.bonuses = []
         self.effects = []
@@ -102,7 +103,7 @@ class Technique(EffectParent):
             if effect.type == 'coast':
                 return effect.apply(entity, skill=self)
 
-    def technique_info(self, entity):
+    def info(self, entity):
         self.bonuses.sort(key=lambda e: e.type == 'coast')
 
         return (
@@ -148,16 +149,15 @@ class Technique(EffectParent):
         if len(self.effects) != 0:
             entity.active_bonuses.append(self)
 
-        if target is not None:
+        if target is not None and target.name != entity.name:
             tech.entity = target
-            # target.technique = tech
 
             if len(tech.effects) != 0:
                 target.active_bonuses.append(tech)
 
     def is_activated(self, entity):
         for bonus in entity.active_bonuses:
-            if isinstance(bonus, Technique) and bonus.name == self.name and self.cooldown_current == 0:
+            if isinstance(bonus, Technique) and bonus.name == self.name:
                 return True
 
         return False

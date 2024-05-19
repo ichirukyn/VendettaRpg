@@ -29,6 +29,7 @@ from tgbot.misc.state import RegState
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.hero import HeroFactory
 from tgbot.models.entity.race import race_init
+from tgbot.models.settings import Settings
 from tgbot.models.user import DBCommands
 
 
@@ -180,6 +181,9 @@ async def select_class_confirm(message: Message, state: FSMContext):
 
 
 async def entry_point(message: Message, state: FSMContext):
+    data = await state.get_data()
+    settings = data.get('settings')
+
     db = DBCommands(message.bot.get('db'))
     config = message.bot.get('config')
     session = message.bot.get('session')
@@ -227,8 +231,12 @@ async def entry_point(message: Message, state: FSMContext):
             hero = await init_hero(db, session, hero_data=hero_data, chat_id=hero_data.get('chat_id', None))
             print(f"hero_id: {hero.id}")
 
+            if settings is None:
+                settings = Settings()
+
             await state.update_data(hero=hero)
             await state.update_data(hero_id=hero.id)
+            await state.update_data(settings=settings)
 
             print('-- Exit on /start -- \n')
             await LocationState.home.set()

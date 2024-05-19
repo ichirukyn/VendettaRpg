@@ -1,7 +1,9 @@
 from random import randint
 from random import random
 
+from tgbot.enums.skill import SkillSubAction
 from tgbot.misc.other import formatted
+from tgbot.models.entity.entity_base.entity_aggression import EntityAggression
 from tgbot.models.entity.entity_base.entity_damage import EntityDamage
 from tgbot.models.entity.entity_base.entity_level import EntityLevel
 from tgbot.models.entity.entity_base.entity_resist import EntityResist
@@ -11,7 +13,7 @@ from tgbot.models.entity.spells import Spell
 from tgbot.models.entity.techniques import Technique
 
 
-class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats):
+class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats, EntityAggression):
     lvl = 1
     team_id = 0
     is_leader = False
@@ -106,6 +108,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         self.debuff_list = []
 
+        self.total_stats_flat = self.sum_flat_stats()
         self.total_stats = self.sum_stats()
 
         self.active_bonuses = []
@@ -153,7 +156,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         self.update_control()
         self.update_stats_percent()
-        self.total_stats = self.sum_stats()
+        self.total_stats_flat = self.sum_flat_stats()
 
     def update_control(self):
         self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
@@ -185,6 +188,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
         self.update_control()
         self.update_stats_percent()
+        self.total_stats_flat = self.sum_flat_stats()
         self.total_stats = self.sum_stats()
 
     def update_stats_percent(self):
@@ -208,9 +212,16 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         else:
             self.shield_percent = round(self.shield_max / self.shield)
 
-    def sum_stats(self):
+    def sum_flat_stats(self):
         return self.flat_strength + self.flat_health + self.flat_speed + self.flat_dexterity + self.flat_soul + \
             self.flat_intelligence + self.flat_submission + self.flat_accuracy
+
+    def sum_stats(self):
+        return self.strength + self.health + self.speed + self.dexterity + self.soul + self.intelligence + \
+            self.submission + self.accuracy
+
+    def default_aggression(self):
+        self.aggression = (self.aggression_base + self.total_stats) * self.aggression_mod
 
     def turn_regenerate(self):
         self.update_regen()
@@ -232,10 +243,10 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
     def check_active_effects(self):
         active_bonuses = [*self.active_bonuses]
 
-        if not hasattr(self.active_bonuses, '__iter__') or len(self.active_bonuses) <= 1:
+        if not hasattr(active_bonuses, '__iter__') or len(self.active_bonuses) < 1:
             return print('Не хочет итерироваться..', self.active_bonuses)
 
-        for bonus in self.active_bonuses:
+        for bonus in active_bonuses:
             if len(bonus.effects) == 0:
                 self.active_bonuses.remove(bonus)
 
@@ -243,13 +254,11 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
                 if bonus.cooldown_current <= 0 and bonus.cooldown != 0:
                     bonus.deactivate(self)
 
-                    if bonus in active_bonuses:
-                        active_bonuses.remove(bonus)
+                    if bonus in self.active_bonuses:
+                        self.active_bonuses.remove(bonus)
 
                 bonus.cooldown_decrease()
                 bonus.check_effect(self)
-
-        self.active_bonuses = active_bonuses
 
     def skill_cooldown(self):
         if len(self.techniques) > 0:
@@ -372,7 +381,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
             f'(Точность {formatted(attacker.accuracy)})\n'
         )
 
-        if self.sub_action == 'Уклонение' and random() < evasion_chance:
+        if self.sub_action == SkillSubAction.evasion and random() < evasion_chance:
             attacker.statistic.battle.evasion_count += 1
             return True
 
@@ -391,7 +400,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
 
     def damage(self, defender, damage_type, technique=None):
         tech = self.technique
-        log = None
+        log = ''
+        is_crit = False
 
         if self.spell is not None:
             tech = self.spell
@@ -403,8 +413,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
             bonus_type = 1 + self.__getattribute__(damage_type)
             def_res = defender.__getattribute__(damage_type)
         else:
-            def_res = 0
             bonus_type = 1
+            def_res = 0
+
         if tech.type_attack == 'all':
             dmg_attr = self.__getattribute__(self._class.main_attr)
         else:
@@ -417,34 +428,34 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats)
         defs = (100 + self.lvl) / ((100 + defender.lvl) * (1 - def_res) * (1 - defender.resist)
                                    * (1 + self.ignore_resist) + (100 + self.lvl))
 
-        total_damage = (base_dmg * bonus_type * self.bonus_damage * (1 - defs)) + 1
-
-        if defender.sub_action == 'Защита':
-            defense = (round(randint(5, 15)) / 100) + self.defence_modify
-
-            # TODO 0 -- бонус экипировки
-            total_damage_ = (base_dmg * bonus_type * self.bonus_damage * (1 - (defs + defense))) + 1
-
-            def_damage = round(total_damage - total_damage_)
-
-            if def_damage > 0:
-                self.statistic.battle.block_damage += def_damage
-                log = f'\n🛡 {defender.name} заблокировал {def_damage} урона'
-
-            total_damage = total_damage_
+        total_damage = (base_dmg * bonus_type * self.bonus_damage * (1 - defs)) + 0
 
         if random() < self.crit_rate:
             total_damage = total_damage + (total_damage * self.crit_damage)
 
             self.statistic.battle.crit_count += 1
+            is_crit = True
             log = f' ⚡️'
 
-        if defender.sub_action == 'Контрудар':
+        if defender.sub_action == SkillSubAction.defense:
+            defense = (round(randint(7, 20)) / 100) + self.defence_modify
+
+            total_damage_ = total_damage * (1 - defense)
+
+            def_damage = round(total_damage - total_damage_)
+
+            if def_damage > 0:
+                self.statistic.battle.block_damage += def_damage
+                log += f'\n🛡 {defender.name} заблокировал {def_damage} урона'
+
+            total_damage = total_damage_
+
+        if defender.sub_action == SkillSubAction.counter_strike:
             cs = round(total_damage * randint(10, 35) / 100) + self.counter_modify
 
             self.hp -= cs
             self.statistic.battle.counter_strike_count += 1
-            log = f'\n🪃 {defender.name} контратаковал на {formatted(cs)} урона.'
+            log += f'\n🪃 {defender.name} контратаковал на {formatted(cs)} урона.'
 
         if round(total_damage) < 1:
             total_damage = 1

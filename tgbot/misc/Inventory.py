@@ -7,30 +7,37 @@ from tgbot.models.user import DBCommands
 
 class Item:
     def __init__(self, item):
-        self.id = item['item_id']
-        self.name = item['name']
-        self.desc = item['desc']
-        self.value = item['value']
-        self.type = item['type']
-        self.modify = item['modify']
+        self.id = item.get('item_id', 0)
+        self.name = item.get('name', 'Name')
+        self.desc = item.get('desc', '')
+        self.value = item.get('value', 0)
+        self.type = item.get('type', '')
+        self.modify = item.get('modify', 0)
+        self.is_check = False
+
+    def get_desc(self):
+        return f"*{self.name}*\n{self.desc}\n\n"
+
+    def get_kb(self):
+        kb = InlineKeyboardMarkup(row_width=1)
+        kb.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
+        return kb
 
 
 class WeaponItem(Item):
-    def __init__(self, item):
-        super().__init__(item)
-        self.is_equip = False
-
-    async def check_is_equip(self, db: DBCommands, hero_id):
+    async def check(self, db: DBCommands, hero_id):
         weapon = await db.get_hero_weapons(hero_id)
 
         if weapon['weapon_id'] == self.id:
-            self.is_equip = True
+            self.is_check = True
 
-    def inventory(self):
-        text = f"*{self.name}*\n{self.desc}\n• Урон — {self.value}\n\n"
+    def get_desc(self):
+        return f"*{self.name}*\n{self.desc}\n• Урон — {self.value}\n\n"
+
+    def get_kb(self):
         kb = InlineKeyboardMarkup(row_width=1)
 
-        if self.is_equip:
+        if self.is_check:
             kb.add(
                 InlineKeyboardButton(text='Снять', callback_data='Снять'),
                 InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
@@ -40,20 +47,33 @@ class WeaponItem(Item):
                 InlineKeyboardButton(text='Экипировать', callback_data='Экипировать'),
                 InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
             )
+        return kb
 
-        return {
-            'text': text,
-            'kb': kb
-        }
+
+class BookItem(Item):
+    async def check(self, db: DBCommands, hero_id):
+        weapon = await db.get_hero_weapons(hero_id)
+
+        if weapon['weapon_id'] == self.id:
+            self.is_check = True
+
+    def get_kb(self):
+        kb = InlineKeyboardMarkup(row_width=1)
+
+        if self.is_check:
+            kb.add(
+                InlineKeyboardButton(text='Изучить', callback_data='Изучить'),
+                InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
+            )
+        return kb
+
+    def get_desc(self):
+        return f"*{self.name}*\n{self.desc}\n\n{'Вы не можете изучить эту книгу.' if not self.is_check else ''}"
 
 
 class ConsumableItem(Item):
-    def get_description(self):
-        # effects_text = '\n'.join([f"{effect['name']} - {effect['value']}%" for effect in self.effects])
-        return f"{self.name}\n{self.desc}\n\n"
+    pass
 
-# weapon = WeaponItem("Меч", "Мощный меч", 20)
-# consumable = ConsumableItem("Зелье здоровья", "Восстанавливает здоровье", [{"name": "Здоровье", "value": 30}])
-#
-# print(weapon.get_description())
-# print(consumable.get_description())
+    # def get_description(self):
+    #     effects_text = '\n'.join([f"{effect['name']} - {effect['value']}%" for effect in self.effects])
+    #     return f"*{self.name}*\n{self.desc}\n\n"

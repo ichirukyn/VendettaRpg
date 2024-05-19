@@ -4,6 +4,7 @@ from tgbot.api.hero import get_hero
 from tgbot.api.hero import get_hero_lvl
 from tgbot.api.hero import get_hero_stats
 from tgbot.api.statistic import get_statistic
+from tgbot.misc.state import BattleState
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.hero import Hero
 from tgbot.models.entity.hero import HeroFactory
@@ -32,13 +33,13 @@ async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None, chat_
 
     hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db)
     hero.flat_init()
+    hero.active_bonuses = []
+
     _, hero = await check_hero_lvl(db, session, hero)
 
     team_db = await db.get_hero_team(hero_id)
     statistic_db = await get_statistic(session, hero_id)
 
-    # skills = await db.get_hero_skills(hero_id)
-    hero.active_bonuses = []
 
     _class = await class_init(session, hero_db.get('class'))
 
@@ -47,6 +48,7 @@ async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None, chat_
         hero._class.apply(hero)
 
     race = await race_init(session, hero_db.get('race'))
+
     if race is not None:
         hero.race = race
         hero.race.apply(hero)
@@ -95,17 +97,21 @@ async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None, chat_
 async def check_hero_lvl(db, session, hero) -> (str, Hero):
     log: str = ''
 
-    hero_lvl_data = await get_hero_lvl(session, hero.id)
-    hero_lvl = await hero_lvl_data.json()
-    hero.init_level(hero_lvl)
+    try:
+        hero_lvl_data = await get_hero_lvl(session, hero.id)
+        hero_lvl = await hero_lvl_data.json()
+        hero.init_level(hero_lvl)
 
-    if hero.check_lvl_up():
-        hero.lvl += 1
-        hero.free_stats += 10  # TODO: Тянуть с ранга
-        log += f"\n\nВы достигли {hero.lvl} уровня!\nВы получили {10} СО"
-        await db.update_hero_stat('free_stats', hero.free_stats, hero.id)
-        await db.update_hero_level(hero.exp, hero.lvl, hero.id)
-        log, hero = await check_hero_lvl(db, session, hero)
+        if hero.check_lvl_up():
+            hero.lvl += 1
+            hero.free_stats += 10  # TODO: Тянуть с ранга
+            log += f"\n\nВы достигли {hero.lvl} уровня!\nВы получили {10} СО"
+            await db.update_hero_stat('free_stats', hero.free_stats, hero.id)
+            await db.update_hero_level(hero.exp, hero.lvl, hero.id)
+            log_, hero = await check_hero_lvl(db, session, hero)
+            log += log_
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
     return log, hero
 
@@ -131,10 +137,20 @@ async def update_hero_weapon(db, hero):
     return hero
 
 
-async def init_team(db, session, team, hero=None):
+async def init_team(db, session, team, dp, hero=None):
     entity_team = []
 
     for entity in team:
+        user = await db.get_heroes(entity.get('hero_id'))
+        chat_id = user.get('chat_id', 0)
+
+        if chat_id != 0:
+            state = await dp.storage.get_state(chat=chat_id)
+
+            for s in BattleState.states:
+                if state == s.state and state != 'BattleState:battle_start':
+                    continue
+
         h = await init_hero(db, session, hero_id=entity['hero_id'])
 
         if len(entity['prefix']) > 0:

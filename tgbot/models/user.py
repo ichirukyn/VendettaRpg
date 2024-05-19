@@ -193,7 +193,7 @@ class DBCommands:
         crit_rate = hero.crit_rate
         crit_damage = hero.crit_damage
         resist = hero.resist
-        total_stats = hero.total_stats
+        total_stats = hero.total_stats_flat
 
         command = self.ADD_HERO_STATS
 
@@ -323,7 +323,7 @@ class DBCommands:
 
     async def get_all_heroes_stats(self, stats_order='total_stats'):
         command = f"SELECT * FROM heroes h INNER JOIN hero_stats hs " \
-                  f"ON h.id = hs.hero_id ORDER BY {stats_order} DESC"
+                  f"ON h.id = hs.hero_id WHERE h.hidden = FALSE ORDER BY {stats_order} DESC"
 
         return await self.pool.fetch(command)
 

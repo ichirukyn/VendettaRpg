@@ -71,6 +71,7 @@ class LocationState(StatesGroup):
     fortress = State()
     arena = State()
     team = State()
+    settings = State()
 
 
 class TowerState(StatesGroup):
@@ -81,7 +82,7 @@ class TowerState(StatesGroup):
 
 class CampusState(StatesGroup):
     select_floor = State()
-    select_enemy = State()
+    battle = State()
 
 
 class FortressState(StatesGroup):
@@ -140,3 +141,7 @@ class AdminState(StatesGroup):
     hero_id = State()
     value = State()
     bd_set = State()
+
+
+class SettingsState(StatesGroup):
+    setting = State()

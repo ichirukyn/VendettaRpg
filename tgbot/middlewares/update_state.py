@@ -52,7 +52,7 @@ class UpdateStatsMiddleware(BaseMiddleware):
                 if hero.team_id > 0:
                     team = await db.get_team_heroes(hero.team_id)
 
-                    player_team = await init_team(db, session, team, hero)
+                    player_team = await init_team(db, session, team, dp, hero=hero)
 
                     await dp.storage.update_data(chat=chat_id, player_team=player_team)
                     await dp.storage.update_data(chat=chat_id, leader_id=team[0]['leader_id'])

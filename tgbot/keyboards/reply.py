@@ -25,12 +25,13 @@ home_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=keyboard['location'])],
         [KeyboardButton(text=keyboard['character'])],
-        [KeyboardButton(text=keyboard['top'])],
+        [KeyboardButton(text=keyboard['top']), KeyboardButton(text=keyboard['settings'])],
     ],
     resize_keyboard=True)
 
 town_kb = ReplyKeyboardMarkup(
     keyboard=[
+        [KeyboardButton(text=keyboard['campus'])],
         [KeyboardButton(text=keyboard['tower']), KeyboardButton(text=keyboard['arena'])],
         # [KeyboardButton(text=keyboard['tower']), KeyboardButton(text=keyboard['arena'])],
         # [KeyboardButton(text=keyboard['fortress']), KeyboardButton(text=keyboard['team'])],
@@ -57,14 +58,14 @@ battle_start_kb = ReplyKeyboardMarkup(
 battle_main_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=keyboard['technique_list']), KeyboardButton(text=keyboard['spell_list'])],
-        [KeyboardButton(text=keyboard['pass'])],
+        [KeyboardButton(text=keyboard['pass']), KeyboardButton(text=keyboard['sub_actions'])],
     ],
     resize_keyboard=True)
 
 battle_sub_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=keyboard['evasion']), KeyboardButton(text=keyboard['defense'])],
-        [KeyboardButton(text=keyboard['contr_strike']), KeyboardButton(text=keyboard['escape'])],
+        [KeyboardButton(text=keyboard['counter_strike']), KeyboardButton(text=keyboard['escape'])],
     ],
     resize_keyboard=True)
 
@@ -189,6 +190,7 @@ equip_kb = ReplyKeyboardMarkup(
 inventory_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=keyboard['weapon']), KeyboardButton(text=keyboard['quest'])],
+        [KeyboardButton(text=keyboard['technique_book']), KeyboardButton(text=keyboard['spell_book'])],
         [KeyboardButton(text=keyboard['other'])],
         [KeyboardButton(text=keyboard['back'])]
     ],

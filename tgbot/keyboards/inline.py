@@ -60,12 +60,22 @@ def floor_inline(lists, columns=2):
     return kb
 
 
-battle_start_inline = InlineKeyboardMarkup(row_width=1)
+def battle_start_inline(is_group=False):
+    kb = InlineKeyboardMarkup(row_width=2)
 
-battle_start_inline.add(
-    InlineKeyboardButton(text='В бой', callback_data='В бой'),
-    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
-)
+    buttons = [
+        InlineKeyboardButton(text=keyboard['battle_solo'], callback_data=keyboard['battle_solo']),
+        InlineKeyboardButton(text=keyboard['battle_group'], callback_data=keyboard['battle_group'])
+    ]
+
+    if is_group:
+        kb.add(*buttons)
+    else:
+        kb.add(InlineKeyboardButton(text=keyboard['battle_solo'], callback_data=keyboard['battle_solo']))
+
+    kb.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
+
+    return kb
 
 
 # Fortress
@@ -137,14 +147,6 @@ top_inline.add(
 )
 top_inline.add(
     InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
-)
-
-# Character
-battle_start_inline = InlineKeyboardMarkup(row_width=1)
-
-battle_start_inline.add(
-    InlineKeyboardButton(text='В бой', callback_data='В бой'),
-    InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
 )
 
 

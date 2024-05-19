@@ -18,6 +18,7 @@ from tgbot.handlers.character import character
 from tgbot.handlers.fortress import fortress
 from tgbot.handlers.location import location
 from tgbot.handlers.register import start
+from tgbot.handlers.settings import settings
 from tgbot.handlers.shop import shop
 from tgbot.handlers.team import team
 from tgbot.handlers.tower import tower
@@ -51,6 +52,7 @@ def register_all_handlers(dp):
     fortress(dp)
     campus(dp)
     battle(dp)
+    settings(dp)
 
 
 async def main():

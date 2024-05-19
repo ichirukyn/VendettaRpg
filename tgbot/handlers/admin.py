@@ -17,7 +17,7 @@ stats = {
 }
 
 
-async def admin_start(message: Message, state: FSMContext):
+async def admin_start(message: Message):
     await AdminState.main.set()
     await message.answer("Админ панель v0.0.0:", reply_markup=admin_kb)
 

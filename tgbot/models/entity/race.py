@@ -1,6 +1,6 @@
 from tgbot.api.race import fetch_race_bonuses
-from tgbot.models.entity.effect import EffectFactory
-from tgbot.models.entity.effect import EffectParent
+from tgbot.models.entity.effects.effect_parent import EffectParent
+from tgbot.models.entity.effects._factory import EffectFactory
 
 
 class RaceFactory:

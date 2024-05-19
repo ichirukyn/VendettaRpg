@@ -1,3 +1,5 @@
+from tgbot.enums.skill import SkillDirection
+from tgbot.enums.skill import SkillSubAction
 from tgbot.enums.skill import SkillType
 from tgbot.misc.locale import keyboard
 from tgbot.misc.other import formatted
@@ -52,10 +54,12 @@ class BattleEngine:
 
     def battle(self):
         i = self.order_index
-        log = None
 
         while i < len(self.order):
             entity = self.order[i]
+
+            if entity.sub_action is None or entity.sub_action == '':
+                entity.sub_action = SkillSubAction.defense
 
             entity.check_active_effects()
             entity.skill_cooldown()
@@ -64,9 +68,6 @@ class BattleEngine:
             log = entity.debuff_round_check()
 
             self.order_index += 1
-
-            if self.check_hp() is not None:
-                return self.order, entity, 'win', i, log
 
             if entity.hp <= 0:
                 return self.battle()
@@ -84,9 +85,15 @@ class BattleEngine:
                 if entity.choice_technique():
                     entity.select_target(teammates, enemies)
 
+                if entity.target is None:
+                    entity.target = enemies[0]
+
                 who = 'enemy'
 
             return self.order, entity, who, i, log
+
+        if self.check_hp() is not None:
+            return self.order, None, 'win', i, ''
 
         self.order_index = 0
         return self.battle()
@@ -129,15 +136,26 @@ class BattleEngine:
 
         return action_return
 
-    def save_entity(self, target):
+    def save_entity(self, target, attacker=None):
         if isinstance(target, list):
             for t in target:
                 # TODO: Понять, почему вдруг None!!
                 if t is None:
+                    print('isinstance(target, list) -- error!!! \n\n')
                     continue
+
+                if attacker is not None and t.name == attacker.name:
+                    self.order = self.update_order()
+                    return
+
                 self.enemy_team = [enemy if enemy.name != t.name else t for enemy in self.enemy_team]
                 self.player_team = [hero if hero.name != t.name else t for hero in self.player_team]
+
         else:
+            if attacker is not None and target.name == attacker.name:
+                self.order = self.update_order()
+                return
+
             self.enemy_team = [enemy if enemy.name != target.name else target for enemy in self.enemy_team]
             self.player_team = [hero if hero.name != target.name else target for hero in self.player_team]
 
@@ -178,6 +196,13 @@ class BattleEngine:
             if player.hp < 0:
                 player.hp = 0
 
+    def escape_hero(self, hero):
+        for e in self.order:
+            if e.name == hero.name:
+                e.hp = 0
+                e.sub_action = SkillSubAction.escape
+                hero.sub_action = SkillSubAction.escape
+
     # TODO: Условия победы в пвп добавить
     def check_hp(self):
         self.round_hp()
@@ -207,17 +232,19 @@ class BattleEngine:
                 return h
 
     def entity_attack(self, attacker, defender):
-        log = ''
         hp = attacker.hp
-        hp_def = defender.hp
+        hp_def = defender.hp or 0
 
         action = attacker.technique
+
+        if defender.sub_action is None or defender.sub_action == '':
+            defender.sub_action = SkillSubAction.defense
 
         if attacker.spell is not None:
             action = attacker.spell
 
-        if defender.check_evasion(attacker) and attacker.name != defender.name:
-            log = f"⚔️ {attacker.name} промахнулся по {defender.name}"
+        if attacker.name != defender.name and defender.check_evasion(attacker):
+            log = f"⚔️ {attacker.name} промахнулся по {defender.name}\n"
 
             attacker.statistic.battle.miss_count += 1
             defender.statistic.battle.evasion_success_count += 1
@@ -231,6 +258,7 @@ class BattleEngine:
         if attacker.name == defender.name:
             action.activate(attacker, attacker)
             log = f"{attacker.name} применил технику {action.name}\n"
+            defender = attacker
         else:
             action.activate(attacker, defender)
             log = f"{attacker.name} применил технику {action.name} к {defender.name}\n"
@@ -252,6 +280,7 @@ class BattleEngine:
             if hp_def < defender.hp:
                 delta = defender.hp - hp
 
+            # TODO: Сделать аналог для щитов..
             if delta != 0:
                 attacker.statistic.battle.healing += delta
                 attacker.statistic.battle.check_max('healing_max', delta)
@@ -259,7 +288,6 @@ class BattleEngine:
 
             attacker.update_stats_percent()
             defender.update_stats_percent()
-            defender.sub_action = ''
 
             return log
 
@@ -276,6 +304,12 @@ class BattleEngine:
                     defender.shield -= total_damage
             else:
                 defender.hp -= total_damage
+
+            if defender.shield <= 0:
+                defender.shield_max = 0
+
+            if attacker.shield <= 0:
+                attacker.shield_max = 0
 
             attacker.statistic.battle.damage += total_damage
             attacker.statistic.battle.check_max('damage_max', total_damage)
@@ -303,10 +337,6 @@ class BattleEngine:
 
         attacker.update_stats_percent()
         defender.update_stats_percent()
-
-        attacker.spell = None
-        attacker.technique = None
-        defender.sub_action = ''
 
         return log
 

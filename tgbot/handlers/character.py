@@ -23,6 +23,9 @@ from tgbot.keyboards.reply import character_distribution_kb
 from tgbot.keyboards.reply import character_info_kb
 from tgbot.keyboards.reply import character_kb
 from tgbot.keyboards.reply import inventory_kb
+from tgbot.misc.Inventory import BookItem
+from tgbot.misc.Inventory import ConsumableItem
+from tgbot.misc.Inventory import Item
 from tgbot.misc.Inventory import WeaponItem
 from tgbot.misc.hero import init_hero
 from tgbot.misc.hero import update_hero_weapon
@@ -48,6 +51,7 @@ stats = {
 inventory = {
     keyboard['weapon']: 'weapon',
     keyboard['quest']: 'quest',
+    keyboard['technique_book']: 'technique_book',
     keyboard['other']: 'other',
 }
 
@@ -95,14 +99,14 @@ async def distribution(message: Message, state: FSMContext):
         stat_value = hero.__getattribute__(flat_stat) + count
         hero.__setattr__(flat_stat, stat_value)
 
-        hero.total_stats += count
+        hero.total_stats_flat += count
         hero.free_stats -= count
 
         hero.update_stats()
 
         await db.update_hero_stat(stat, stat_value, hero_id)
         await db.update_hero_stat('free_stats', hero.free_stats, hero_id)
-        await db.update_hero_stat('total_stats', hero.total_stats, hero_id)
+        await db.update_hero_stat('total_stats', hero.total_stats_flat, hero_id)
 
         hero = await init_hero(db, session, hero.id, chat_id=chat_id)
 
@@ -149,7 +153,7 @@ async def character_techniques(cb: CallbackQuery, state: FSMContext):
         technique = technique_init(res)
 
         text = (
-            f"{technique.technique_info(hero)}\n"
+            f"{technique.info(hero)}\n"
             f"{fix}"
         )
     else:
@@ -220,7 +224,7 @@ async def character_spell(cb: CallbackQuery, state: FSMContext):
         spell = spell_init(res)
 
         text = (
-            f"{spell.spell_info(hero)}\n"
+            f"{spell.info(hero)}\n"
             f"{fix}"
         )
     else:
@@ -322,15 +326,23 @@ async def character_inventory_items(cb: CallbackQuery, state: FSMContext):
 
     for item in items:
         if item['item_id'] == item_id:
+            i = Item(item)
+
             if type == 'weapon':
-                weapon = WeaponItem(item)
-                await weapon.check_is_equip(db, hero.id)
-                weapon_info = weapon.inventory()
+                i = WeaponItem(item)
+                await item.check(db, hero.id)
+            elif 'book' in type:
+                i = BookItem(item)
+            elif type == 'consumable':
+                i = ConsumableItem(item)
 
-                await state.update_data(inventory_item=item_id)
+            text = i.get_desc()
+            kb = i.get_kb()
 
-                await CharacterState.inventory_action.set()
-                await cb.message.edit_text(weapon_info['text'], reply_markup=weapon_info['kb'])
+            await state.update_data(inventory_item=item_id)
+
+            await CharacterState.inventory_action.set()
+            await cb.message.edit_text(text, reply_markup=kb)
 
 
 async def character_inventory_action(cb: CallbackQuery, state: FSMContext):
@@ -342,6 +354,9 @@ async def character_inventory_action(cb: CallbackQuery, state: FSMContext):
     type = data['inventory']
 
     if cb.data == 'Экипировать':
+        await db.update_hero_weapon(hero.id, item_id, 0)
+
+    elif cb.data == 'Снять':
         await db.update_hero_weapon(hero.id, item_id, 0)
 
     elif cb.data == 'Снять':

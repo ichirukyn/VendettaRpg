@@ -9,6 +9,7 @@ from tgbot.api.enemy import get_enemy_loot
 from tgbot.api.statistic import statistics_to_json
 from tgbot.api.statistic import update_statistic
 from tgbot.enums.skill import SkillDirection
+from tgbot.enums.skill import SkillSubAction
 from tgbot.enums.skill import SkillType
 from tgbot.handlers.battle.hook import BattleEngine
 from tgbot.handlers.battle.hook import BattleLogger
@@ -29,6 +30,7 @@ from tgbot.misc.state import BattleState
 from tgbot.misc.state import LocationState
 from tgbot.models.api.enemy_api import EnemyItemType
 from tgbot.models.entity.hero import Hero
+from tgbot.models.settings import Settings
 from tgbot.models.user import DBCommands
 
 
@@ -92,12 +94,13 @@ class BattleInterface:
 
     async def battle(self):
         order, entity, who, i, log = self.engine.battle()
-        move = entity.debuff_control_check('move')
 
         state = await self.state.get_state()
 
         if who == 'win' or state == BattleState.end.state:
             return await self.check_hp()
+
+        move = entity.debuff_control_check('move')
 
         if not move:
             if isinstance(entity, Hero):
@@ -134,18 +137,17 @@ class BattleInterface:
                 await self.message.bot.send_message(chat_id=e.chat_id, text=logs, reply_markup=kb_to_use,
                                                     parse_mode='Markdown')
 
-    async def send_all(self, hero, text, text_hero, kb, kb_h):
+    async def send_all(self, hero, text, text_h, kb, kb_h):
         for e in self.engine.order:
             if isinstance(e, Hero):
                 if e.name != hero.name:
                     await self.message.bot.send_message(chat_id=e.chat_id, text=text, reply_markup=kb,
                                                         parse_mode='Markdown')
                 else:
-                    await self.message.bot.send_message(chat_id=e.chat_id, text=text_hero, reply_markup=kb_h,
+                    await self.message.bot.send_message(chat_id=e.chat_id, text=text_h, reply_markup=kb_h,
                                                         parse_mode='Markdown')
 
     # HANDLERS
-
     def handler_npc_turn_start(self, hero):
         asyncio.create_task(self.handler_npc_turn(hero))
 
@@ -164,71 +166,59 @@ class BattleInterface:
     async def process_user_sub_turn(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
+        settings: Settings = data.get('settings')
 
-        if message.text == 'Уклонение':
-            hero.sub_action = 'Уклонение'
-            self.engine.save_entity(hero)
-
-            await self.set_state(hero.chat_id, BattleState.load)
-
+        text = '⁢'
+        if message.text == keyboard['evasion']:
+            hero.sub_action = SkillSubAction.evasion
             text = f'{hero.name} пробует уклонится.'
 
-            await self.send_all(hero, text, text, None, next_kb)
-            return await self.battle()
-
-        if message.text == 'Защита':
-            hero.sub_action = 'Защита'
-            self.engine.save_entity(hero)
-
-            await self.set_state(hero.chat_id, BattleState.load)
-
+        if message.text == keyboard['defense']:
+            hero.sub_action = SkillSubAction.defense
             text = f'{hero.name} поставил блок.'
 
-            await self.send_all(hero, text, text, None, next_kb)
-            return await self.battle()
-
-        if message.text == 'Контрудар':
-            hero.sub_action = 'Контрудар'
-            self.engine.save_entity(hero)
-
-            await self.set_state(hero.chat_id, BattleState.load)
-
+        if message.text == keyboard['counter_strike']:
+            hero.sub_action = SkillSubAction.counter_strike
             text = f'{hero.name} ждёт момент для контрудара.'
 
-            await self.send_all(hero, text, text, None, next_kb)
-            return await self.battle()
+        if message.text == keyboard['escape']:
+            if settings is not None and not settings.confirm_escape:
+                return await self.process_user_escape(hero, state)
+            else:
+                await self.set_state(hero.chat_id, BattleState.user_escape_confirm)
+                return await message.answer('Вы уверены что хотите сбежать?', reply_markup=confirm_kb)
 
-        # TODO: Добавить подтверждение
-        if message.text == 'Сбежать':
-            await self.set_state(hero.chat_id, BattleState.user_escape_confirm)
-            await message.answer('Вы уверены что хотите сбежать?', reply_markup=confirm_kb)
+        # TODO: Если что-то теряется между героями, нужно сохранить Сущность И Битву!!!
+        self.engine.save_entity(hero)
+        await self.save_battle('hero', hero)
+
+        await BattleState.user_turn.set()
+        await self.send_all(hero, text, text, None, battle_main_kb)
+
+    async def process_user_escape(self, hero, state):
+        hero.hp = 0
+        hero.statistic.escape_count += 1
+
+        self.engine.escape_hero(hero)
+        await state.update_data(hero=hero)
+
+        text = f'{hero.name} сбегает..'
+
+        await self.set_state(hero.chat_id, LocationState.home)
+        await self.save_battle('order', self.engine.order)
+        await self.send_all(hero, text, text, None, home_kb)
+
+        await self.battle()
+        return await self.check_hp()
 
     async def process_user_escape_confirm(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
 
         if message.text == keyboard['yes']:
-            hero.hp = 0
-            hero.statistic.escape_count += 1
+            return await self.process_user_escape(hero, state)
 
-            await state.update_data(hero=hero)
-
-            for e in self.engine.order:
-                if e.name == hero.name:
-                    e.hp = 0
-                    e.sub_action = 'Сбежать'
-                    hero.sub_action = 'Сбежать'
-
-            text = f'{hero.name} сбегает..'
-
-            await self.set_state(hero.chat_id, LocationState.home)
-            await self.save_battle('order', self.engine.order)
-            await self.send_all(hero, text, text, None, home_kb)
-
-            await self.battle()
-            return await self.check_hp()
-
-        elif message.text == keyboard['back']:
+        if message.text == keyboard['back']:
             await self.set_state(hero.chat_id, BattleState.user_sub_turn)
             return await message.answer(f'Выбери доп. действие:', reply_markup=battle_sub_kb)
 
@@ -238,17 +228,17 @@ class BattleInterface:
 
         if message.text == keyboard['yes']:
             text = f'{hero.name} пропустил ход.'
+            await self.set_state(hero.chat_id, BattleState.load)
+            await self.send_all(hero, text, text, None, None)
 
-            await self.set_state(hero.chat_id, BattleState.user_sub_turn)
-            return await self.send_all(hero, text, text, None, battle_sub_kb)
-
-        elif message.text == keyboard['back']:
+        if message.text == keyboard['back']:
             await self.set_state(hero.chat_id, BattleState.user_turn)
             return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
     async def process_user_turn(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
+        settings: Settings = data.get('settings')
 
         if message.text == keyboard['technique_list']:
             hero.action = keyboard['technique_list']
@@ -257,26 +247,35 @@ class BattleInterface:
             kb = list_kb(hero.techniques)
 
             await self.set_state(hero.chat_id, BattleState.select_technique)
-            await message.answer('Выбери технику:', reply_markup=kb)
+            return await message.answer('Выбери технику:', reply_markup=kb)
 
-        elif message.text == keyboard['spell_list']:
+        if message.text == keyboard['spell_list']:
             hero.action = keyboard['spell_list']
             await self.state.update_data(hero=hero)
 
             kb = list_object_kb(hero.spells)
 
             await self.set_state(hero.chat_id, BattleState.select_spell)
-            await message.answer('Выбери заклинание:', reply_markup=kb)
+            return await message.answer('Выбери заклинание:', reply_markup=kb)
 
-        elif message.text == keyboard['pass']:
-            await self.set_state(hero.chat_id, BattleState.user_pass_confirm)
-            await message.answer('Вы уверены что хотите пропустить ход?', reply_markup=confirm_kb)
+        if message.text == keyboard['pass']:
+            if settings is not None and not settings.confirm_pass:
+                text = f'{hero.name} пропустил ход.'
+                await self.set_state(hero.chat_id, BattleState.load)
+                await self.send_all(hero, text, text, None, None)
+                return await self.battle()
+            else:
+                await self.set_state(hero.chat_id, BattleState.user_pass_confirm)
+                return await message.answer('Вы уверены что хотите пропустить ход?', reply_markup=confirm_kb)
 
-        await self.update_data(hero.chat_id, 'hero', hero)
+        if message.text == keyboard['sub_actions']:
+            await self.set_state(hero.chat_id, BattleState.user_sub_turn)
+            return await message.answer(f'Твой ход:', reply_markup=battle_sub_kb)
 
     async def process_select_spell(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
+        settings: Settings = data.get('settings')
 
         if message.text == keyboard["back"]:
             await self.set_state(hero.chat_id, BattleState.user_turn)
@@ -295,8 +294,12 @@ class BattleInterface:
                     hero.spell = spell
                     hero.technique = None
                     await self.update_data(hero.chat_id, 'hero', hero)
-                    await self.set_state(hero.chat_id, BattleState.select_spell_confirm)
-                    return await message.answer(spell.spell_info(hero), reply_markup=confirm_kb)
+
+                    if settings is not None and not settings.confirm_spell:
+                        return await self.handler_select_target(message, state)
+                    else:
+                        await self.set_state(hero.chat_id, BattleState.select_spell_confirm)
+                        return await message.answer(spell.info(hero), reply_markup=confirm_kb)
                 else:
                     text = spell.log or 'Ошибка активации..'
                     await self.set_state(hero.chat_id, BattleState.user_turn)
@@ -317,6 +320,7 @@ class BattleInterface:
     async def process_select_technique(self, message: Message, state: FSMContext):
         data = await state.get_data()
         hero = data.get('hero')
+        settings: Settings = data.get('settings')
 
         if message.text == keyboard["back"]:
             await self.set_state(hero.chat_id, BattleState.user_turn)
@@ -334,9 +338,14 @@ class BattleInterface:
                 if technique.check(hero):
                     hero.technique = technique
                     hero.spell = None
+
                     await self.update_data(hero.chat_id, 'hero', hero)
-                    await self.set_state(hero.chat_id, BattleState.select_technique_confirm)
-                    return await message.answer(technique.technique_info(hero), reply_markup=confirm_kb)
+
+                    if settings is not None and not settings.confirm_technique:
+                        return await self.handler_select_target(message, state)
+                    else:
+                        await self.set_state(hero.chat_id, BattleState.select_technique_confirm)
+                        return await message.answer(technique.info(hero), reply_markup=confirm_kb)
                 else:
                     text = technique.log or 'Ошибка активации..'
                     await self.set_state(hero.chat_id, BattleState.user_turn)
@@ -357,28 +366,37 @@ class BattleInterface:
     async def process_battle_action(self, hero, target):
         action_result = self.engine.battle_action(hero, target)
 
-        if action_result is not None:
-            if action_result['target'] is not None:
-                self.engine.save_entity(action_result['target'])
+        hero.spell = None
+        hero.technique = None
 
-            self.engine.save_entity(action_result['attacker'])
+        if action_result is None:
+            text = 'Ошибка action_result..'
+            return await self.send_all(hero, text, text, None, None)
 
-            if isinstance(hero, Hero):
-                await self.update_data(hero.chat_id, 'hero', action_result['attacker'])
-                await self.set_state(hero.chat_id, BattleState.user_sub_turn)
+        self.engine.save_entity(action_result['attacker'])
 
-                await self.send_all(hero, action_result['log'], action_result['log'], None, battle_sub_kb)
+        if action_result['target'] is not None:
+            self.engine.save_entity(action_result['target'], action_result['attacker'])
 
-                await self.save_battle()
-                await self.check_hp()
-            else:
-                await self.send_all(hero, action_result['log'], action_result['log'], None, None)
-                await self.save_battle()
+        if isinstance(hero, Hero):
+            await self.update_data(hero.chat_id, 'hero', action_result['attacker'])
 
-                if await self.check_hp():
-                    return
+            await self.set_state(hero.chat_id, BattleState.load)
+            await self.send_all(hero, action_result['log'], action_result['log'], None, ReplyKeyboardRemove())
+            await self.save_battle()
 
-                await self.battle()
+            if await self.check_hp():
+                return
+
+            return await self.battle()
+        else:
+            await self.send_all(hero, action_result['log'], action_result['log'], None, None)
+            await self.save_battle()
+
+            if await self.check_hp():
+                return
+
+            await self.battle()
 
     async def handler_select_target(self, message: Message, state: FSMContext):
         data = await state.get_data()
@@ -455,13 +473,14 @@ class BattleInterface:
 
         try:
             for e in self.engine.order:
-                if isinstance(e, Hero) and e.sub_action != 'Сбежать':
+                if isinstance(e, Hero) and e.sub_action != SkillSubAction.escape:
                     log = 'Бой окончен'
                     await self.set_state(e.chat_id, BattleState.end)
                     await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=ReplyKeyboardRemove())
 
             for e in self.engine.order:
                 log = 'Вы проиграли..'
+                lvl_log = None
                 kb = battle_revival_kb
                 state = BattleState.revival
                 is_inline = False
@@ -474,6 +493,12 @@ class BattleInterface:
 
                     log += '*Вы победили!*\n'
                     log += await self.battle_reward(e, session)
+
+                    # TODO: Против "фармил", которые живут ареной и пока не сделаю норм опыт....
+                    if e.lvl > 20:
+                        lvl_log = f'Вы достигли предела... \nПополните баланс, чтобы продолжить)) \n'
+                    else:
+                        lvl_log, e = await check_hero_lvl(self.db, session, e)
 
                     if self.engine.battle_type == 'arena_one':
                         e.statistic.win_one_to_one += 1
@@ -496,7 +521,7 @@ class BattleInterface:
                     if self.engine.is_dev:
                         log += f"\n\n{e.statistic.battle.get_battle_statistic()}"
 
-                    if e.sub_action != 'Сбежать':
+                    if e.sub_action != SkillSubAction.escape:
                         if is_inline:
                             await self.message.bot.send_message(
                                 chat_id=e.chat_id, text='⁢', reply_markup=ReplyKeyboardRemove()
@@ -510,12 +535,16 @@ class BattleInterface:
 
                         await self.set_state(e.chat_id, state)
                         await self.message.bot.send_message(chat_id=e.chat_id, text=log, reply_markup=kb)
+
+                        if lvl_log is not None and lvl_log != '':
+                            await self.message.bot.send_message(chat_id=e.chat_id, text=lvl_log, reply_markup=kb)
+
                         await self.update_data(e.chat_id, 'hero', e)
         except Exception as e:
             print(e)
 
             for e in self.engine.order:
-                if isinstance(e, Hero) and e.sub_action != 'Сбежать':
+                if isinstance(e, Hero) and e.sub_action != SkillSubAction.escape:
                     await self.set_state(e.chat_id, BattleState.end)
                     await self.message.bot.send_message(chat_id=e.chat_id, text=locale['error_battle'])
 
@@ -527,7 +556,10 @@ class BattleInterface:
         total_reward_gold = 0
 
         for enemy in enemies:
-            loot = await get_enemy_loot(session, enemy.id, e.id)
+            if hasattr(enemy, 'chat_id'):
+                continue
+
+            loot = await get_enemy_loot(session, enemy.id, e.id, e.lvl)
 
             if loot is not None and len(loot) != 0:
                 for l in loot:
@@ -547,16 +579,6 @@ class BattleInterface:
 
         e.exp += int(total_reward_exp)
         e.exp_now += int(total_reward_exp)
-
-        # TODO: Против "фармил", которые живут ареной и пока не сделаю норм опыт....
-        if e.lvl > 20:
-            return (
-                f'Вы достигли предела... \n'
-                f'Пополните баланс, чтобы продолжить)) \n'
-            )
-
-        lvl_log, e = await check_hero_lvl(self.db, session, e)
-        log += lvl_log
 
         return log
 
