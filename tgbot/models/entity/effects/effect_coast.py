@@ -49,7 +49,7 @@ class CoastEffect(Effect, ABC):
         control_mod -= control_mod / 7
         coast_base = self.value
 
-        coast_total = (control + coast_base) * (1 - control_mod) * (1 + entity.lvl / 50) * coast_rank * (damage / 2)
+        coast_total = (control + coast_base) * (1 - control_mod) * (1 + entity.lvl / 50) * coast_rank * (1 + damage / 100)
         return coast_total
 
     def info(self, entity, skill=None):
