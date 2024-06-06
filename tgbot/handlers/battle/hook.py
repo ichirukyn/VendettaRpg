@@ -1,4 +1,3 @@
-from tgbot.enums.skill import SkillDirection
 from tgbot.enums.skill import SkillSubAction
 from tgbot.enums.skill import SkillType
 from tgbot.misc.locale import keyboard

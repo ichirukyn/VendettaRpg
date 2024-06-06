@@ -1,3 +1,5 @@
+import asyncio
+
 from tgbot.api.hero import fetch_hero_spell
 from tgbot.api.hero import fetch_hero_technique
 from tgbot.api.hero import get_hero
@@ -14,83 +16,80 @@ from tgbot.models.entity.statistic import Statistic
 from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
+options_init = {
+    'stats': True,
+    'race': True,
+    'class_': True,
+    'statistic': True,
+    'techniques': True,
+    'spells': True,
+    'teams': True,
+    'weapon': True
+}
 
-async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None, chat_id=None) -> Hero:
-    if hero_id is not None and hero_data is None:
-        hero_db = await get_hero(session, hero_id)
-        stats_db = await get_hero_stats(session, hero_id)
 
-        _chat_id: str = hero_db.get('user').get('chat_id', '0')
-        hero_db['chat_id'] = int(_chat_id)
-    else:
-        hero_id = hero_data['id']
-        hero_db = hero_data
-        hero_db['chat_id'] = hero_data.get('user').get('chat_id')
-        stats_db = await get_hero_stats(session, hero_id)
+async def init_hero(db: DBCommands, session, hero_id=None, chat_id=None, options=None) -> Hero:
+    if options is None:
+        options = {**options_init}
+
+    hero_db = None
+    stats_db = None
+
+    if hero_id is not None:
+        hero_db, stats_db = await asyncio.gather(get_hero(session, hero_id), get_hero_stats(session, hero_id))
+
+        chat_id_ = hero_db.get('user', {}).get('chat_id', '0')
+        hero_db['chat_id'] = int(chat_id_)
 
     if chat_id is not None:
         hero_db['chat_id'] = chat_id
 
-    hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db)
-    hero.flat_init()
-    hero.active_bonuses = []
+    hero = HeroFactory.create_hero(hero_id, hero_db, stats_db if options.get('stats') else {})
 
-    _, hero = await check_hero_lvl(db, session, hero)
+    if options.get('stats'):
+        hero.flat_init()
+        hero.active_bonuses = []
+        _, hero = await check_hero_lvl(db, session, hero)
 
-    team_db = await db.get_hero_team(hero_id)
-    statistic_db = await get_statistic(session, hero_id)
+    if options.get('race'):
+        race = await race_init(session, hero_db.get('race'))
+        if race is not None:
+            hero.race = race
+            hero.race.apply(hero)
 
+    if options.get('class_'):
+        _class = await class_init(session, hero_db.get('class'))
+        if _class is not None:
+            hero._class = _class
+            hero._class.apply(hero)
 
-    _class = await class_init(session, hero_db.get('class'))
+    if options.get('statistic'):
+        statistic_db = await get_statistic(session, hero_id)
+        hero.statistic = Statistic()
+        hero.statistic.init_bd(statistic_db)
 
-    if _class is not None:
-        hero._class = _class
-        hero._class.apply(hero)
+    if options.get('techniques'):
+        techniques_db = await fetch_hero_technique(session, hero.id)
+        hero.techniques = [technique_init(tech.get('technique')) for tech in techniques_db if tech.get('technique')]
 
-    race = await race_init(session, hero_db.get('race'))
+    if options.get('spells'):
+        spells_db = await fetch_hero_spell(session, hero.id)
+        hero.spells = [spell_init(_spell.get('spell')) for _spell in spells_db if _spell.get('spell')]
 
-    if race is not None:
-        hero.race = race
-        hero.race.apply(hero)
+    if options.get('weapon'):
+        hero = await update_hero_weapon(db, hero)
 
-    hero.statistic = Statistic()
-    hero.statistic.init_bd(statistic_db)
+    if options.get('weapon'):
+        team_db = await db.get_hero_team(hero_id)
 
-    # Technique
-    hero.techniques = []
-    techniques_db = await fetch_hero_technique(session, hero.id)
+        if team_db is not None:
+            hero.team_id = team_db.get('team_id')
 
-    if techniques_db is not None:
-        for tech in techniques_db:
-            technique = tech.get('technique')
-            technique = technique_init(technique)
-
-            if technique is not None:
-                hero.techniques.append(technique)
-
-    # Spell
-    hero.spells = []
-    spells_db = await fetch_hero_spell(session, hero.id)
-
-    if spells_db is not None:
-        for _spell in spells_db:
-            spell = _spell.get('spell')
-            spell = spell_init(spell)
-
-            if spell is not None:
-                hero.spells.append(spell)
-
-    hero = await update_hero_weapon(db, hero)
-
-    if team_db is not None:
-        hero.team_id = team_db['team_id']
-
-        if team_db['is_leader']:
-            hero.name = f' {hero.name}'
-            hero.is_leader = True
+            if team_db.get('is_leader'):
+                hero.name = f' {hero.name}'
+                hero.is_leader = True
 
     hero.update_stats_all()
-
     return hero
 
 
@@ -105,26 +104,19 @@ async def check_hero_lvl(db, session, hero) -> (str, Hero):
         if hero.check_lvl_up():
             hero.lvl += 1
             hero.free_stats += 10  # TODO: Тянуть с ранга
+
             log += f"\n\nВы достигли {hero.lvl} уровня!\nВы получили {10} СО"
+
             await db.update_hero_stat('free_stats', hero.free_stats, hero.id)
             await db.update_hero_level(hero.exp, hero.lvl, hero.id)
+
             log_, hero = await check_hero_lvl(db, session, hero)
             log += log_
+
     except Exception as e:
         print(f"An error occurred: {e}")
 
     return log, hero
-
-
-async def update_hero_stats(session, hero):
-    stats_db = await get_hero_stats(session, hero.id)
-
-    hero.init_stats_factory(stats_db)
-    hero.flat_init()
-    # Обновить бонусы
-    hero.update_stats_all()
-
-    return hero
 
 
 async def update_hero_weapon(db, hero):
