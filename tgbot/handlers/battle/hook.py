@@ -78,6 +78,9 @@ class BattleEngine:
                 enemies = self.target_enemy_team(entity)
                 teammates = self.target_teammate_team(entity)
 
+                if len(enemies) < 1:
+                    return self.order, None, 'win', i, ''
+
                 entity.define_action()
                 entity.sub_action = entity.define_sub_action(enemies)
 
@@ -415,24 +418,36 @@ class BattleLogger:
         stats = ''
 
         if isinstance(attacker, Hero):
-            stats = attacker.info.status_all(attacker)
+            stats = f"attacker.info.status_all(attacker)\n"
 
         if def_name != attacker.name:
             def_log = ''.join([f"\n\n", def_name, f"\n", bonuses_d, debuffs_d])
 
+        def get_hp(entity):
+            if entity is None:
+                return ''
+
+            hp = ''
+
+            if not isinstance(entity, list):
+                entity = [entity]
+
+            # Придумать как убрать отображение ошибки..
+            for e in entity:
+                hp = ''.join([hp, f"({e.hp}/{e.hp_max}) "])
+
+            return hp
+
         log = ''.join([
             log,
             f"\n\n",
-            f"Атакующий: {attacker.name}\n",
-            f"Тип: {attacker.action}\n",
-            f"{f'Цель: {def_name}' if def_name != attacker.name else ''}\n",
-            f"\n",
+            f"Атакующий: {attacker.name} {get_hp(attacker)}\n",
+            f"{f'Цель: {def_name} {get_hp(defender)}' if def_name != attacker.name else ''}\n",
+            f"Действие: {attacker.action}\n",
             bonuses_a,
             f"\n\n",
             stats,
-            f"\n",
             debuffs_a,
-            def_log
         ])
 
         return log

@@ -56,9 +56,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
     control_qi = 0
     control_qi_normalize = 0
 
-    hp_modify = 0  # Мод. Хп
-    qi_modify = 0  # Мод. Ки
-    mana_modify = 0  # Мод. Маны
+    hp_modify = 1  # Мод. Хп
+    qi_modify = 1  # Мод. Ки
+    mana_modify = 1  # Мод. Маны
 
     flat_strength = 0
     flat_health = 0
