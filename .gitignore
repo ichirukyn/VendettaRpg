@@ -68,3 +68,4 @@ dicts
 model/
 simulation/logs
 simulation/data
+tgbot/models/helpers/logs
