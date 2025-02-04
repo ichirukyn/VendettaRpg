@@ -165,7 +165,7 @@ class EnemyStat(Base):
     crit_rate: Mapped[float] = mapped_column(default="0.05")
     crit_damage: Mapped[float] = mapped_column(default="0.5")
     resist: Mapped[float] = mapped_column(default="0.1")
-    total_stats: Mapped[int] = mapped_column(default=7)
+    total_stats_flat: Mapped[int] = mapped_column(default=7)
 
 
 class EnemyTeam(Base):

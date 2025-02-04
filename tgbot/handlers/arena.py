@@ -65,16 +65,16 @@ async def arena_select_type(message: Message, state: FSMContext):
         if pvp_type == 'team':
             if hero.team_id != 0:
                 team = await db.get_team_heroes(hero.team_id)
-                player_team = await init_team(db, session, team)
+                player_team = await init_team(db, session, team, dp)
             else:
                 player_team = [hero]
 
             team_bd = await db.get_team_heroes(id)
-            enemy_team = await init_team(db, session, team_bd)
+            enemy_team = await init_team(db, session, team_bd, dp)
 
             for enemy in enemy_team:
                 if enemy.id == hero.id:
-                    return await message.answer('Вызывать свою команду на бой, можно только в 1 на 1')
+                    return await message.answer('Вызывать свою команду на бой нельзя')
 
             await state.update_data(player_team=player_team)
             await state.update_data(enemy_team=enemy_team)

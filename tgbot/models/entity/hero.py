@@ -1,8 +1,9 @@
 import copy
 
+from simulation import base_technique
 from tgbot.misc.other import formatted
 from tgbot.models.entity._class import Class
-from tgbot.models.entity.effect import Effect
+from tgbot.models.entity.effects.effect import Effect
 from tgbot.models.entity.entity import Entity
 from tgbot.models.entity.race import Race
 
@@ -15,18 +16,18 @@ class HeroFactory:
             'name': data['name'],
             'rank': data['rank'],
             'money': data['money'],
-            'strength': stats['strength'],
-            'health': stats['health'],
-            'speed': stats['speed'],
-            'dexterity': stats['dexterity'],
-            'accuracy': stats['accuracy'],
-            'soul': stats['soul'],
-            'intelligence': stats['intelligence'],
-            'submission': stats['submission'],
-            'crit_rate': stats['crit_rate'],
-            'crit_damage': stats['crit_damage'],
-            'resist': stats['resist'],
-            'free_stats': stats['free_stats'],
+            'strength': stats.get('strength', 1),
+            'health': stats.get('health', 1),
+            'speed': stats.get('speed', 1),
+            'dexterity': stats.get('dexterity', 1),
+            'accuracy': stats.get('accuracy', 1),
+            'soul': stats.get('soul', 1),
+            'intelligence': stats.get('intelligence', 1),
+            'submission': stats.get('submission', 1),
+            'crit_rate': stats.get('crit_rate', 1),
+            'crit_damage': stats.get('crit_damage', 1),
+            'resist': stats.get('resist', 1),
+            'free_stats': stats.get('free_stats', 0),
             'chat_id': data['chat_id'],
         }
         return Hero(**hero)
@@ -70,15 +71,6 @@ class Hero(Entity):
     def level_up(self):
         self.free_stats += 10  # TODO: Обновить под ранги, а не статика
 
-    def damage_demo(self, technique):
-        entity = HeroFactory.create_init_hero(1, 0, 'demo')
-        entity.lvl = self.lvl
-        # self.technique = technique
-
-        damage, _ = self.damage(entity, technique.type_damage, technique)
-        # self.technique = None  # Чтобы не было багов
-
-        return damage
 
 
 class HeroInfo:
@@ -118,11 +110,23 @@ class HeroInfo:
         return debuff_list
 
     @staticmethod
-    def status(hero, crit=False):
+    def dps(hero):
+        return hero.damage_demo(base_technique)
+
+        # TODO: На будущее придумать как бы удобно смотреть примерный урон за бой
+        # for technique in hero.techniques:
+        #     damage, _ = hero.damage_demo(technique)
+        #     cd = technique.cooldown
+        #     count = len(hero.techniques)
+
+
+
+
+    def status(self, hero, crit=False):
         hero.update_stats()
         hero.default_stats()
         hero.update_regen()
-        so_string = f'`• Свободные очки: {formatted(hero.free_stats)}` \n'
+        # so_string = f'`• Свободные очки: {formatted(hero.free_stats)}` \n'
         crit_string = ''
 
         if crit:
@@ -137,7 +141,7 @@ class HeroInfo:
             f"     `• Класс: {hero._class.name}`\n"
             f"`• Уровень: {hero.lvl}` `({hero.exp_now}/{hero.exp_to_lvl})`\n"
             f"     `• Ранг: {hero.rank}`\n"
-            f"`• Золото: {formatted(hero.money)}`\n"
+            # f"`• Золото: {formatted(hero.money)}`\n"
             f"`———————————————————`\n"
             f"*Ваше текущее состояние:*\n"
             f"`• ХП: {formatted(hero.hp)} / {formatted(hero.hp_max)}`\n"
@@ -157,11 +161,36 @@ class HeroInfo:
             f"`• Контроль ки: {formatted(hero.control_qi)} ({formatted(hero.control_qi_normalize * 100)}%)`\n"
             f"{crit_string}"
             f"`———————————————————`\n"
-            f"`• Общая сила: {formatted(hero.total_stats)}`\n"
-            f"{so_string if hero.free_stats > 0 else ''}"
+            f"`• Общая сила: {formatted(hero.total_stats_flat)} ({formatted(hero.total_stats)})`\n"
+            # f"{so_string if hero.free_stats > 0 else ''}"
+            # f"`———————————————————`\n"
+            f"`• Оружие: {hero.weapon_name} {f'({hero.weapon_lvl} ур.)' if hero.weapon_lvl > 0 else ''} - {formatted(hero.weapon_damage)} урон`\n"
+            f"`• Средний урон: {self.dps(hero)}`\n"
+            # f"`———————————————————`\n"
+            # f"{so_string if hero.free_stats > 0 else ''}"
+        )
+
+    @staticmethod
+    def status_stats(hero):
+        hero.update_stats()
+        hero.default_stats()
+        hero.update_regen()
+        return (
+            f"*Ваше текущее состояние:*\n"
+            f"`• ХП: {formatted(hero.hp)} / {formatted(hero.hp_max)}`\n"
+            f"`• Мана: {formatted(hero.mana)} / {formatted(hero.mana_max)} ({formatted(hero.mana_reg)})`\n"
+            f"`• Ки: {formatted(hero.qi)} / {formatted(hero.qi_max)} ({formatted(hero.qi_reg)})`\n"
             f"`———————————————————`\n"
-            f"`• Оружие: {hero.weapon_name} {f'({hero.weapon_lvl} ур.)' if hero.weapon_lvl > 0 else ''}`\n"
-            f"`• Урон: {formatted(hero.weapon_damage)}\n`"
+            f"*Ваши характеристики:*\n"
+            f"`• Сила: {formatted(hero.strength)}`\n"
+            f"`• Здоровье: {formatted(hero.health)}`\n"
+            f"`• Скорость: {formatted(hero.speed)}`\n"
+            f"`• Ловкость: {formatted(hero.dexterity)}`\n"
+            f"`• Меткость: {formatted(hero.accuracy)}`\n"
+            f"`• Интеллект: {formatted(hero.intelligence)}`\n"
+            f"`• Дух: {formatted(hero.soul)}`\n"
+            f"`• Подчинение: {formatted(hero.submission)}`\n"
+            f"`- Урон: {formatted(hero.weapon_damage)}`\n"
         )
 
     @staticmethod

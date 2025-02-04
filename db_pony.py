@@ -108,7 +108,7 @@ class EnemyStat(db.Entity):
     crit_rate = Optional(float, default="0.05")
     crit_damage = Optional(float, default="0.5")
     resist = Optional(float, default="0.1")
-    total_stats = Optional(int, default=7)
+    total_stats_flat = Optional(int, default=7)
 
 
 class EnemyTeam(db.Entity):

@@ -26,11 +26,20 @@ async def buy_item(cb: CallbackQuery, state: FSMContext):
         return await cb.message.edit_text(locale['shop'], reply_markup=kb)
 
     text = "Вам не хватает денег.."
+
+    count = 1
+
     try:
-        if cb.data == 'Купить всё':
+        # match cb.data:
+        #     case f"{keyboard['buy_all']}":
+        #         count = item['item_count']
+
+        if cb.data == keyboard["buy_one"]:
+            count = 1
+        elif cb.data == keyboard["buy_ten"]:
+            count = 10
+        elif cb.data == keyboard["buy_all"]:
             count = item['item_count']
-        else:
-            count = int(cb.data)
     except ValueError:
         return await check_before_send(cb, "Введите корректное число", shop_buy_inline)
 
@@ -42,6 +51,26 @@ async def buy_item(cb: CallbackQuery, state: FSMContext):
     if price > hero.money:
         return await check_before_send(cb, "Вам не хватает денег..", shop_buy_inline)
 
+    # TODO: Переделать под trader_id, сейчас только под 1 магазин..
+    trader_items = await db.get_hero_trader_items(hero.id)
+    is_trader_count = None
+
+    for i in trader_items:
+        if i['item_id'] == item_id and i['item_count'] < count:
+            return await check_before_send(cb, "Не хватает товаров", shop_buy_inline)
+
+        if i['item_id'] == item_id:
+            new_count = i['item_count'] - count
+            is_trader_count = new_count
+
+            await db.update_trader_hero('item_count', new_count, item_id, hero.id)
+
+    if is_trader_count is None:
+        trader_count = item['item_count'] - count
+
+        await db.add_trader_hero(hero.id, item_id, 1, trader_count)
+        await db.update_heroes('money', hero.money, hero.id)
+
     inventory = await db.get_hero_inventory_all(hero.id)
     update = None
 
@@ -49,25 +78,17 @@ async def buy_item(cb: CallbackQuery, state: FSMContext):
         if i['item_id'] == item_id and i['is_stack'] is True:
             new_count = count + int(i['count'])
             update = await db.update_hero_inventory('count', new_count, hero.id, item_id)
-            print(update)
 
     if update is None:
         await db.add_hero_inventory(hero.id, item_id, count, True, True)
-        print('add')
 
     hero.money -= price
-    trader_count = item['item_count'] - count
 
-    # TODO: Переделать под trader_id, сейчас только под 1 магазин..
-    await db.add_trader_hero(hero.id, item_id, 1, trader_count)
-    await db.update_heroes('money', hero.money, hero.id)
+    items = await db.get_trader_items(1)
+    kb = list_inline(items)
 
-    if trader_count == 0:
-        items = await db.get_trader_items(1)
-        kb = list_inline(items)
-
-        await LocationState.store.set()
-        return await cb.message.edit_text('Спасибо за покупку!', reply_markup=kb)
+    await LocationState.store.set()
+    return await cb.message.edit_text('Спасибо за покупку!', reply_markup=kb)
 
 
 def shop(dp: Dispatcher):

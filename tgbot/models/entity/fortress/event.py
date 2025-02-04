@@ -1,4 +1,4 @@
-from tgbot.models.entity.effect import EffectFactory
+from tgbot.models.entity.effects.effect import EffectFactory
 
 
 class EventFactory:

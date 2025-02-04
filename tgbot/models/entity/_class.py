@@ -1,6 +1,6 @@
 from tgbot.api.class_ import fetch_class_bonuses
-from tgbot.models.entity.effect import EffectFactory
-from tgbot.models.entity.effect import EffectParent
+from tgbot.models.entity.effects._factory import EffectFactory
+from tgbot.models.entity.effects.effect_parent import EffectParent
 
 
 class ClassFactory:
@@ -12,15 +12,16 @@ class ClassFactory:
         desc_short = data.get('desc_short', 'Мечник')
         main_attr = data.get('main_attr', 'strength')
         type = data.get('type', 'Воин')
+        tag_id = data['tag_id']
 
-        _class = Class(id, name, desc, desc_short, bonuses, main_attr, type)
+        _class = Class(id, name, desc, desc_short, bonuses, main_attr, type, tag_id)
         return _class
 
 
 class Class(EffectParent):
     main_attr = ''
 
-    def __init__(self, id, name, desc, desc_short, bonuses, main_attr, type):
+    def __init__(self, id, name, desc, desc_short, bonuses, main_attr, type, tag_id):
         self.id = id
         self.name = name
         self.desc_short = desc_short
@@ -31,12 +32,17 @@ class Class(EffectParent):
 
         self.bonuses = bonuses
         self.effects = []
+        self.tag_id = tag_id
 
 
 async def class_init(session, class_db):
     try:
         id = class_db.get('id')
-        bonuses = await fetch_class_bonuses(session, id)
+
+        bonuses = class_db.get('bonuses', None)
+
+        if bonuses is None:
+            bonuses = await fetch_class_bonuses(session, id)
 
         new_bonuses = []
 

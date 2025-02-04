@@ -74,8 +74,10 @@ async def fetch_enemy_item(session, enemy_id) -> List[EnemyTechniqueType] | None
         return None
 
 
-async def get_enemy_loot(session, enemy_id, hero_id) -> List[EnemyItemType] | None:
-    async with session.get(url(f'/enemy/{enemy_id}/loot'), params={'hero_id': hero_id}) as res:
+async def get_enemy_loot(session, enemy_id, hero_id, lvl=0) -> List[EnemyItemType] | None:
+    params = {'hero_id': hero_id, 'enemy_lvl': lvl}
+
+    async with session.get(url(f'/enemy/{enemy_id}/loot'), params=params) as res:
         if res.status == 200:
             return await res.json()
 

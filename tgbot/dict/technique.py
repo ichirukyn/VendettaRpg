@@ -75,7 +75,7 @@ condition_attribute = {
 
     'prev': 'Прошлое значение',
     'prev_percent': 'Прошлый процент',
-    'total_stats': 'Всего ОС',
+    'total_stats_flat': 'Всего ОС',
     'lvl': 'Уровень',
 
     'mana_modify': 'Модификатор маны',

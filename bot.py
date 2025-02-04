@@ -1,4 +1,5 @@
 import asyncio
+import faulthandler
 
 import aiohttp
 from aiogram import Bot
@@ -6,10 +7,12 @@ from aiogram import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage
 
+from logger import logger
 from sql import create_pool
 from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
 from tgbot.filters.register import RegFilter
+from tgbot.handlers._commands import commands
 from tgbot.handlers.admin import register_admin
 from tgbot.handlers.arena import arena
 from tgbot.handlers.battle.handlers import battle
@@ -17,14 +20,13 @@ from tgbot.handlers.campus import campus
 from tgbot.handlers.character import character
 from tgbot.handlers.fortress import fortress
 from tgbot.handlers.location import location
-from tgbot.handlers.register import start
+from tgbot.handlers.settings import settings
 from tgbot.handlers.shop import shop
 from tgbot.handlers.team import team
 from tgbot.handlers.tower import tower
 from tgbot.middlewares.environment import EnvironmentMiddleware
 from tgbot.middlewares.update_state import UpdateStatsMiddleware
 from tgbot.misc.commands import bot_command
-from tgbot.misc.logger import logger
 
 
 def register_all_middlewares(dp, config):
@@ -39,7 +41,7 @@ def register_all_filters(dp):
 
 def register_all_handlers(dp):
     register_admin(dp)
-    start(dp)
+    commands(dp)
     location(dp)
 
     character(dp)
@@ -51,11 +53,16 @@ def register_all_handlers(dp):
     fortress(dp)
     campus(dp)
     battle(dp)
+    settings(dp)
 
 
 async def main():
     logger.info("Starting bot")
-    config = load_config(".env")
+
+    try:
+        config = load_config(".env")
+    except RuntimeError as e:
+        return logger.error(e)
 
     storage = MemoryStorage()
     if config.redis.use_redis:
@@ -91,6 +98,7 @@ async def main():
 
 if __name__ == '__main__':
     try:
+        faulthandler.enable()
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         logger.error("Bot stopped!")

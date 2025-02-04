@@ -6,6 +6,7 @@ from aiogram.types import ReplyKeyboardRemove
 
 from tgbot.api.spells import fetch_spell
 from tgbot.api.technique import fetch_technique
+from tgbot.handlers.settings import settings_menu
 from tgbot.handlers.team import to_team_main
 from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.inline import shop_buy_inline
@@ -43,26 +44,31 @@ async def location_main_select(message: Message, state: FSMContext):
         await LocationState.town.set()
         return await message.answer(locale['town'], reply_markup=town_kb)
 
-    elif message.text == keyboard['character']:
+    if message.text == keyboard['character']:
         await location_character(message, state)
 
-    elif message.text == keyboard['top']:
+    if message.text == keyboard['top']:
         await LocationState.top.set()
         await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
         await message.answer(locale['top'], reply_markup=top_inline)
+
+    if message.text == keyboard['settings']:
+        await LocationState.settings.set()
+        await message.answer('⁢', reply_markup=ReplyKeyboardRemove())
+        return await settings_menu(message, state)
 
 
 async def location_town(message: Message, state: FSMContext):
     data = await state.get_data()
 
     if message.text == keyboard['tower']:
-        return await location_tower(message, state)
+        return await location_tower(message)
 
     if message.text == keyboard['fortress']:
-        return await location_fortress(message, state)
+        return await location_fortress(message)
 
     if message.text == keyboard['campus']:
-        return await location_campus(message, state)
+        return await location_campus(message)
 
     if message.text == keyboard['arena']:
         pvp_hero = data.get('pvp_hero', None)
@@ -172,9 +178,7 @@ async def location_team(cb: CallbackQuery, state: FSMContext):
         return await cb.message.edit_text('Вы можете изменить настройки группы:', reply_markup=team_setting_inline)
 
 
-async def location_tower(message: Message, state: FSMContext):
-    print('Arena Floors')
-
+async def location_tower(message: Message):
     db = DBCommands(message.bot.get('db'))
     floors = await db.get_arena_floors()
 
@@ -185,7 +189,7 @@ async def location_tower(message: Message, state: FSMContext):
     await message.answer(locale['tower'], reply_markup=kb)
 
 
-async def location_fortress(message: Message, state: FSMContext):
+async def location_fortress(message: Message):
     db = DBCommands(message.bot.get('db'))
     floors = await db.get_arena_floors()
 
@@ -196,7 +200,7 @@ async def location_fortress(message: Message, state: FSMContext):
     await message.answer(locale['tower'], reply_markup=kb)
 
 
-async def location_campus(message: Message, state: FSMContext):
+async def location_campus(message: Message):
     db = DBCommands(message.bot.get('db'))
     floors = await db.get_arena_floors()
 
@@ -255,9 +259,10 @@ async def location_character(message: Message, state: FSMContext):
         await CharacterState.info_menu.set()
         return await message.answer(hero.info.status_all(hero), reply_markup=character_info_kb,
                                     parse_mode='Markdown')
-    info = HeroInfo()
     await LocationState.character.set()
-    await message.answer(info.status(hero), reply_markup=character_kb(hero.free_stats), parse_mode='Markdown')
+
+    status = HeroInfo().status(hero)
+    await message.answer(status, reply_markup=character_kb(hero.free_stats), parse_mode='Markdown')
 
 
 async def location_store(cb: CallbackQuery, state: FSMContext):

@@ -1,122 +1,162 @@
+import asyncio
+
 from tgbot.api.hero import fetch_hero_spell
 from tgbot.api.hero import fetch_hero_technique
 from tgbot.api.hero import get_hero
 from tgbot.api.hero import get_hero_lvl
 from tgbot.api.hero import get_hero_stats
 from tgbot.api.statistic import get_statistic
+from tgbot.misc.state import BattleState
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.hero import Hero
 from tgbot.models.entity.hero import HeroFactory
+from tgbot.models.entity.item import item_init
 from tgbot.models.entity.race import race_init
 from tgbot.models.entity.spells import spell_init
 from tgbot.models.entity.statistic import Statistic
 from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
+options_init = {
+    'stats': True,
+    'race': True,
+    'class_': True,
+    'statistic': True,
+    'techniques': True,
+    'spells': True,
+    'teams': True,
+    'weapon': True
+}
 
-async def init_hero(db: DBCommands, session, hero_id=None, hero_data=None, chat_id=None) -> Hero:
-    if hero_id is not None and hero_data is None:
-        hero_db = await get_hero(session, hero_id)
-        stats_db = await get_hero_stats(session, hero_id)
 
-        _chat_id: str = hero_db.get('user').get('chat_id', '0')
-        hero_db['chat_id'] = int(_chat_id)
-    else:
-        hero_id = hero_data['id']
-        hero_db = hero_data
-        hero_db['chat_id'] = hero_data.get('user').get('chat_id')
-        stats_db = await get_hero_stats(session, hero_id)
+async def init_hero(db: DBCommands, session, hero_id=None, chat_id=None, options=None) -> Hero:
+    # start_time = time.perf_counter()  # Начало измерения времени
+
+    if options is None:
+        options = {**options_init}
+
+    hero_db = None
+    stats_db = None
+
+    if hero_id is not None:
+        hero_db, stats_db = await asyncio.gather(get_hero(session, hero_id), get_hero_stats(session, hero_id))
+
+        chat_id_ = hero_db.get('user', {}).get('chat_id', '0')
+        hero_db['chat_id'] = int(chat_id_)
 
     if chat_id is not None:
         hero_db['chat_id'] = chat_id
 
-    hero: Hero = HeroFactory.create_hero(hero_id, hero_db, stats_db)
-    hero.flat_init()
-    _, hero = await check_hero_lvl(db, session, hero)
+    hero = HeroFactory.create_hero(hero_id, hero_db, stats_db if options.get('stats') else {})
 
-    team_db = await db.get_hero_team(hero_id)
-    statistic_db = await get_statistic(session, hero_id)
+    if options.get('stats'):
+        hero.flat_init()
+        hero.active_bonuses = []
+        _, hero = await check_hero_lvl(db, session, hero)
 
-    # skills = await db.get_hero_skills(hero_id)
-    hero.active_bonuses = []
+    if options.get('race'):
+        race = await race_init(session, hero_db.get('race'))
+        if race is not None:
+            hero.race = race
+            hero.race.apply(hero)
 
-    _class = await class_init(session, hero_db.get('class'))
+    if options.get('class_'):
+        _class = await class_init(session, hero_db.get('class'))
+        if _class is not None:
+            hero._class = _class
+            hero._class.apply(hero)
 
+    if options.get('statistic'):
+        statistic_db = await get_statistic(session, hero_id)
+        hero.statistic = Statistic()
+        hero.statistic.init_bd(statistic_db)
+
+    if options.get('techniques'):
+        techniques_db = await fetch_hero_technique(session, hero.id)
+        hero.techniques = [technique_init(tech.get('technique')) for tech in techniques_db if tech.get('technique')]
+
+    if options.get('spells'):
+        spells_db = await fetch_hero_spell(session, hero.id)
+        hero.spells = [spell_init(_spell.get('spell')) for _spell in spells_db if _spell.get('spell')]
+
+    if options.get('weapon'):
+        hero = await update_hero_weapon(db, hero)
+
+    if options.get('team'):
+        team_db = await db.get_hero_team(hero_id)
+
+        if team_db is not None:
+            hero.team_id = team_db.get('team_id')
+
+            if team_db.get('is_leader'):
+                hero.name = f' {hero.name}'
+                hero.is_leader = True
+
+    hero = await update_hero_potion(db, hero)
+    hero.update_stats_all()
+
+    # end_time = time.perf_counter()  # Конец измерения времени
+    # duration = end_time - start_time  # Время выполнения
+
+    return hero
+
+
+async def entity_base_init(session, entity_db, technique_db, entity):
+    _class = await class_init(session, entity_db.get('class'))
     if _class is not None:
-        hero._class = _class
-        hero._class.apply(hero)
+        entity._class = _class
+        entity._class.apply(entity)
 
-    race = await race_init(session, hero_db.get('race'))
+    race = await race_init(session, entity_db.get('race'))
     if race is not None:
-        hero.race = race
-        hero.race.apply(hero)
+        entity.race = race
+        entity.race.apply(entity)
 
-    hero.statistic = Statistic()
-    hero.statistic.init_bd(statistic_db)
+    entity.techniques = []
 
-    # Technique
-    hero.techniques = []
-    techniques_db = await fetch_hero_technique(session, hero.id)
-
-    if techniques_db is not None:
-        for tech in techniques_db:
+    if technique_db is not None:
+        for tech in technique_db:
             technique = tech.get('technique')
             technique = technique_init(technique)
 
             if technique is not None:
-                hero.techniques.append(technique)
+                entity.techniques.append(technique)
 
-    # Spell
-    hero.spells = []
-    spells_db = await fetch_hero_spell(session, hero.id)
-
-    if spells_db is not None:
-        for _spell in spells_db:
-            spell = _spell.get('spell')
-            spell = spell_init(spell)
-
-            if spell is not None:
-                hero.spells.append(spell)
-
-    hero = await update_hero_weapon(db, hero)
-
-    if team_db is not None:
-        hero.team_id = team_db['team_id']
-
-        if team_db['is_leader']:
-            hero.name = f' {hero.name}'
-            hero.is_leader = True
-
-    hero.update_stats_all()
-
-    return hero
+    return entity
 
 
 async def check_hero_lvl(db, session, hero) -> (str, Hero):
     log: str = ''
 
-    hero_lvl_data = await get_hero_lvl(session, hero.id)
-    hero_lvl = await hero_lvl_data.json()
-    hero.init_level(hero_lvl)
+    try:
+        hero_lvl_data = await get_hero_lvl(session, hero.id)
+        hero_lvl = await hero_lvl_data.json()
+        hero.init_level(hero_lvl)
 
-    if hero.check_lvl_up():
-        hero.lvl += 1
-        hero.free_stats += 10  # TODO: Тянуть с ранга
-        log += f"\n\nВы достигли {hero.lvl} уровня!\nВы получили {10} СО"
-        await db.update_hero_stat('free_stats', hero.free_stats, hero.id)
-        await db.update_hero_level(hero.exp, hero.lvl, hero.id)
-        log, hero = await check_hero_lvl(db, session, hero)
+        if hero.check_lvl_up():
+            hero.lvl += 1
+            hero.free_stats += 10  # TODO: Тянуть с ранга
+
+            log += f"\n\nВы достигли {hero.lvl} уровня!\nВы получили {10} СО"
+
+            await db.update_hero_stat('free_stats', hero.free_stats, hero.id)
+            await db.update_hero_level(hero.exp, hero.lvl, hero.id)
+
+            log_, hero = await check_hero_lvl(db, session, hero)
+            log += log_
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
     return log, hero
 
 
-async def update_hero_stats(session, hero):
-    stats_db = await get_hero_stats(session, hero.id)
+async def update_hero_potion(db, hero):
+    potions = await db.get_hero_inventory('potion', hero.id)
 
-    hero.init_stats_factory(stats_db)
-    hero.flat_init()
-    # Обновить бонусы
-    hero.update_stats_all()
+    for potion in potions:
+        p = item_init(potion)
+        hero.potions.append(p)
 
     return hero
 
@@ -131,10 +171,20 @@ async def update_hero_weapon(db, hero):
     return hero
 
 
-async def init_team(db, session, team, hero=None):
+async def init_team(db, session, team, dp, hero=None):
     entity_team = []
 
     for entity in team:
+        user = await db.get_heroes(entity.get('hero_id'))
+        chat_id = user.get('chat_id', 0)
+
+        if chat_id != 0:
+            state = await dp.storage.get_state(chat=chat_id)
+
+            for s in BattleState.states:
+                if state == s.state and state != 'BattleState:battle_start':
+                    continue
+
         h = await init_hero(db, session, hero_id=entity['hero_id'])
 
         if len(entity['prefix']) > 0:

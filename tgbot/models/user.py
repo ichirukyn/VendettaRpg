@@ -193,7 +193,7 @@ class DBCommands:
         crit_rate = hero.crit_rate
         crit_damage = hero.crit_damage
         resist = hero.resist
-        total_stats = hero.total_stats
+        total_stats = hero.total_stats_flat
 
         command = self.ADD_HERO_STATS
 
@@ -224,7 +224,7 @@ class DBCommands:
 
     async def get_hero_inventory(self, type, hero_id):
         command = f"SELECT * FROM hero_inventory hi INNER JOIN items ON hi.item_id = items.id  " \
-                  f"WHERE hero_id = $1 AND type='{type}'"
+                  f"WHERE hero_id = $1 AND type like '%{type}%'"
 
         return await self.pool.fetch(command, hero_id)
 
@@ -263,10 +263,10 @@ class DBCommands:
 
         return await self.pool.fetch(command, hero_id, trader_id)
 
-    async def update_trader_hero(self, stat_name, stat_value, hero_id):
-        command = f"UPDATE trader_heroes SET {stat_name} = $1 WHERE hero_id = $2"
+    async def update_trader_hero(self, column, value, item_id, hero_id):
+        command = f"UPDATE trader_heroes SET {column} = $1 WHERE item_id = $2 AND hero_id = $3"
 
-        return await self.pool.fetch(command, stat_value, hero_id)
+        return await self.pool.fetch(command, value, item_id, hero_id)
 
     # Race
     async def get_races(self):
@@ -323,7 +323,7 @@ class DBCommands:
 
     async def get_all_heroes_stats(self, stats_order='total_stats'):
         command = f"SELECT * FROM heroes h INNER JOIN hero_stats hs " \
-                  f"ON h.id = hs.hero_id ORDER BY {stats_order} DESC"
+                  f"ON h.id = hs.hero_id WHERE h.hidden = FALSE ORDER BY {stats_order} DESC"
 
         return await self.pool.fetch(command)
 
