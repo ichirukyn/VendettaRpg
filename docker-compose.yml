@@ -13,10 +13,11 @@ services:
     env_file:
       - ".env"
     networks:
-      - tg
+      - vendetta-network
 volumes:
   postgresDB:
 
 networks:
-  tg:
+  vendetta-network:
     external: true
+    driver: bridge
