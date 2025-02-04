@@ -11,7 +11,7 @@ race_prefix = ['🙂', '🧝‍♂️', '👨‍🦱', '😇', '😈', '☠️']
 class TechniqueFactory:
     @staticmethod
     def create_technique(data):
-        id = data.get('technique_id', 0)
+        id = data.get('id', 0)
         name = data.get('name', '')
         desc = data.get('desc', '')
         desc_short = data.get('desc_short', '')

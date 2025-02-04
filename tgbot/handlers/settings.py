@@ -20,14 +20,15 @@ async def settings_keyboard(message: Message, state: FSMContext):
 
     for setting in setting_list:
         name = f"{setting.get('label', '')}"
-        value = setting.get('value', '')
+        attr = setting.get('attr', '')
+        value = getattr(settings_, attr)
 
-        if hasattr(settings_, value) and getattr(settings_, value):
+        if hasattr(settings_, attr) and getattr(settings_, attr):
             name = f"✅ {name}"
         else:
             name = f"☑️ {name}"
 
-        settings_inline.add(InlineKeyboardButton(text=name, callback_data=value))
+        settings_inline.add(InlineKeyboardButton(text=name.format(value), callback_data=attr))
 
     settings_inline.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
 
@@ -48,6 +49,7 @@ async def settings_menu(message: Message, state: FSMContext, text=''):
 async def setting_toggle(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     settings_: Settings = data.get('settings')
+    value = ''
 
     if cb.data == keyboard['back']:
         await cb.message.delete()
@@ -61,16 +63,16 @@ async def setting_toggle(cb: CallbackQuery, state: FSMContext):
         else:
             settings_.active_all()
     else:
-        settings_.filter(cb.data)
+        value = settings_.filter(cb.data)
 
     text = ''
 
     for setting in setting_list:
         setting_name = setting.get('label', 'Настройка')
-        setting_value = setting.get('value', '')
+        setting_value = setting.get('attr', '')
 
         if setting_value == cb.data:
-            text = f"Вы изменили {setting_name}\n{locale['settings']}"
+            text = f"Вы изменили {setting_name.format(value)}\n{locale['settings']}"
 
     await state.update_data(settings=settings_)
 

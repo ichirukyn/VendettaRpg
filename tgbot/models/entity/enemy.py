@@ -6,11 +6,10 @@ from tgbot.api.enemy import get_enemy
 from tgbot.enums.skill import SkillDirection
 from tgbot.enums.skill import SkillSubAction
 from tgbot.enums.skill import SkillType
+from tgbot.handlers import lib_stats
+from tgbot.misc.hero import entity_base_init
 from tgbot.misc.locale import keyboard
-from tgbot.models.entity._class import class_init
 from tgbot.models.entity.entity import Entity
-from tgbot.models.entity.race import race_init
-from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
 
@@ -38,33 +37,103 @@ class EnemyFactory:
 
 
 class Enemy(Entity):
-    def auto_distribute(self, delta):
-        if self.lvl >= 3:
+    def auto_distribute(self, delta, tags=None):
+        if self.lvl >= 3 or delta >= 5:
             delta += randint(-2, 3)
 
-        # TODO: Заменить на ранг
-        points_to_add = delta * 10
+        # TODO: Заменить на ранг и подключить как-то начальную +20 (в конце)
+        # points_to_add = (delta * 10 * (1 + (self.rank / 10))) + 20
+
+        points_to_add = (delta * 10) + 20
+
         self.lvl += delta
+        print('Ожидаемое кол-во: ', points_to_add, f'({(self.lvl * 10) + 20 + 8})\n')
 
         self.update_stats_all()
 
-        self.strength += (self.strength / self.total_stats) * points_to_add
-        self.health += (self.health / self.total_stats) * points_to_add
-        self.speed += (self.speed / self.total_stats) * points_to_add
-        self.dexterity += (self.dexterity / self.total_stats) * points_to_add
-        self.accuracy += (self.accuracy / self.total_stats) * points_to_add
-        self.soul += (self.soul / self.total_stats) * points_to_add
-        self.intelligence += (self.intelligence / self.total_stats) * points_to_add
-        self.submission += (self.submission / self.total_stats) * points_to_add
+        if tags is not None:
+            combined_priorities = {}
 
-        print('weapon_damage', self.weapon_damage)
+            # Слияние приоритетов из тегов с использованием lib_stats для соответствия ключей
+            for tag in tags:
+                for key in lib_stats:
+                    k = lib_stats[key]
+                    k_ = None
+
+                    if key in ['Сила', 'Ловкость', 'Интеллект']:
+                        k_ = self._class.main_attr
+
+                    if k not in combined_priorities.keys():
+                        combined_priorities[k] = 0
+
+                    if k_ is not None and k_ not in combined_priorities.keys():
+                        combined_priorities[k_] = 0
+
+                    combined_priorities[k_ or k] += round(tag.get(k, 0) * tag.get('priority', 0), 2)
+
+            # Нормализация приоритетов
+            total_priority = sum(combined_priorities.values()) or 1
+            print(f'Приоритеты: {combined_priorities}')
+
+            normalized_priorities = {
+                attr: priority / total_priority for attr, priority in combined_priorities.items()
+            }
+
+            normalized_priorities = self.adjust_priorities(normalized_priorities)
+
+            print(f'Приоритеты норм: {normalized_priorities}\n')
+            # Распределение свободных очков с учетом приоритетов
+            for attr, priority in normalized_priorities.items():
+                points_for_attr = round(points_to_add * priority)
+                setattr(self, attr, getattr(self, attr) + points_for_attr)
+        else:
+            self.strength += (self.strength / self.total_stats) * points_to_add
+            self.health += (self.health / self.total_stats) * points_to_add
+            self.speed += (self.speed / self.total_stats) * points_to_add
+            self.dexterity += (self.dexterity / self.total_stats) * points_to_add
+            self.accuracy += (self.accuracy / self.total_stats) * points_to_add
+            self.soul += (self.soul / self.total_stats) * points_to_add
+            self.intelligence += (self.intelligence / self.total_stats) * points_to_add
+            self.submission += (self.submission / self.total_stats) * points_to_add
+
         # TODO: Заменить на что-то более четкое..
-        self.weapon_damage += delta * 5
-        print('weapon_damage', self.weapon_damage)
+        self.weapon_damage += delta * 3
 
         self.update_stats_all()
+        print('Полученное кол-во: ', self.total_stats, '\n')
 
         return self
+
+    def adjust_priorities(self, normalized_priorities):
+        # Получаем текущие значения характеристик
+        current_attributes = {attr: getattr(self, attr) for attr in normalized_priorities.keys()}
+        total_attributes = sum(current_attributes.values())
+
+        # Вычисляем текущее соотношение характеристик
+        current_ratios = {attr: value / total_attributes for attr, value in current_attributes.items() if value > 0}
+
+        # Вычисляем разницу между текущим соотношением и нормализованными приоритетами
+        ratio_difference = {
+            attr: current_ratios.get(attr, 0) - normalized_priorities.get(attr, 0) for attr in normalized_priorities
+            if normalized_priorities[attr] > 0
+        }
+
+        # Корректируем нормализованные приоритеты на основе разницы
+        for attr, difference in ratio_difference.items():
+            if difference < 0:
+                # Если текущее значение меньше желаемого, увеличиваем приоритет
+                normalized_priorities[attr] += abs(difference)
+            elif difference > 0:
+                # Если текущее значение больше желаемого, уменьшаем приоритет
+                normalized_priorities[attr] -= difference
+
+        # Перенормализация приоритетов после корректировки
+        total_priority = sum(normalized_priorities.values())
+        adjusted_priorities = {
+            attr: priority / total_priority for attr, priority in normalized_priorities.items() if priority > 0
+        }
+
+        return adjusted_priorities
 
     def select_enemy(self, enemy_team):
         if len(enemy_team) > 0:
@@ -129,7 +198,7 @@ class Enemy(Entity):
                 return SkillSubAction.counter_strike
             elif self.speed > entity.speed:
                 return SkillSubAction.evasion
-            elif round(self.hp_percent) <= 2:
+            elif round(self.hp_percent) <= 0.1:
                 return SkillSubAction.escape
             else:
                 return SkillSubAction.defense
@@ -143,6 +212,7 @@ class Enemy(Entity):
         else:
             return SkillSubAction.defense
 
+
 async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
     enemy_db = await get_enemy(session, enemy_id)
     stats_db = await db.get_enemy_stats(enemy_id)
@@ -152,6 +222,7 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
 
     enemy = EnemyFactory.create_enemy(stats_db)
     enemy.flat_init()
+
     # Костыль, чтобы противники могли больше спамить заклинаниями..
     enemy.qi_modify = 100
     enemy.mana_modify = 100
@@ -160,26 +231,9 @@ async def init_enemy(db: DBCommands, enemy_id, session) -> Enemy:
 
     enemy.init_weapon(weapon, enemy_weapon['lvl'])
 
-    enemy.techniques = []
     technique_db = await fetch_enemy_technique(session, enemy_id)
 
-    if technique_db is not None:
-        for tech in technique_db:
-            technique = tech.get('technique')
-            technique = technique_init(technique)
-
-            if technique is not None:
-                enemy.techniques.append(technique)
-
-    _class = await class_init(session, enemy_db.get('class'))
-    if _class is not None:
-        enemy._class = _class
-        enemy._class.apply(enemy)
-
-    race = await race_init(session, enemy_db.get('race'))
-    if race is not None:
-        enemy.race = race
-        enemy.race.apply(enemy)
+    enemy = await entity_base_init(session, enemy_db, technique_db, enemy)
 
     enemy.update_stats_all()
     return enemy
@@ -210,3 +264,12 @@ class DefensiveEnemy(Enemy):
             return 'defense'
         else:
             return 'dodge'
+
+# strength: 0.2
+# health: 0.2
+# priority: 3
+#
+# strength: 0.25
+# health: 0.15
+# speed: 0.15
+# priority: 4

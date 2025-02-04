@@ -15,7 +15,7 @@ class CoastEffect(Effect, ABC):
 
     def check(self, entity, skill=None) -> bool:
         if self.condition and not self.check(entity):
-            print('Условия не выполнены')
+            # Условия не выполнены
             return False
 
         coast_total = self.coast(entity, skill)

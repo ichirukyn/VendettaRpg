@@ -12,7 +12,8 @@ from tgbot.models.entity.statistic import StatisticBattle
 
 
 class BattleEngine:
-    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb, battle_type, is_dev=False):
+    def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb, battle_type, is_dev=False,
+                 callback=None):
         self.enemy_team = enemy_team
         self.player_team = player_team
         self.order = []
@@ -29,6 +30,8 @@ class BattleEngine:
         self.team_win = None
         self.logs = ''
         self.is_dev = is_dev
+        self.callback = callback
+        self.round = 0
 
     def initialize(self):
         self.order = self.update_order()
@@ -57,12 +60,19 @@ class BattleEngine:
         while i < len(self.order):
             entity = self.order[i]
 
+            if self.callback:
+                for e in self.order:
+                    e.turn += 1
+
+                self.callback([self.player_team, self.enemy_team])
+
             if entity.sub_action is None or entity.sub_action == '':
                 entity.sub_action = SkillSubAction.defense
 
             entity.check_active_effects()
             entity.skill_cooldown()
             entity.turn_regenerate()
+            entity.decay_aggression()
 
             log = entity.debuff_round_check()
 
@@ -98,6 +108,7 @@ class BattleEngine:
             return self.order, None, 'win', i, ''
 
         self.order_index = 0
+        self.round += 1
         return self.battle()
 
     def battle_action(self, attacker: Entity, defender):
@@ -213,10 +224,8 @@ class BattleEngine:
         player = max(self.player_team, key=lambda x: x.hp)
 
         if enemy.hp <= 0:
-            print('Player win')
             return self.player_team
         elif player.hp <= 0:
-            print('Enemy win')
             return self.enemy_team
 
         return None
@@ -233,6 +242,16 @@ class BattleEngine:
             if h.id == hero.id:
                 return h
 
+    def entity_aggression(self, attacker, type, value=1):
+        match type:
+            case 'damage':
+                attacker.update_aggression(damage=value)
+            case 'heal':
+                attacker.update_aggression(healing=value)
+            case 'cc', 'skill':
+                dps = HeroInfo().dps(attacker)
+                attacker.update_aggression(cc=dps)
+
     def entity_attack(self, attacker, defender):
         hp = attacker.hp
         hp_def = defender.hp or 0
@@ -247,6 +266,7 @@ class BattleEngine:
 
         if attacker.name != defender.name and defender.check_evasion(attacker):
             log = f"⚔️ {attacker.name} промахнулся по {defender.name}\n"
+            attacker.aggression_combo = 1
 
             attacker.statistic.battle.miss_count += 1
             defender.statistic.battle.evasion_success_count += 1
@@ -260,10 +280,12 @@ class BattleEngine:
         if attacker.name == defender.name:
             action.activate(attacker, attacker)
             log = f"{attacker.name} применил технику {action.name}\n"
+            self.entity_aggression(attacker, 'skill')
             defender = attacker
         else:
             action.activate(attacker, defender)
             log = f"{attacker.name} применил технику {action.name} к {defender.name}\n"
+            self.entity_aggression(attacker, 'skill')
 
         if action.type == SkillType.support:
             attacker.check_shield()
@@ -287,6 +309,7 @@ class BattleEngine:
                 attacker.statistic.battle.healing += delta
                 attacker.statistic.battle.check_max('healing_max', delta)
                 log = f"{defender.name} восстановил 🔻{formatted(delta)}"
+                self.entity_aggression(attacker, 'heal', delta)
 
             attacker.update_stats_percent()
             defender.update_stats_percent()
@@ -320,6 +343,8 @@ class BattleEngine:
 
             attacker.statistic.battle.hits_count += 1
 
+            self.entity_aggression(attacker, 'damage', total_damage)
+
             if total_damage == 0:
                 log = f"⚔️ {attacker.name} использовал \"{action.name}\" на {defender.name}"
 
@@ -330,6 +355,7 @@ class BattleEngine:
             if hp > attacker.hp:
                 delta = hp - attacker.hp
 
+                self.entity_aggression(defender, 'damage', delta)
                 attacker.statistic.battle.damage_taken += delta
                 defender.statistic.battle.counter_strike_damage += delta
                 defender.statistic.battle.counter_strike_count += 1
@@ -398,6 +424,22 @@ class BattleLogger:
 
         return response
 
+    @staticmethod
+    def get_hp(entity):
+        if entity is None:
+            return ''
+
+        hp = ''
+
+        if not isinstance(entity, list):
+            entity = [entity]
+
+        # Придумать как убрать отображение ошибки..
+        for e in entity:
+            hp = ''.join([hp, f"({e.hp}/{e.hp_max}) "])
+
+        return hp
+
     def turn_log(self, attacker, defender, log):
         if not self.is_dev:
             return log
@@ -423,32 +465,33 @@ class BattleLogger:
         if def_name != attacker.name:
             def_log = ''.join([f"\n\n", def_name, f"\n", bonuses_d, debuffs_d])
 
-        def get_hp(entity):
-            if entity is None:
-                return ''
+        def_ = defender
 
-            hp = ''
+        if isinstance(defender, list):
+            def_ = defender[0]
 
-            if not isinstance(entity, list):
-                entity = [entity]
+        evasion_chance = def_.get_evasion(attacker)
 
-            # Придумать как убрать отображение ошибки..
-            for e in entity:
-                hp = ''.join([hp, f"({e.hp}/{e.hp_max}) "])
+        # log = ''.join([
+        #     log,
+        # ])
 
-            return hp
+        log = (
+            f"\n\n\n",
+            f"Действие: {attacker.action} ({attacker.technique.name if attacker.action == 'Техники' else attacker.spell.name})\n",
+            f"Атакующий: {attacker.name} {self.get_hp(attacker)}\n",
+            f"{f'Цель: {def_name} {self.get_hp(defender)}' if def_name != attacker.name else ''}\n\n",
+            # bonuses_a,
+            # f"\n\n",
+            # stats,
+            # debuffs_a,
+            f'Шанс уклонения = {formatted(evasion_chance * 100)}% '
+            f'(Скорость {formatted(attacker.speed)} (attacker) vs {formatted(def_.speed)}) '
+            f'(Точность {formatted(def_.accuracy)})\n'
+            '/end'
+        )
 
-        log = ''.join([
-            log,
-            f"\n\n",
-            f"Атакующий: {attacker.name} {get_hp(attacker)}\n",
-            f"{f'Цель: {def_name} {get_hp(defender)}' if def_name != attacker.name else ''}\n",
-            f"Действие: {attacker.action}\n",
-            bonuses_a,
-            f"\n\n",
-            stats,
-            debuffs_a,
-        ])
+        log = ''.join(log)
 
         return log
 

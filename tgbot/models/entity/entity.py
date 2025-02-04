@@ -10,7 +10,30 @@ from tgbot.models.entity.entity_base.entity_resist import EntityResist
 from tgbot.models.entity.entity_base.entity_stats import EntityStats
 from tgbot.models.entity.entity_base.entity_weapon import EntityWeapon
 from tgbot.models.entity.spells import Spell
+from tgbot.models.entity.statistic import Statistic, StatisticBattle
 from tgbot.models.entity.techniques import Technique
+
+
+class EntityFactory:
+    @staticmethod
+    def create_entity(user_id, name):
+        entity = {
+            'entity_id': user_id,
+            'name': name,
+            'rank': 'Редкий',
+            'strength': 1,
+            'health': 1,
+            'speed': 1,
+            'dexterity': 1,
+            'accuracy': 1,
+            'soul': 1,
+            'intelligence': 1,
+            'submission': 1,
+            'crit_rate': 0.05,
+            'crit_damage': 0.5,
+            'resist': 0.1,
+        }
+        return Entity(**entity)
 
 
 class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats, EntityAggression):
@@ -85,6 +108,14 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
 
     bonus_damage = 1
 
+    # Для модели
+    class_id = 0
+    race_id = 0
+
+    is_enemy = False
+    is_me = False
+    turn = 0
+
     # TODO: Перенести всё в init
     def __init__(self, entity_id, name, rank, strength, health, speed, dexterity, accuracy, soul, intelligence,
                  submission, crit_rate, crit_damage, resist):
@@ -115,6 +146,12 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         self.effects = []
         self.spells = []
         self.techniques = []
+
+        self.potion = None
+        self.potions = []
+        self.potion_cd = 0
+
+        self.postfix = ""
 
     # Stats
     def flat_init(self):
@@ -220,9 +257,6 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         return self.strength + self.health + self.speed + self.dexterity + self.soul + self.intelligence + \
             self.submission + self.accuracy
 
-    def default_aggression(self):
-        self.aggression = (self.aggression_base + self.total_stats) * self.aggression_mod
-
     def turn_regenerate(self):
         self.update_regen()
         self.qi += self.qi_reg
@@ -240,6 +274,10 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         if self.shield > self.shield_max:
             self.shield_max = self.shield
 
+    # Battle
+    def default_aggression(self):
+        self.aggression = (self.aggression_base + self.total_stats) * self.aggression_mod
+
     def check_active_effects(self):
         active_bonuses = [*self.active_bonuses]
 
@@ -248,7 +286,11 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
 
         for bonus in active_bonuses:
             if len(bonus.effects) == 0:
-                self.active_bonuses.remove(bonus)
+                try:
+                    self.active_bonuses.remove(bonus)
+                except ValueError as e:
+                    print(e)
+                    print('test')
 
             if isinstance(bonus, Technique) or isinstance(bonus, Spell):
                 if bonus.cooldown_current <= 0 and bonus.cooldown != 0:
@@ -268,6 +310,9 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         if len(self.spells) > 0:
             for spell in self.spells:
                 spell.cooldown_decrease()
+
+        if self.potion_cd > 0:
+            self.potion_cd -= 1
 
     def is_active_skill(self, name):
         for skill in self.active_bonuses:
@@ -355,31 +400,104 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         self.hp -= total_damage
         return f"{self.name} получил урон {debuff.get('name')} ({total_damage})"
 
-    def check_evasion(self, attacker):
+    def get_evasion(self, attacker):
         action = attacker.technique
 
         if attacker.spell is not None:
             action = attacker.spell
 
+        level_difference = abs(self.lvl - attacker.lvl)
+
+        if level_difference <= 5:
+            scatter_coefficient = 1.0 + (level_difference * 0.05)
+        else:
+            scatter_coefficient = 1.0 + (level_difference * 0.1)
+
         evasion_chance = (self.speed / (self.speed + attacker.speed)) + self.evasion_modify
-        # evasion_chance = (100 + self.lvl) / ((100 + defender.lvl) * (100 + defender.speed)
-        # + (100 + defender.dexterity) + (100 + self.lvl))
+        evasion_chance *= scatter_coefficient
 
         if attacker._class.type == 'Лучник' or action.distance == 'distant':
             evasion_chance = (self.speed / (self.speed + attacker.speed + (attacker.accuracy * 1.5)))
             evasion_chance += self.evasion_modify
 
-        if evasion_chance < 0.05:
-            evasion_chance = 0.05
+        evasion_chance = max(0.05, min(evasion_chance, 0.95))
 
-        if evasion_chance > 0.95:
-            evasion_chance = 0.95
+        return evasion_chance
 
-        print(
-            f'Шанс уклонения {self.name} = {formatted(evasion_chance * 100)}% '
-            f'(Скорость {formatted(self.speed)} vs {formatted(attacker.speed)}) '
-            f'(Точность {formatted(attacker.accuracy)})\n'
-        )
+    # TODO: На "Подумать"
+    # def get_evasion(self, attacker):
+    #     evasion_chance = (self.speed / (self.speed + attacker.speed)) + self.evasion_modify
+    #
+    #     # Используем линейную интерполяцию для модификатора точности
+    #     # accuracy_modifier = (attacker.accuracy * 1.5) / ((attacker.accuracy * 1.5) + self.speed)
+    #     # interpolated_accuracy_modifier = evasion_chance * (1 - accuracy_modifier) + 0.1 * accuracy_modifier
+    #
+    #     # evasion_chance_1 = interpolated_accuracy_modifier + self.evasion_modify
+    #
+    #     evasion_chance_1 = 0.5 * (evasion_chance + (1 - evasion_chance))
+    #
+    #     # level_difference = max(1, abs(self.lvl - attacker.lvl))
+    #     # scatter_coefficient = 1 / level_difference
+    #
+    #     # Лучше
+    #     # level_difference = self.lvl - attacker.lvl
+    #     # scatter_coefficient = 1.0 + (level_difference * 0.1)
+    #
+    #     level_difference = abs(self.lvl - attacker.lvl)
+    #
+    #     if level_difference <= 5:
+    #         scatter_coefficient = 1.0 + (level_difference * 0.05)
+    #     else:
+    #         scatter_coefficient = 1.0 + (level_difference * 0.1)
+    #
+    #     print(
+    #         f"\n"
+    #         f"{self.name}\n"
+    #         f"Без точности:\n"
+    #         f"Шанс уклонения обычный: {round(evasion_chance, 2) * 100}%\n"
+    #         f"Шанс уклонения интерполяция: {round(evasion_chance_1, 2) * 100}%\n"
+    #         f"Шанс уклонения уровни: {round(evasion_chance * scatter_coefficient, 2) * 100}%\n"
+    #         f"Шанс уклонения уровни и интерполяция: {round(evasion_chance_1 * scatter_coefficient, 2) * 100}%\n"
+    #         f"self - Скорость: {round(self.speed)}, Точность: {round(self.accuracy)}\n"
+    #         f"attacker - Скорость: {round(attacker.speed)}, Точность: {round(attacker.accuracy)}\n"
+    #         f"\n"
+    #     )
+    #
+    #     action = attacker.technique
+    #     if attacker.spell is not None:
+    #         action = attacker.spell
+    #
+    #     if attacker._class.type == 'Лучник' or action.distance == 'distant':
+    #         evasion_chance = (self.speed / (self.speed + attacker.speed + (attacker.accuracy * 1.5)))
+    #         evasion_chance += self.evasion_modify
+    #
+    #     # # Используем линейную интерполяцию для модификатора точности
+    #     # accuracy_modifier = (attacker.accuracy * 1.5) / ((attacker.accuracy * 1.5) + self.speed)
+    #     # interpolated_accuracy_modifier = evasion_chance * (1 - accuracy_modifier) + 0.1 * accuracy_modifier
+    #     #
+    #     # evasion_chance_1 = interpolated_accuracy_modifier + self.evasion_modify
+    #
+    #     evasion_chance_1 = 0.5 * (evasion_chance + (1 - evasion_chance))
+    #
+    #     print(
+    #         f"\n"
+    #         f"{self.name}\n"
+    #         f"С точностью:\n"
+    #         f"Шанс уклонения обычный: {round(evasion_chance, 2) * 100}%\n"
+    #         f"Шанс уклонения интерполяция: {round(evasion_chance_1, 2) * 100}%\n"
+    #         f"Шанс уклонения уровни: {round(evasion_chance * scatter_coefficient, 2) * 100}%\n"
+    #         f"Шанс уклонения уровни и интерполяция: {round(evasion_chance_1 * scatter_coefficient, 2) * 100}%\n"
+    #         f"self - Скорость: {round(self.speed)}, Точность: {round(self.accuracy)}\n"
+    #         f"attacker - Скорость: {round(attacker.speed)}, Точность: {round(attacker.accuracy)}\n"
+    #         f"\n"
+    #     )
+    #
+    #     evasion_chance = max(0.05, min(evasion_chance, 0.95))
+    #
+    #     return evasion_chance
+
+    def check_evasion(self, attacker):
+        evasion_chance = self.get_evasion(attacker)
 
         if self.sub_action == SkillSubAction.evasion and random() < evasion_chance:
             attacker.statistic.battle.evasion_count += 1
@@ -391,7 +509,6 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         evasion_chance = (target_adder.accuracy / ((target_adder.accuracy * 0.7) + self.speed)) + self.evasion_modify
         effect_chance = target_adder.effect_chance + evasion_chance
         chance = base_chance * (1 + effect_chance) * (1 - self.effect_resist) * (1 - self.debuff_resist)
-        print('real_effect_probability', chance)
 
         if random() < chance:
             return True
@@ -411,7 +528,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
 
         if damage_type != 'none':
             bonus_type = 1 + self.__getattribute__(damage_type)
-            def_res = defender.__getattribute__(damage_type)
+            def_res = defender.__getattribute__(damage_type.replace('damage', 'resist'))
         else:
             bonus_type = 1
             def_res = 0
@@ -423,10 +540,12 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
 
         base_dmg = tech.damage * (dmg_attr + self.weapon_damage)
 
+        cof = 1.2
+
         # defs = 1.0 (100% защита), defs = 0.0 (0% защиты)
         # TODO 1 - 0 -- Сопротивления элем. урону | 1 - 0 -- Игнорирование защиты
         defs = (100 + self.lvl) / ((100 + defender.lvl) * (1 - def_res) * (1 - defender.resist)
-                                   * (1 + self.ignore_resist) + (100 + self.lvl))
+                                   * (1 + self.ignore_resist) + (100 + self.lvl) * (1 + cof))
 
         total_damage = (base_dmg * bonus_type * self.bonus_damage * (1 - defs)) + 0
 
@@ -464,3 +583,27 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
             return 0, None
 
         return round(total_damage), log
+
+    def damage_demo(self, technique):
+        entity = EntityFactory.create_entity(1, 'demo')
+        entity.lvl = self.lvl
+
+        # entity = copy.copy(self)
+        self.base_resist(entity)
+
+        entity.statistic = Statistic()
+        entity.statistic.battle = StatisticBattle()
+
+        entity.crit_rate = 0
+        damage, _ = self.damage(entity, technique.type_damage, technique)
+
+        return damage
+
+    def base_resist(self, entity):
+        entity.light_resist = 0.1
+        entity.air_resist = 0.1
+        entity.phys_resist = 0.1
+        entity.dark_resist = 0.1
+        entity.earth_resist = 0.1
+        entity.fire_resist = 0.1
+        entity.resist = 0.1

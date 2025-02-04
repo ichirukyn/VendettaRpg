@@ -60,6 +60,11 @@ venv.bak/
 # Pyre type checker
 *.log
 .pyre/
+
+#
 .idea/*
 .env
 dicts
+model/
+simulation/logs
+simulation/data

@@ -21,6 +21,7 @@ class BattleState(StatesGroup):
     select_technique_confirm = State()
     select_spell = State()
     select_spell_confirm = State()
+    select_item_confirm = State()
     user_escape_confirm = State()
     user_pass_confirm = State()
     battle_start = State()

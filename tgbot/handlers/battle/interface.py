@@ -13,6 +13,7 @@ from tgbot.enums.skill import SkillSubAction
 from tgbot.enums.skill import SkillType
 from tgbot.handlers.battle.hook import BattleEngine
 from tgbot.handlers.battle.hook import BattleLogger
+from tgbot.keyboards.inline import quick_slot
 from tgbot.keyboards.reply import arena_kb
 from tgbot.keyboards.reply import battle_main_kb
 from tgbot.keyboards.reply import battle_revival_kb
@@ -125,6 +126,9 @@ class BattleInterface:
         await self.check_index()
 
     async def send_battle_logs(self, order, hero, kb, kb_h):
+        data = await self.state.get_data()
+        settings: Settings = data.get('settings')
+
         for e in order:
             if e.name != hero.name:
                 logs = self.logger.enemys_log(order, e) + f'Ход {hero.name}'
@@ -134,6 +138,10 @@ class BattleInterface:
                 kb_to_use = kb_h
 
             if isinstance(e, Hero):
+                if e.name == hero.name:
+                    await self.message.bot.send_message(chat_id=e.chat_id, text="⁢", reply_markup=kb_to_use)
+                    kb_to_use = quick_slot(e, settings.slot_count)
+
                 await self.message.bot.send_message(chat_id=e.chat_id, text=logs, reply_markup=kb_to_use,
                                                     parse_mode='Markdown')
 
@@ -241,7 +249,6 @@ class BattleInterface:
         settings: Settings = data.get('settings')
 
         if message.text == keyboard['technique_list']:
-            hero.action = keyboard['technique_list']
             await self.state.update_data(hero=hero)
 
             kb = list_kb(hero.techniques)
@@ -250,7 +257,6 @@ class BattleInterface:
             return await message.answer('Выбери технику:', reply_markup=kb)
 
         if message.text == keyboard['spell_list']:
-            hero.action = keyboard['spell_list']
             await self.state.update_data(hero=hero)
 
             kb = list_object_kb(hero.spells)
@@ -272,7 +278,7 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.user_sub_turn)
             return await message.answer(f'Твой ход:', reply_markup=battle_sub_kb)
 
-    async def process_select_spell(self, message: Message, state: FSMContext):
+    async def process_select_spell(self, message: Message, state: FSMContext, sp=None):
         data = await state.get_data()
         hero = data.get('hero')
         settings: Settings = data.get('settings')
@@ -282,7 +288,7 @@ class BattleInterface:
             return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
         for spell in hero.spells:
-            if message.text.strip() == spell.name.strip():
+            if message.text.strip() == spell.name.strip() or sp == spell.id:
                 root_check = spell.distance != 'distant' or spell.type == 'support'
 
                 if not hero.debuff_control_check('turn') and not root_check:
@@ -296,6 +302,7 @@ class BattleInterface:
                     await self.update_data(hero.chat_id, 'hero', hero)
 
                     if settings is not None and not settings.confirm_spell:
+                        hero.action = keyboard['spell_list']
                         return await self.handler_select_target(message, state)
                     else:
                         await self.set_state(hero.chat_id, BattleState.select_spell_confirm)
@@ -315,9 +322,10 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.select_spell)
             return await message.answer('Выбери технику:', reply_markup=kb)
 
+        hero.action = keyboard['spell_list']
         return await self.handler_select_target(message, state)
 
-    async def process_select_technique(self, message: Message, state: FSMContext):
+    async def process_select_technique(self, message: Message, state: FSMContext, tech=None):
         data = await state.get_data()
         hero = data.get('hero')
         settings: Settings = data.get('settings')
@@ -327,7 +335,7 @@ class BattleInterface:
             return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
         for technique in hero.techniques:
-            if message.text.strip() == technique.name.strip():
+            if message.text.strip() == technique.name.strip() or tech == technique.id:
                 root_check = technique.distance != 'distant' or technique.type == 'support'
 
                 if not hero.debuff_control_check('turn') and not root_check:
@@ -342,6 +350,7 @@ class BattleInterface:
                     await self.update_data(hero.chat_id, 'hero', hero)
 
                     if settings is not None and not settings.confirm_technique:
+                        hero.action = keyboard['technique_list']
                         return await self.handler_select_target(message, state)
                     else:
                         await self.set_state(hero.chat_id, BattleState.select_technique_confirm)
@@ -361,7 +370,56 @@ class BattleInterface:
             await self.set_state(hero.chat_id, BattleState.select_technique)
             return await message.answer('Выбери технику:', reply_markup=kb)
 
+        hero.action = keyboard['technique_list']
         return await self.handler_select_target(message, state)
+
+    async def process_select_item(self, message: Message, state: FSMContext, p=None):
+        data = await state.get_data()
+        hero = data.get('hero')
+        settings: Settings = data.get('settings')
+
+        if message.text == keyboard["back"]:
+            await self.set_state(hero.chat_id, BattleState.user_turn)
+            return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
+
+        for potion in hero.potions:
+            if message.text.strip() == potion.name.strip() or p == potion.id:
+
+                if not hero.debuff_control_check('turn'):
+                    text = f'Вы под эффектом контроля и не можете применить {potion.name}'
+                    await self.set_state(hero.chat_id, BattleState.user_turn)
+                    return await message.answer(text, reply_markup=battle_main_kb)
+
+                if potion.check(hero):
+                    if settings is not None and not settings.confirm_battle_item:
+                        text = potion.activate(hero)
+                        await self.update_data(hero.chat_id, 'hero', hero)
+                        return await message.answer(text)
+                    else:
+                        hero.potion = potion
+                        await self.update_data(hero.chat_id, 'hero', hero)
+                        await self.set_state(hero.chat_id, BattleState.select_item_confirm)
+                        return await message.answer(f"Точно использовать {potion.name}?", reply_markup=confirm_kb)
+                else:
+                    text = potion.log or f"Ошибка использования {potion.name}"
+                    await self.set_state(hero.chat_id, BattleState.user_turn)
+                    return await message.answer(text, reply_markup=battle_main_kb)
+
+    async def process_select_item_confirm(self, message: Message, state: FSMContext):
+        data = await state.get_data()
+        hero = data.get('hero')
+
+        if message.text == keyboard["back"]:
+            await self.set_state(hero.chat_id, BattleState.user_turn)
+            return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
+
+        if message.text == keyboard["yes"] and hero.potion is not None:
+            hero.potion.activate(hero)
+            hero.potion = None
+            await self.update_data(hero.chat_id, 'hero', hero)
+
+            await self.set_state(hero.chat_id, BattleState.user_turn)
+            return await message.answer(f'Твой ход:', reply_markup=battle_main_kb)
 
     async def process_battle_action(self, hero, target):
         action_result = self.engine.battle_action(hero, target)
@@ -600,7 +658,7 @@ class BattleInterface:
 
 class BattleFactory:
     def __init__(self, enemy_team, player_team, exit_state, exit_message, exit_kb, battle_type='battle', is_dev=False,
-                 is_inline=False):
+                 is_inline=False, callback=None):
         self.enemy_team = enemy_team
         self.player_team = player_team
 
@@ -609,10 +667,11 @@ class BattleFactory:
         self.exit_kb = exit_kb
         self.is_dev = is_dev
         self.battle_type = battle_type
+        self.callback = callback
 
     def create_battle_engine(self):
         return BattleEngine(self.enemy_team, self.player_team, self.exit_state, self.exit_message,
-                            self.exit_kb, self.battle_type, is_dev=self.is_dev)
+                            self.exit_kb, self.battle_type, is_dev=self.is_dev, callback=self.callback)
 
     def create_battle_logger(self):
         return BattleLogger(self.is_dev)

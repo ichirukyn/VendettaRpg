@@ -8,6 +8,7 @@ from tgbot.models.api.user_api import UserType
 async def create_user(body: CreateUserType):
     async with aiohttp.ClientSession() as session:
         res = await session.post(url(f'/user'), json=body)
+        print("Create USER: ", body)
         return await res.json()
 
 
@@ -40,5 +41,3 @@ async def fetch_user(session) -> [UserType]:
 #     'is_admin': False,
 #     'ref_id': 1,
 # }
-#
-# print(create_user(data))

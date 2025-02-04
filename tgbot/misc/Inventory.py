@@ -71,6 +71,21 @@ class BookItem(Item):
         return f"*{self.name}*\n{self.desc}\n\n{'Вы не можете изучить эту книгу.' if not self.is_check else ''}"
 
 
+class PotionItem(Item):
+    def get_kb(self):
+        kb = InlineKeyboardMarkup(row_width=1)
+
+        kb.add(
+            InlineKeyboardButton(text='Закрепить', callback_data='Закрепить'),
+            InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"])
+        )
+
+        return kb
+
+    def get_desc(self):
+        return f"*{self.name}*\n{self.desc}\n\n"
+
+
 class ConsumableItem(Item):
     pass
 

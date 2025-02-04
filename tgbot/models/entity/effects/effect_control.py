@@ -6,7 +6,7 @@ from tgbot.models.entity.effects.effect import Effect
 class ControlEffect(Effect, ABC):
     def apply(self, hero, target=None, skill=None):
         if self.condition and not self.check(hero):
-            print('Условия не выполнены')
+            # Условия не выполнены
             return False
 
         if target.name == hero.name:

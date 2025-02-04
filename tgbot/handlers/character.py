@@ -14,6 +14,7 @@ from tgbot.api.spells import fetch_spell
 from tgbot.api.spells import get_spell
 from tgbot.api.technique import fetch_technique
 from tgbot.api.technique import get_technique
+from tgbot.handlers import lib_stats
 from tgbot.keyboards.inline import back_inline
 from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.inline import skill_add_inline
@@ -23,7 +24,7 @@ from tgbot.keyboards.reply import character_distribution_kb
 from tgbot.keyboards.reply import character_info_kb
 from tgbot.keyboards.reply import character_kb
 from tgbot.keyboards.reply import inventory_kb
-from tgbot.misc.Inventory import BookItem
+from tgbot.misc.Inventory import BookItem, PotionItem
 from tgbot.misc.Inventory import ConsumableItem
 from tgbot.misc.Inventory import Item
 from tgbot.misc.Inventory import WeaponItem
@@ -37,20 +38,10 @@ from tgbot.models.entity.spells import spell_init
 from tgbot.models.entity.techniques import technique_init
 from tgbot.models.user import DBCommands
 
-stats = {
-    'Сила': 'strength',
-    'Здоровье': 'health',
-    'Скорость': 'speed',
-    'Ловкость': 'dexterity',
-    'Меткость': 'accuracy',
-    'Дух': 'soul',
-    'Интеллект': 'intelligence',
-    'Подчинение': 'submission',
-}
-
 inventory = {
     keyboard['weapon']: 'weapon',
     keyboard['quest']: 'quest',
+    keyboard['potion']: 'potion',
     keyboard['technique_book']: 'technique_book',
     keyboard['other']: 'other',
 }
@@ -65,7 +56,7 @@ async def distribution_menu(message: Message, state: FSMContext):
 
         return await message.answer(hero.info.status(hero), reply_markup=character_kb(hero.free_stats))
 
-    stat = stats.get(message.text)
+    stat = lib_stats.get(message.text)
 
     if stat:
         hero.__getattribute__(stat)
@@ -76,6 +67,10 @@ async def distribution_menu(message: Message, state: FSMContext):
 
 
 async def distribution(message: Message, state: FSMContext):
+    if message.text == keyboard["back"]:
+        await CharacterState.distribution_menu.set()
+        return await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
+
     db = DBCommands(message.bot.get('db'))
     session = message.bot.get('session')
 
@@ -89,10 +84,6 @@ async def distribution(message: Message, state: FSMContext):
     try:
         count = int(message.text)
     except ValueError:
-        if message.text == keyboard["back"]:
-            await CharacterState.distribution_menu.set()
-            return await message.answer(locale['distribution'], reply_markup=character_distribution_kb)
-
         return await message.answer("Введите корректное число")
 
     if 0 < count <= hero.free_stats:
@@ -101,8 +92,6 @@ async def distribution(message: Message, state: FSMContext):
 
         hero.total_stats_flat += count
         hero.free_stats -= count
-
-        hero.update_stats()
 
         await db.update_hero_stat(stat, stat_value, hero_id)
         await db.update_hero_stat('free_stats', hero.free_stats, hero_id)
@@ -328,13 +317,17 @@ async def character_inventory_items(cb: CallbackQuery, state: FSMContext):
         if item['item_id'] == item_id:
             i = Item(item)
 
-            if type == 'weapon':
-                i = WeaponItem(item)
-                await item.check(db, hero.id)
-            elif 'book' in type:
-                i = BookItem(item)
-            elif type == 'consumable':
-                i = ConsumableItem(item)
+            match type:
+                case 'weapon':
+                    i = WeaponItem(item)
+                    await i.check(db, hero.id)
+                case 'technique_book', 'spell_book':
+                    i = BookItem(item)
+                case 'potion':
+                    i = PotionItem(item)
+                    # await i.check(db, hero.id)
+                case _:
+                    i = ConsumableItem(item)
 
             text = i.get_desc()
             kb = i.get_kb()
@@ -353,14 +346,14 @@ async def character_inventory_action(cb: CallbackQuery, state: FSMContext):
     item_id = data['inventory_item']
     type = data['inventory']
 
-    if cb.data == 'Экипировать':
-        await db.update_hero_weapon(hero.id, item_id, 0)
-
-    elif cb.data == 'Снять':
-        await db.update_hero_weapon(hero.id, item_id, 0)
-
-    elif cb.data == 'Снять':
-        await db.update_hero_weapon(hero.id, item_id, 0)
+    match cb.data:
+        case 'Экипировать':
+            await db.update_hero_weapon(hero.id, item_id, 0)
+        case 'Снять':
+            await db.update_hero_weapon(hero.id, item_id, 0)
+        case 'Закрепить':
+            # TODO: Подключить зельки к слотам
+            pass
 
     hero = await update_hero_weapon(db, hero)
 

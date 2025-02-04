@@ -1,5 +1,4 @@
 from random import choice
-from random import randint
 
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
@@ -11,13 +10,13 @@ from tgbot.keyboards.inline import battle_start_inline
 from tgbot.keyboards.inline import list_inline
 from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import town_kb
+from tgbot.misc.enemy import init_enemies
 from tgbot.misc.hero import init_hero
 from tgbot.misc.hero import init_team
 from tgbot.misc.locale import keyboard
 from tgbot.misc.locale import locale
 from tgbot.misc.state import CampusState
 from tgbot.misc.state import LocationState
-from tgbot.models.entity.enemy import init_enemy
 from tgbot.models.user import DBCommands
 
 
@@ -35,7 +34,6 @@ async def battle_init(cb: CallbackQuery, state: FSMContext, is_group=False):
     hero = await init_hero(db, session, hero_id=hero.id, chat_id=hero.chat_id)
 
     player_team = [hero]
-    enemy_team = []
 
     if hero.team_id is not None and is_group:
         if hero.team_id > 0 and hero.is_leader:
@@ -47,28 +45,22 @@ async def battle_init(cb: CallbackQuery, state: FSMContext, is_group=False):
 
     # Ввести умное увеличение противников
     range_ = len(player_team)
-    print(f'Количество противников: {range_}')
+
+    enemy_ids = []
 
     for i in range(range_ if range_ >= 1 else 1):
         # Ввести более умную выборку противников..
         rand_enemy = choice(enemies)
         id = rand_enemy.get('enemy_id')
-        enemy = await init_enemy(db, int(id), session)
 
-        print('enemy_TO', enemy.total_stats)
-        enemy_team.append(enemy)
+        enemy_ids.append(id)
 
-        hero_avg_lvl = sum(hero.lvl for hero in player_team)
-        enemy_avg_lvl = sum(hero.lvl for hero in enemy_team)
-        delta = hero_avg_lvl - enemy_avg_lvl
+        # enemy = await init_enemy(db, int(id), session)
+        # enemy_team.append(enemy)
+        #
+        # enemy.auto_distribute(delta)
 
-        print('delta', delta)
-        if delta <= 0:
-            delta = 0
-
-        enemy.auto_distribute(delta)
-
-        print('new_enemy_TO', enemy_team[0].total_stats)
+    enemy_team = await init_enemies(db, enemy_ids, session, player_team)
 
     floors = await db.get_arena_floors()
     kb = list_inline(floors)
@@ -105,13 +97,10 @@ async def battle_init(cb: CallbackQuery, state: FSMContext, is_group=False):
 
 async def battle_start(cb: CallbackQuery, state: FSMContext):
     db = DBCommands(cb.bot.get('db'))
-    data = await state.get_data()
-
-    floor_id = data.get('floor_id')
 
     if cb.data == keyboard["back"]:
-        enemies_list, _ = await floor_enemies(db, floor_id)
-        kb = list_inline(enemies_list)
+        floors = await db.get_arena_floors()
+        kb = list_inline(floors)
 
         await CampusState.select_floor.set()
         return await cb.message.edit_text('Доступные противники:', reply_markup=kb)

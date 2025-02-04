@@ -5,7 +5,7 @@ from tgbot.models.entity.effects._factory import EffectFactory
 class SpellFactory:
     @staticmethod
     def create_spell(data):
-        id = data.get('spell_id')
+        id = data.get('id')
         name = data.get('name', '')
         desc = data.get('desc', '')
         desc_short = data.get('desc_short', '')

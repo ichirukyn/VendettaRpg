@@ -10,7 +10,7 @@ class BonusEffect(Effect, ABC):
             entity = target
 
         if self.condition and not self.check(entity):
-            print('Условия не выполнены')
+            # Условия не выполнены
             return False
 
         val = getattr(entity, self.attribute) + self.value
@@ -21,7 +21,8 @@ class BonusEffect(Effect, ABC):
 
     def cancel(self, hero, target=None, skill=None):
         if self.condition and not self.check(hero):
-            return print('Условия не выполнены')
+            # Условия не выполнены
+            return
 
         val = getattr(hero, self.attribute) - self.value
         setattr(hero, self.attribute, val)

@@ -19,7 +19,7 @@ class RegFilter(BoundFilter):
         chat_id = obj.chat.id
         user_id = await database.get_user_id(chat_id)
 
-        print(f"user_id: {user_id}")
+        # print(f"user_id: {user_id}")
 
         if user_id is not None:
             return self.is_reg == True

@@ -12,7 +12,7 @@ class ActivateEffect(Effect, ABC):
             entity = target
 
         if self.condition and not self.check(entity):
-            print('Условия не выполнены')
+            # Условия не выполнены
             return False
 
         return True

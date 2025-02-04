@@ -166,8 +166,9 @@ character_info_kb = ReplyKeyboardMarkup(
 def character_kb(free_stats=0):
     kb = [
         [KeyboardButton(text=keyboard['info'])],
-        [KeyboardButton(text=keyboard['equipment']), KeyboardButton(text=keyboard['inventory'])],
-        [KeyboardButton(text=keyboard['techniques']), KeyboardButton(text=keyboard['spells'])],
+        # [KeyboardButton(text=keyboard['equipment']), KeyboardButton(text=keyboard['inventory'])],
+        [KeyboardButton(text=keyboard['inventory']), KeyboardButton(text=keyboard['techniques'])],
+        # [KeyboardButton(text=keyboard['techniques']), KeyboardButton(text=keyboard['spells'])],
         [KeyboardButton(text=keyboard['back'])]
     ]
 
@@ -189,9 +190,9 @@ equip_kb = ReplyKeyboardMarkup(
 # Inventory
 inventory_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text=keyboard['weapon']), KeyboardButton(text=keyboard['quest'])],
-        [KeyboardButton(text=keyboard['technique_book']), KeyboardButton(text=keyboard['spell_book'])],
-        [KeyboardButton(text=keyboard['other'])],
+        [KeyboardButton(text=keyboard['weapon']), KeyboardButton(text=keyboard['potion'])],
+        # [KeyboardButton(text=keyboard['technique_book']), KeyboardButton(text=keyboard['spell_book'])],
+        # [KeyboardButton(text=keyboard['other'])],
         [KeyboardButton(text=keyboard['back'])]
     ],
 
@@ -200,6 +201,8 @@ inventory_kb = ReplyKeyboardMarkup(
 # Shop
 buy_kb = ReplyKeyboardMarkup(
     keyboard=[
+        [KeyboardButton(text=keyboard['buy_one'])],
+        [KeyboardButton(text=keyboard['buy_ten'])],
         [KeyboardButton(text=keyboard['buy_all'])],
         [KeyboardButton(text=keyboard['back'])]
     ],

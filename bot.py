@@ -1,4 +1,5 @@
 import asyncio
+import faulthandler
 
 import aiohttp
 from aiogram import Bot
@@ -97,6 +98,7 @@ async def main():
 
 if __name__ == '__main__':
     try:
+        faulthandler.enable()
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         logger.error("Bot stopped!")

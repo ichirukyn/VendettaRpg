@@ -10,7 +10,7 @@ class PercentBonusEffect(Effect, ABC):
             entity = target
 
         if self.condition and not self.check(entity):
-            print('Условия не выполнены')
+            # Условия не выполнены
             return False
 
         val = getattr(entity, self.attribute) * (1 + self.value)
@@ -22,7 +22,8 @@ class PercentBonusEffect(Effect, ABC):
     def cancel(self, hero, target=None, skill=None):
         # TODO: Проверить баффы
         if self.condition and not self.check(hero):
-            return print('Условия не выполнены')
+            # Условия не выполнены
+            return
 
         val = getattr(hero, self.attribute) / (1 + self.value)
         setattr(hero, self.attribute, val)

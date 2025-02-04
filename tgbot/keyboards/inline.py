@@ -150,7 +150,7 @@ top_inline.add(
 )
 
 
-def list_inline(lists, columns=2, label='name', cb_data='id'):
+def list_inline(lists, columns=2, label='name', cb_data='id', back_btn=True):
     kb = InlineKeyboardMarkup(row_width=2)
 
     for sublist in chunked(lists, columns):
@@ -170,8 +170,8 @@ def list_inline(lists, columns=2, label='name', cb_data='id'):
             kb.add(row[0], row[1])
         except IndexError:
             kb.add(row[0])
-
-    kb.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
+    if back_btn:
+        kb.add(InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]))
 
     return kb
 
@@ -195,10 +195,24 @@ skill_del_inline.add(
 shop_buy_inline = InlineKeyboardMarkup(row_width=1)
 
 shop_buy_inline.add(
-    InlineKeyboardButton(text='Купить всё', callback_data='Купить всё'),
+    InlineKeyboardButton(text=keyboard['buy_one'], callback_data=keyboard['buy_one']),
+    InlineKeyboardButton(text=keyboard['buy_ten'], callback_data=keyboard['buy_ten']),
+    InlineKeyboardButton(text=keyboard['buy_all'], callback_data=keyboard['buy_all']),
     InlineKeyboardButton(text=keyboard["back"], callback_data=keyboard["back"]),
 )
 
+def quick_slot(hero, slot_count):
+    slots = [*hero.potions, *hero.techniques, *hero.spells]
+    data = []
+
+    slots = slots[0:slot_count]
+
+    for slot in slots:
+        data.append({'id': f"{type(slot).__name__}_{slot.id}", 'name': slot.name})
+
+    kb = list_inline(data, back_btn=False)
+
+    return kb
 
 # Team
 def team_main_inline(is_team=False, is_leader=False):

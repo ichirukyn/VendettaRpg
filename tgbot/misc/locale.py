@@ -102,7 +102,10 @@ keyboard = {
     'quest': 'Квестовые предметы',
     'technique_book': 'Книги техник',
     'spell_book': 'Книги заклинаний',
+    'potion': 'Зелья',
     'other': 'Прочее',
     # Shop
+    'buy_one': 'Купить 1',
+    'buy_ten': 'Купить 10',
     'buy_all': 'Купить всё',
 }

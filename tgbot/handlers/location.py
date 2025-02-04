@@ -179,8 +179,6 @@ async def location_team(cb: CallbackQuery, state: FSMContext):
 
 
 async def location_tower(message: Message):
-    print('Arena Floors')
-
     db = DBCommands(message.bot.get('db'))
     floors = await db.get_arena_floors()
 
@@ -261,9 +259,10 @@ async def location_character(message: Message, state: FSMContext):
         await CharacterState.info_menu.set()
         return await message.answer(hero.info.status_all(hero), reply_markup=character_info_kb,
                                     parse_mode='Markdown')
-    info = HeroInfo()
     await LocationState.character.set()
-    await message.answer(info.status(hero), reply_markup=character_kb(hero.free_stats), parse_mode='Markdown')
+
+    status = HeroInfo().status(hero)
+    await message.answer(status, reply_markup=character_kb(hero.free_stats), parse_mode='Markdown')
 
 
 async def location_store(cb: CallbackQuery, state: FSMContext):

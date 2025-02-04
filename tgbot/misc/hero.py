@@ -10,6 +10,7 @@ from tgbot.misc.state import BattleState
 from tgbot.models.entity._class import class_init
 from tgbot.models.entity.hero import Hero
 from tgbot.models.entity.hero import HeroFactory
+from tgbot.models.entity.item import item_init
 from tgbot.models.entity.race import race_init
 from tgbot.models.entity.spells import spell_init
 from tgbot.models.entity.statistic import Statistic
@@ -29,6 +30,8 @@ options_init = {
 
 
 async def init_hero(db: DBCommands, session, hero_id=None, chat_id=None, options=None) -> Hero:
+    # start_time = time.perf_counter()  # Начало измерения времени
+
     if options is None:
         options = {**options_init}
 
@@ -79,7 +82,7 @@ async def init_hero(db: DBCommands, session, hero_id=None, chat_id=None, options
     if options.get('weapon'):
         hero = await update_hero_weapon(db, hero)
 
-    if options.get('weapon'):
+    if options.get('team'):
         team_db = await db.get_hero_team(hero_id)
 
         if team_db is not None:
@@ -89,8 +92,37 @@ async def init_hero(db: DBCommands, session, hero_id=None, chat_id=None, options
                 hero.name = f' {hero.name}'
                 hero.is_leader = True
 
+    hero = await update_hero_potion(db, hero)
     hero.update_stats_all()
+
+    # end_time = time.perf_counter()  # Конец измерения времени
+    # duration = end_time - start_time  # Время выполнения
+
     return hero
+
+
+async def entity_base_init(session, entity_db, technique_db, entity):
+    _class = await class_init(session, entity_db.get('class'))
+    if _class is not None:
+        entity._class = _class
+        entity._class.apply(entity)
+
+    race = await race_init(session, entity_db.get('race'))
+    if race is not None:
+        entity.race = race
+        entity.race.apply(entity)
+
+    entity.techniques = []
+
+    if technique_db is not None:
+        for tech in technique_db:
+            technique = tech.get('technique')
+            technique = technique_init(technique)
+
+            if technique is not None:
+                entity.techniques.append(technique)
+
+    return entity
 
 
 async def check_hero_lvl(db, session, hero) -> (str, Hero):
@@ -117,6 +149,16 @@ async def check_hero_lvl(db, session, hero) -> (str, Hero):
         print(f"An error occurred: {e}")
 
     return log, hero
+
+
+async def update_hero_potion(db, hero):
+    potions = await db.get_hero_inventory('potion', hero.id)
+
+    for potion in potions:
+        p = item_init(potion)
+        hero.potions.append(p)
+
+    return hero
 
 
 async def update_hero_weapon(db, hero):

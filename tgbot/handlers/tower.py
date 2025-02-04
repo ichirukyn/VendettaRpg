@@ -8,7 +8,6 @@ from tgbot.api.enemy import fetch_enemy_team
 from tgbot.handlers.battle.interface import BattleFactory
 from tgbot.keyboards.inline import battle_start_inline
 from tgbot.keyboards.inline import list_inline
-from tgbot.keyboards.reply import home_kb
 from tgbot.keyboards.reply import town_kb
 from tgbot.misc.hero import init_hero
 from tgbot.misc.hero import init_team
@@ -25,6 +24,9 @@ from tgbot.models.user import DBCommands
 async def battle_init(message: Message, state: FSMContext, is_group=False):
     db = DBCommands(message.bot.get('db'))
     dp = message.bot.get('dp')
+
+    config = message.bot.get('config')
+    is_dev = config.tg_bot.is_dev
 
     session = message.bot.get('session')
     data = await state.get_data()
@@ -45,6 +47,12 @@ async def battle_init(message: Message, state: FSMContext, is_group=False):
     floors = await db.get_arena_floors()
     kb = list_inline(floors)
 
+    # TODO: The Perry
+    # pet = copy(enemy_team[0])
+    # pet.techniques = hero.techniques
+    # pet.name = "The Перри!"
+    # player_team.append(pet)
+
     engine_data = {
         "enemy_team": enemy_team,
         "player_team": player_team,
@@ -53,12 +61,10 @@ async def battle_init(message: Message, state: FSMContext, is_group=False):
         "battle_type": 'tower',
         "exit_kb": kb,
         "is_inline": False,
+        "is_dev": is_dev,
     }
 
-    config = message.bot.get('config')
-    is_dev = config.tg_bot.is_dev
-
-    factory = BattleFactory(enemy_team, player_team, LocationState.home, '', home_kb, is_dev)
+    factory = BattleFactory(**engine_data)
 
     logger = factory.create_battle_logger()
     engine = factory.create_battle_engine()
@@ -148,6 +154,7 @@ async def select_enemy(cb: CallbackQuery, state: FSMContext):
     if len(enemy_team) > 1:
         text = f"Выбраны противники:\n"
         for entity in enemy_team:
+            entity.name += f" - {enemy_team.index(entity) + 1}"
             stats = f"{entity.name} — {formatted(entity.lvl)} Уровень\n"
             text += stats
     else:

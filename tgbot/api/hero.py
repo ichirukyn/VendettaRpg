@@ -23,7 +23,7 @@ async def get_hero(session, hero_id: int) -> HeroType:
         return await res.json()
 
 
-async def fetch_hero(session, ) -> [HeroType]:
+async def fetch_hero(session) -> [HeroType]:
     async with session.get(url(f'/hero')) as res:
         return await res.json()
 

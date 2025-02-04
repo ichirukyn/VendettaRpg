@@ -37,7 +37,7 @@ async def register_user(message: Message, state: FSMContext):
         return await message.answer('Ник игрока должен состоять от 5 до 25 символов')
 
     if not pattern.match(message.text):
-        return await message.answer('Ник ирока содержит недопустимые символы.')
+        return await message.answer('Ник игрока содержит недопустимые символы.')
 
     hero.name = message.text
     print('Register | name:', hero.name)
@@ -48,26 +48,30 @@ async def register_user(message: Message, state: FSMContext):
     race_id = data.get('select_race', 1)
     class_id = data.get('select_class', 1)
 
-    logger.debug('Register | chat_id:', chat_id)
-    logger.debug('Register | race_id:', race_id)
-    logger.debug('Register | class_id:', class_id)
+    logger.debug(f'Register | chat_id: {chat_id}')
+    logger.debug(f'Register | race_id: {race_id}')
+    logger.debug(f'Register | class_id: {class_id}')
 
-    user = await get_user(session, chat_id)
-    if user is not None:
-        await message.answer('Вы уже зарегистрированы')
-        return to_home(message)
+    # user = await get_user(session, chat_id)
+    # if user is not None:
+    #     await message.answer('Вы уже зарегистрированы')
+    #     return to_home(message)
 
     try:
-        user_data = await create_user({'chat_id': chat_id, 'login': message.from_user.first_name, 'ref_id': 1})
+        user_data = await create_user({'chat_id': f"{chat_id}", 'login': message.from_user.first_name, 'ref_id': 1})
         user_id = user_data.get('id')
         print('Register | user_id:', user_id)
 
-        hero_data = await create_hero({'user_id': user_id, 'name': hero.name, 'race_id': race_id, 'class_id': class_id})
-        hero.id = hero_data.get('id', 0)
-        print('Register | hero.id:', hero.id)
+        if user_id is None:
+            return logger.warning("Register | user create error")
 
-        if hero.id == 0:
-            logger.error('Register | hero.id == 0')
+        hero_data = await create_hero({'user_id': user_id, 'name': hero.name, 'race_id': race_id, 'class_id': class_id})
+        hero.id = hero_data.get('id')
+
+        if hero.id is None:
+            return logger.warning("Register | hero create error")
+
+        print('Register | hero.id:', hero.id)
 
         await db.add_hero_stats(hero.id, hero)
         await db.add_hero_lvl(hero.id, 1, 0)
@@ -100,7 +104,7 @@ async def select_race(message: Message, state: FSMContext):
 
     for race in races:
         if race.get('name', '') == race_name:
-            await state.update_data(select_race=race.get(id, 0))
+            await state.update_data(select_race=race.get('id', 0))
 
             race = await race_init(session, race)
             hero.race = race
@@ -129,8 +133,13 @@ async def select_class(message: Message, state: FSMContext):
         await RegState.select_race.set()
         return await message.answer('Выбери стартовую расу:', reply_markup=kb)
 
-    data = await state.get_data()
     race_id = data.get('select_race')
+
+    if race_id is None or race_id == 0:
+        print('race_id', race_id)
+        await RegState.entry.set()
+        return await message.answer('Произошла ошибка, начните сначала:', reply_markup=entry_kb)
+
 
     class_name = message.text
     classes_bd = await fetch_race_classes(session, race_id)

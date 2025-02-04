@@ -40,7 +40,10 @@ class ShieldEffect(Effect, ABC):
         main_attr = hero.__getattribute__(self.attribute)
         control = hero.control_qi
 
-        element_mod = hero.__getattribute__(skill.type_damage) or 0
+        element_mod = 0
+
+        if skill.type_damage != 'none':
+            element_mod = hero.__getattribute__(skill.type_damage) or 0
 
         if self.attribute in magic_filter:
             control = hero.control_mana

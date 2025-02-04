@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 from aiogram.types import ReplyKeyboardRemove
@@ -23,10 +25,9 @@ async def check_auth(message: Message, state: FSMContext):
         settings = data.get('settings')
 
         db = DBCommands(message.bot.get('db'))
+
         config = message.bot.get('config')
         session = message.bot.get('session')
-
-        logger.info(f'User - {message.chat.id}')
 
         if message.chat.id not in config.tg_bot.admin_ids and config.tg_bot.is_dev:
             return
@@ -66,7 +67,7 @@ async def check_auth(message: Message, state: FSMContext):
             return await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
         hero = await init_hero(db, session, hero_data.get('id'), hero_data.get('chat_id', None))
-        print(f"hero_id: {hero.id}")
+        # print(f"hero_id: {hero.id}")
 
         if settings is None:
             settings = Settings()
@@ -78,8 +79,32 @@ async def check_auth(message: Message, state: FSMContext):
         print('-- Exit on /start -- \n')
         await LocationState.home.set()
         return await message.answer(f'Приветствую тебя, {hero.name}!', reply_markup=home_kb, parse_mode='Markdown')
+        # await test_init_hero(session, db)
+
     except Exception as e:
         await message.answer(f'Ошибка..\n {e}', reply_markup=ReplyKeyboardRemove())
+
+
+async def test_init_hero(session, db):
+    hero_data = await get_user_hero(session, 6)
+
+    hero_data_list = [hero_data for _ in range(100)]
+    batch_size = 1  # Количество пользователей, запускаемых одновременно
+    durations = []
+
+    for i in range(0, len(hero_data_list), batch_size):
+        batch = hero_data_list[i:i + batch_size]
+        tasks = [init_hero(db, session, hero_data['id']) for hero_data in batch]
+        results = await asyncio.gather(*tasks)
+        durations.extend([result[1] for result in results])
+
+    total = sum(durations)
+    average = total / len(durations)
+    max_time = max(durations)
+
+    print(f'Total time: {total:.2f} seconds')
+    print(f'Average time: {average:.2f} seconds')
+    print(f'Max time: {max_time:.2f} seconds')
 
 
 def auth(dp):
