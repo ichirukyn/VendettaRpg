@@ -1,5 +1,5 @@
-from tgbot.models.entity.techniques import Technique
 from tgbot.models.entity.effects._factory import EffectFactory
+from tgbot.models.entity.techniques import Technique
 
 
 class SpellFactory:

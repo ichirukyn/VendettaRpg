@@ -2,8 +2,8 @@ from copy import deepcopy
 
 from tgbot.dict.technique import technique_type_attack
 from tgbot.misc.other import formatted
-from tgbot.models.entity.effects.effect_parent import EffectParent
 from tgbot.models.entity.effects._factory import EffectFactory
+from tgbot.models.entity.effects.effect_parent import EffectParent
 
 race_prefix = ['🙂', '🧝‍♂️', '👨‍🦱', '😇', '😈', '☠️']
 

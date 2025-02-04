@@ -10,8 +10,6 @@ from tgbot.api.hero import create_hero
 from tgbot.api.race import fetch_race
 from tgbot.api.race import fetch_race_classes
 from tgbot.api.user import create_user
-from tgbot.api.user import get_user
-from tgbot.handlers.location import to_home
 from tgbot.keyboards.reply import confirm_kb
 from tgbot.keyboards.reply import entry_kb
 from tgbot.keyboards.reply import list_kb
