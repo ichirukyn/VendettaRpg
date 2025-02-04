@@ -196,15 +196,15 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         self.total_stats_flat = self.sum_flat_stats()
 
     def update_control(self):
-        self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
-        self.control_mana_normalize = self.control_mana / max(self.intelligence, self.soul)
+        self.control_mana = (2 * self.intelligence or 1 * self.soul or 1) / (self.intelligence or 1 + self.soul or 1)
+        self.control_mana_normalize = self.control_mana / max(self.intelligence or 1, self.soul or 1)
 
         if self.flat_strength >= self.flat_dexterity:
-            self.control_qi = (2 * self.strength * self.health) / (self.strength + self.health)
-            self.control_qi_normalize = self.control_qi / max(self.strength, self.health)
+            self.control_qi = (2 * self.strength or 1 * self.health) / (self.strength or 1 + self.health)
+            self.control_qi_normalize = self.control_qi / max(self.strength or 1, self.health)
         else:
-            self.control_qi = (2 * self.dexterity * self.health) / (self.dexterity + self.health)
-            self.control_qi_normalize = self.control_qi / max(self.dexterity, self.health)
+            self.control_qi = (2 * self.dexterity or 1 * self.health) / (self.dexterity or 1 + self.health)
+            self.control_qi_normalize = self.control_qi / max(self.dexterity or 1, self.health)
 
     def update_stats_all(self):
         self.hp_max = round(self.health) * self.hp_modify
