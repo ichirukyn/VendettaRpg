@@ -308,7 +308,7 @@ class BattleInterface:
                         await self.set_state(hero.chat_id, BattleState.select_spell_confirm)
                         return await message.answer(spell.info(hero), reply_markup=confirm_kb)
                 else:
-                    text = spell.log or 'Ошибка активации..'
+                    text = spell.log or 'Ошибка активации'
                     await self.set_state(hero.chat_id, BattleState.user_turn)
                     return await message.answer(text, reply_markup=battle_main_kb)
 

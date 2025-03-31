@@ -25,7 +25,7 @@ async def battle_handler_init(message: Message, state: FSMContext, ):
             "enemy_team": [data.get('hero')],
             "player_team": [],
             "exit_state": LocationState.home,
-            "exit_message": 'Была ошибка...\n',
+            "exit_message": 'Неизвестная ошибка\n',
             "exit_kb": home_kb,
             "battle_type": 'battle',
             "is_inline": False,

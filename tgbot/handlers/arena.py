@@ -45,7 +45,7 @@ async def arena_select_type(message: Message, state: FSMContext):
         chat_id = hero.chat_id
 
         if id == hero.id and pvp_type == 'solo':
-            return await message.answer('Вызывать себя на бой, можно только в голове XD')
+            return await message.answer('Вызывать себя на бой, нельзя')
 
         if pvp_type == 'solo':
             try:
@@ -74,7 +74,7 @@ async def arena_select_type(message: Message, state: FSMContext):
 
             for enemy in enemy_team:
                 if enemy.id == hero.id:
-                    return await message.answer('Вызывать свою команду на бой нельзя')
+                    return await message.answer('Вызывать свою команду на бой, нельзя')
 
             await state.update_data(player_team=player_team)
             await state.update_data(enemy_team=enemy_team)
@@ -103,7 +103,7 @@ async def arena_battle(message: Message, state: FSMContext):
     enemy_team = data.get('enemy_team', [])
 
     if pvp_hero is None:
-        await message.answer('Вы потерялись на дороге жизни..')
+        await message.answer('Неизвестная ошибка')
         return to_home(message)
 
     text_solo = f'{hero.name} принял вызов {pvp_hero.name}.'

@@ -164,7 +164,7 @@ async def team_send_invite(message: Message, state: FSMContext):
         return await to_team_main(message, state)
 
     except TypeError:
-        await message.answer('Введите корректное число...')
+        await message.answer('Введите корректное число')
 
 
 async def team_accept_invite(message: Message, state: FSMContext):
@@ -189,7 +189,7 @@ async def team_accept_invite(message: Message, state: FSMContext):
         await to_team_main(message, state)
 
     except KeyError:
-        await message.answer('Произошла ошибка.. Попробуйте снова..')
+        await message.answer('Неизвестная ошибка')
 
 
 async def teammate_list(cb: CallbackQuery, state: FSMContext):

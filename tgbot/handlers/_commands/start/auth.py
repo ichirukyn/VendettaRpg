@@ -63,7 +63,7 @@ async def check_auth(message: Message, state: FSMContext):
                 await state.update_data(hero_chat_id=message.chat.id)
 
         if hero_data is None:
-            text = 'Ошибка получения героя, звоните Ichiru..'
+            text = 'Ошибка получения героя'
             return await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
         hero = await init_hero(db, session, hero_data.get('id'), hero_data.get('chat_id', None))
@@ -82,7 +82,7 @@ async def check_auth(message: Message, state: FSMContext):
         # await test_init_hero(session, db)
 
     except Exception as e:
-        await message.answer(f'Ошибка..\n {e}', reply_markup=ReplyKeyboardRemove())
+        await message.answer(f'Неизвестная ошибка\n {e}', reply_markup=ReplyKeyboardRemove())
 
 
 async def test_init_hero(session, db):

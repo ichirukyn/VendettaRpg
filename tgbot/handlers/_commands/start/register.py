@@ -87,7 +87,7 @@ async def register_user(message: Message, state: FSMContext):
     except Exception as e:
         logger.error('Register | error')
         logger.error(e)
-        text = f"Произошла ошибка! Напишите @Ichirukyn, разберёмся..\nОшибка:{e}"
+        text = f"Ошибка:{e}"
         await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
 
