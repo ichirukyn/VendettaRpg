@@ -24,8 +24,8 @@ options_init = {
     'statistic': True,
     'techniques': True,
     'spells': True,
-    'teams': True,
-    'weapon': True
+    'weapon': True,
+    'team': True,
 }
 
 

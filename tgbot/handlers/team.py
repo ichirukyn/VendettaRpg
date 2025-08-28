@@ -84,10 +84,14 @@ async def team_list(cb: CallbackQuery, state: FSMContext):
     if cb.data == 'Да':
         team_select = data.get('team_select')
         team = await db.get_team(team_select)
-        leader = await db.get_user(team['leader_id'])
+        leader = await db.get_heroes(team.get('leader_id'))
 
-        await state.storage.update_data(chat=leader['chat_id'], send_invite_to_team=hero.id)
-        await cb.message.bot.send_message(chat_id=leader['chat_id'], text=f"{hero.name} хочет присоединится к команде.")
+        if not leader:
+            return await cb.message.edit_text('Ошибка leader not found', reply_markup=team_main_inline())
+
+        await state.storage.update_data(chat=leader.get('chat_id'), send_invite_to_team=hero.id)
+        await cb.message.bot.send_message(chat_id=leader.get('chat_id'),
+                                          text=f"{hero.name} хочет присоединится к команде.")
 
         await LocationState.team.set()
         return await cb.message.edit_text('Вы отправили заявку!', reply_markup=team_main_inline())

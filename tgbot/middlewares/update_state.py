@@ -19,7 +19,7 @@ list_ignore = [
 
 
 def logger(id, state, message=''):
-    print(f"-- {id} id - {state} -- {message}\n")
+    print(f"-- {id} id - {state} -- {message}")
 
 
 class UpdateStatsMiddleware(BaseMiddleware):
@@ -35,9 +35,15 @@ class UpdateStatsMiddleware(BaseMiddleware):
         chat_id = message.chat.id
         data = await dp.storage.get_data(chat=chat_id)
 
+        if not data:
+            await dp.storage.reset_data(chat=chat_id)
+            await dp.storage.reset_state(chat=chat_id)
+            return
+
         try:
             hero = data['hero']
-            chat_id_ = data.get('hero_chat_id', None)
+            # chat_id_ = data.get('hero_chat_id', None)
+            chat_id_ = hero.chat_id
 
             state = await dp.storage.get_state(chat=chat_id)
 

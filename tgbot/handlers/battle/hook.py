@@ -415,11 +415,11 @@ class BattleLogger:
 
     @staticmethod
     def battle_order(order):
-        response = "Последовательность действий:\n"
+        response = "Последовательность действий:"
 
         i = 1
         for e in order:
-            response += f"{i}. {e.name}\n"
+            response += f"\n{i}. {e.name}"
             i += 1
 
         return response

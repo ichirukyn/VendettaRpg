@@ -29,8 +29,8 @@ async def check_auth(message: Message, state: FSMContext):
         config = message.bot.get('config')
         session = message.bot.get('session')
 
-        if message.chat.id not in config.tg_bot.admin_ids and config.tg_bot.is_dev:
-            return
+        # if message.chat.id not in config.tg_bot.admin_ids and config.tg_bot.is_dev:
+        #     return
 
         chat_id = message.chat.id
         logger.info(f'chat_id: {chat_id}')
