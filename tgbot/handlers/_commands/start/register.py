@@ -31,8 +31,8 @@ async def register_user(message: Message, state: FSMContext):
     # Регулярное выражение для ника
     pattern = re.compile(r'^[a-zA-Zа-яА-Я0-9]+$')
 
-    if 3 >= len(message.text) >= 25:
-        return await message.answer('Ник игрока должен состоять от 5 до 25 символов')
+    if 1 >= len(message.text) >= 25:
+        return await message.answer('Ник игрока должен состоять от 1 до 25 символов')
 
     if not pattern.match(message.text):
         return await message.answer('Ник игрока содержит недопустимые символы.')
