@@ -10,21 +10,14 @@ class PercentBonusEffect(Effect, ABC):
             entity = target
 
         if self.condition and not self.check(entity):
-            # Условия не выполнены
-            return False
+            return False  # Условия не выполнены
 
-        val = getattr(entity, self.attribute) * (1 + self.value)
-        setattr(entity, self.attribute, val)
-        setattr(entity, 'prev_percent', val)
+        entity.apply_bonus_effect(self.attribute, self.value, is_percent=True)
         self.duration_current = self.duration
         return True
 
     def cancel(self, hero, target=None, skill=None):
-        # TODO: Проверить баффы
         if self.condition and not self.check(hero):
-            # Условия не выполнены
-            return
+            return  # Условия не выполнены
 
-        val = getattr(hero, self.attribute) / (1 + self.value)
-        setattr(hero, self.attribute, val)
-        setattr(hero, 'prev_percent', val)
+        hero.cancel_bonus_effect(self.attribute, self.value, is_percent=True)

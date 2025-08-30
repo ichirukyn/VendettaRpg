@@ -14,6 +14,18 @@ from tgbot.models.entity.statistic import Statistic, StatisticBattle
 from tgbot.models.entity.techniques import Technique
 
 
+def safe_calculation(func):
+    """Декоратор для безопасных вычислений"""
+
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except ZeroDivisionError:
+            return 0
+
+    return wrapper
+
+
 class EntityFactory:
     @staticmethod
     def create_entity(user_id, name):
@@ -175,6 +187,14 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
 
         self.update_control()
 
+    @safe_calculation
+    def calculate_percent(self, current, maximum):
+        return round((current * 100) / maximum)
+
+    @safe_calculation
+    def calculate_from_percent(self, percent, maximum):
+        return round((percent * maximum) / 100)
+
     def update_regen(self):
         self.qi_reg = ((self.strength / 2) + self.health) / 3
         self.mana_reg = ((self.intelligence / 2) + self.soul) / 3
@@ -228,11 +248,34 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         self.total_stats_flat = self.sum_flat_stats()
         self.total_stats = self.sum_stats()
 
+    def check_percent(self):
+        # Проверяем, чтобы проценты не были отрицательными
+        self.hp_percent = max(0, self.hp_percent)
+        self.mana_percent = max(0, self.mana_percent)
+        self.qi_percent = max(0, self.qi_percent)
+        self.shield_percent = max(0, self.shield_percent)
+
+        # Проверяем, чтобы проценты не превышали 100
+        self.hp_percent = min(100, self.hp_percent)
+        self.mana_percent = min(100, self.mana_percent)
+        self.qi_percent = min(100, self.qi_percent)
+        self.shield_percent = min(100, self.shield_percent)
+
     def update_stats_percent(self):
-        self.hp_percent = 0 if self.hp_percent <= 0 else round((self.hp * 100) / self.hp_max)
-        self.mana_percent = 0 if self.mana_percent <= 0 else round((self.mana * 100) / self.mana_max)
-        self.qi_percent = 0 if self.qi_percent <= 0 else round((self.qi * 100) / self.qi_max)
-        self.shield_percent = 0 if self.shield_percent <= 0 else round((self.shield * 100) / self.shield_max)
+        self.check_percent()
+
+        self.hp_percent = self.calculate_percent(self.hp, self.hp_max)
+        self.mana_percent = self.calculate_percent(self.mana, self.mana_max)
+        self.qi_percent = self.calculate_percent(self.qi, self.qi_max)
+        self.shield_percent = self.calculate_percent(self.shield, self.shield_max)
+
+    def update_stats_from_percent(self):
+        self.check_percent()
+
+        self.hp = max(0, min(self.hp_max, self.calculate_from_percent(self.hp_percent, self.hp_max)))
+        self.mana = max(0, min(self.mana_max, self.calculate_from_percent(self.mana_percent, self.mana_max)))
+        self.qi = max(0, min(self.qi_max, self.calculate_from_percent(self.qi_percent, self.qi_max)))
+        self.shield = max(0, min(self.shield_max, self.calculate_from_percent(self.shield_percent, self.shield_max)))
 
     def sum_flat_stats(self):
         return self.flat_strength + self.flat_health + self.flat_speed + self.flat_dexterity + self.flat_soul + \
@@ -258,6 +301,69 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
     def check_shield(self):
         if self.shield > self.shield_max:
             self.shield_max = self.shield
+
+    def update_derived_stats(self):
+        """Обновляет все производные характеристики (HP, Mana, Qi и их максимумы)"""
+        self.update_stats()
+        self.update_stats_percent()
+        self.update_control()
+        self.total_stats_flat = self.sum_flat_stats()
+        self.total_stats = self.sum_stats()
+
+    # Effects
+    def apply_bonus_effect(self, attribute, value, is_percent=False):
+        """Применяет бонус к характеристике с обновлением зависимых stats"""
+        current_value = getattr(self, attribute)
+
+        if is_percent:
+            # Для процентных бонусов
+            new_value = current_value * (1 + value)
+            setattr(self, attribute, new_value)
+            setattr(self, 'prev_percent', new_value)
+        else:
+            # Для плоских бонусов
+            new_value = current_value + value
+            setattr(self, attribute, new_value)
+            setattr(self, 'prev', new_value)
+
+            # Обновляем производные характеристики
+            self.update_stats_from_percent()
+
+        return new_value
+
+    def cancel_bonus_effect(self, attribute, value, is_percent=False):
+        """Отменяет бонус к характеристике с обновлением зависимых stats"""
+        current_value = getattr(self, attribute)
+
+        if is_percent:
+            # Для процентных бонусов
+            new_value = current_value / (1 + value)
+            setattr(self, attribute, new_value)
+            setattr(self, 'prev_percent', new_value)
+        else:
+            # Для плоских бонусов
+            new_value = current_value - value
+            setattr(self, attribute, new_value)
+            setattr(self, 'prev', new_value)
+
+            # Обновляем производные характеристики
+            self.update_stats_from_percent()
+
+        return new_value
+
+    def apply_effect_and_update(self, effect, target=None):
+        """Применяет эффект и обновляет все зависимости"""
+        success = effect.apply(self, target)
+
+        if success:
+            self.update_derived_stats()
+
+        return success
+
+    def cancel_effect_and_update(self, effect, target=None):
+        """Отменяет эффект и обновляет все зависимости"""
+        effect.cancel(self, target)
+        self.update_derived_stats()
 
     # Battle
     def default_aggression(self):

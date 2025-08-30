@@ -10,20 +10,14 @@ class BonusEffect(Effect, ABC):
             entity = target
 
         if self.condition and not self.check(entity):
-            # Условия не выполнены
-            return False
+            return False # Условия не выполнены
 
-        val = getattr(entity, self.attribute) + self.value
-        setattr(entity, self.attribute, val)
-        setattr(entity, 'prev', val)
+        entity.apply_bonus_effect(self.attribute, self.value, is_percent=False)
         self.duration_current = self.duration
         return True
 
     def cancel(self, hero, target=None, skill=None):
         if self.condition and not self.check(hero):
-            # Условия не выполнены
-            return
+            return # Условия не выполнены
 
-        val = getattr(hero, self.attribute) - self.value
-        setattr(hero, self.attribute, val)
-        setattr(hero, 'prev', val)
+        hero.cancel_bonus_effect(self.attribute, self.value, is_percent=False)
