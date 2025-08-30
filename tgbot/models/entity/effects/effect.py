@@ -39,6 +39,7 @@ class Effect(EffectABC, ABC):
         if self.condition_attribute == 'class_id':
             return entity._class.id == self.condition_value
         if self.condition_attribute is not None:
+            entity.update_stats_percent()
             return condition_operator[self.condition](getattr(entity, self.condition_attribute), int(self.condition_value))
 
     def apply(self, hero, target=None, skill=None) -> bool:

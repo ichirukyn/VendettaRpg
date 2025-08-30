@@ -229,25 +229,10 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         self.total_stats = self.sum_stats()
 
     def update_stats_percent(self):
-        if self.hp <= 0:
-            self.hp_percent = 0
-        else:
-            self.hp_percent = round(self.hp_max / self.hp)
-
-        if self.mana <= 0:
-            self.mana_percent = 0
-        else:
-            self.mana_percent = round(self.mana_max / self.mana)
-
-        if self.qi <= 0:
-            self.qi_percent = 0
-        else:
-            self.qi_percent = round(self.qi_max / self.qi)
-
-        if self.shield <= 0:
-            self.shield_percent = 0
-        else:
-            self.shield_percent = round(self.shield_max / self.shield)
+        self.hp_percent = 0 if self.hp_percent <= 0 else round((self.hp * 100) / self.hp_max)
+        self.mana_percent = 0 if self.mana_percent <= 0 else round((self.mana * 100) / self.mana_max)
+        self.qi_percent = 0 if self.qi_percent <= 0 else round((self.qi * 100) / self.qi_max)
+        self.shield_percent = 0 if self.shield_percent <= 0 else round((self.shield * 100) / self.shield_max)
 
     def sum_flat_stats(self):
         return self.flat_strength + self.flat_health + self.flat_speed + self.flat_dexterity + self.flat_soul + \
@@ -542,8 +527,6 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
 
         cof = 1.2
 
-        # defs = 1.0 (100% защита), defs = 0.0 (0% защиты)
-        # TODO 1 - 0 -- Сопротивления элем. урону | 1 - 0 -- Игнорирование защиты
         defs = (100 + self.lvl) / ((100 + defender.lvl) * (1 - def_res) * (1 - defender.resist)
                                    * (1 + self.ignore_resist) + (100 + self.lvl) * (1 + cof))
 
