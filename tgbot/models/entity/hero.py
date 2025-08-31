@@ -123,7 +123,7 @@ class HeroInfo:
 
 
     def status(self, hero, crit=False):
-        hero.update_stats()
+        hero.update_all_stats()
         hero.default_stats()
         hero.update_regen()
         # so_string = f'`• Свободные очки: {formatted(hero.free_stats)}` \n'
@@ -172,7 +172,7 @@ class HeroInfo:
 
     @staticmethod
     def status_stats(hero):
-        hero.update_stats()
+        hero.update_all_stats()
         hero.default_stats()
         hero.update_regen()
         return (
@@ -196,7 +196,7 @@ class HeroInfo:
     @staticmethod
     def status_flat(hero):
         hero.default_stats()
-        hero.update_stats()
+        hero.update_all_stats()
         return (
             f"*Ваши характеристики без бонусов:*\n"
             f"`• Сила: {formatted(hero.flat_strength)}`\n"
@@ -212,7 +212,7 @@ class HeroInfo:
     @staticmethod
     def status_elements_damage(hero):
         hero.default_stats()
-        hero.update_stats()
+        hero.update_all_stats()
         return (
             f"*Урон стихий:*\n"
             f"`• Огонь: {formatted(hero.fire_damage * 100)}%`\n"
@@ -226,7 +226,7 @@ class HeroInfo:
     @staticmethod
     def status_elements_resist(hero):
         hero.default_stats()
-        hero.update_stats()
+        hero.update_all_stats()
         return (
             f"*Защита стихий:*\n"
             f"`• Огонь: {formatted(hero.fire_resist * 100)}%`\n"

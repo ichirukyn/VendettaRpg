@@ -202,7 +202,16 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
         if self.dexterity > self.strength:
             self.qi_reg = ((self.dexterity / 2) + self.health) / 3
 
+    def update_all_stats(self):
+        self.update_stats()
+        self.update_stats_percent()
+        self.total_stats_flat = self.sum_flat_stats()
+
     def update_stats(self):
+        self.update_max_params()
+        self.update_control()
+
+    def update_max_params(self):
         self.hp_max = round(self.health) * self.hp_modify
         self.mana_max = round(self.soul) * self.mana_modify
 
@@ -210,10 +219,6 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
             self.qi_max = round(self.health) * self.qi_modify
         else:
             self.qi_max = (round(self.health) + (0.25 * round(self.dexterity))) * self.qi_modify
-
-        self.update_control()
-        self.update_stats_percent()
-        self.total_stats_flat = self.sum_flat_stats()
 
     def update_control(self):
         self.control_mana = (2 * self.intelligence * self.soul) / (self.intelligence + self.soul)
@@ -305,8 +310,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
     def update_derived_stats(self):
         """Обновляет все производные характеристики (HP, Mana, Qi и их максимумы)"""
         self.update_stats()
-        self.update_stats_percent()
-        self.update_control()
+        self.update_stats_from_percent()
+
         self.total_stats_flat = self.sum_flat_stats()
         self.total_stats = self.sum_stats()
 
@@ -320,6 +325,8 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
             new_value = current_value * (1 + value)
             setattr(self, attribute, new_value)
             setattr(self, 'prev_percent', new_value)
+
+            self.update_derived_stats()
         else:
             # Для плоских бонусов
             new_value = current_value + value
@@ -327,7 +334,7 @@ class Entity(EntityResist, EntityDamage, EntityWeapon, EntityLevel, EntityStats,
             setattr(self, 'prev', new_value)
 
             # Обновляем производные характеристики
-            self.update_stats_from_percent()
+            self.update_derived_stats()
 
         return new_value
 
